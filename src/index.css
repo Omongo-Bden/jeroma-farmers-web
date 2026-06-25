@@ -1009,11 +1009,12 @@ img {
   font-weight: 600;
   font-family: var(--font-heading);
   transition: var(--transition-fast);
-  color: var(--color-primary-dark);
+  color: var(--color-text-dark);
 }
 
 .filter-btn:hover {
   background-color: var(--color-primary-ultra-light);
+  color: var(--color-primary-dark) !important;
 }
 
 .filter-btn.active {
@@ -3802,36 +3803,35 @@ body {
 [style*="background: #fff"],
 [style*="background: white"],
 .bot-bubble,
-.chatbot-input,
-.quick-reply-chip {
+.chatbot-input {
   color: #000000 !important;
 }
 
 /* Force all child elements under white backgrounds to be black for readability */
 [style*="background-color: #ffffff"] h1, [style*="background-color: #ffffff"] h2, [style*="background-color: #ffffff"] h3,
 [style*="background-color: #ffffff"] h4, [style*="background-color: #ffffff"] h5, [style*="background-color: #ffffff"] h6,
-[style*="background-color: #ffffff"] p, [style*="background-color: #ffffff"] span, [style*="background-color: #ffffff"] label,
-[style*="background-color: #ffffff"] li, [style*="background-color: #ffffff"] a, [style*="background-color: #ffffff"] div,
+[style*="background-color: #ffffff"] p, [style*="background-color: #ffffff"] span:not(.section-badge):not(.badge):not(.profile-tab-btn), [style*="background-color: #ffffff"] label,
+[style*="background-color: #ffffff"] li, [style*="background-color: #ffffff"] a:not(.btn):not(.profile-tab-btn), [style*="background-color: #ffffff"] div:not(.profile-tab-btn),
 [style*="background-color: #ffffff"] td, [style*="background-color: #ffffff"] th, [style*="background-color: #ffffff"] small,
 [style*="background-color: #fff"] h1, [style*="background-color: #fff"] h2, [style*="background-color: #fff"] h3,
 [style*="background-color: #fff"] h4, [style*="background-color: #fff"] h5, [style*="background-color: #fff"] h6,
-[style*="background-color: #fff"] p, [style*="background-color: #fff"] span, [style*="background-color: #fff"] label,
-[style*="background-color: #fff"] li, [style*="background-color: #fff"] a, [style*="background-color: #fff"] div,
+[style*="background-color: #fff"] p, [style*="background-color: #fff"] span:not(.section-badge):not(.badge):not(.profile-tab-btn), [style*="background-color: #fff"] label,
+[style*="background-color: #fff"] li, [style*="background-color: #fff"] a:not(.btn):not(.profile-tab-btn), [style*="background-color: #fff"] div:not(.profile-tab-btn),
 [style*="background-color: #fff"] td, [style*="background-color: #fff"] th, [style*="background-color: #fff"] small,
 [style*="background: #ffffff"] h1, [style*="background: #ffffff"] h2, [style*="background: #ffffff"] h3,
 [style*="background: #ffffff"] h4, [style*="background: #ffffff"] h5, [style*="background: #ffffff"] h6,
-[style*="background: #ffffff"] p, [style*="background: #ffffff"] span, [style*="background: #ffffff"] label,
-[style*="background: #ffffff"] li, [style*="background: #ffffff"] a, [style*="background: #ffffff"] div,
+[style*="background: #ffffff"] p, [style*="background: #ffffff"] span:not(.section-badge):not(.badge):not(.profile-tab-btn), [style*="background: #ffffff"] label,
+[style*="background: #ffffff"] li, [style*="background: #ffffff"] a:not(.btn):not(.profile-tab-btn), [style*="background: #ffffff"] div:not(.profile-tab-btn),
 [style*="background: #ffffff"] td, [style*="background: #ffffff"] th, [style*="background: #ffffff"] small,
 [style*="background: #fff"] h1, [style*="background: #fff"] h2, [style*="background: #fff"] h3,
 [style*="background: #fff"] h4, [style*="background: #fff"] h5, [style*="background: #fff"] h6,
-[style*="background: #fff"] p, [style*="background: #fff"] span, [style*="background: #fff"] label,
-[style*="background: #fff"] li, [style*="background: #fff"] a, [style*="background: #fff"] div,
+[style*="background: #fff"] p, [style*="background: #fff"] span:not(.section-badge):not(.badge):not(.profile-tab-btn), [style*="background: #fff"] label,
+[style*="background: #fff"] li, [style*="background: #fff"] a:not(.btn):not(.profile-tab-btn), [style*="background: #fff"] div:not(.profile-tab-btn),
 [style*="background: #fff"] td, [style*="background: #fff"] th, [style*="background: #fff"] small,
 [style*="background-color: white"] h1, [style*="background-color: white"] h2, [style*="background-color: white"] h3,
 [style*="background-color: white"] h4, [style*="background-color: white"] h5, [style*="background-color: white"] h6,
-[style*="background-color: white"] p, [style*="background-color: white"] span, [style*="background-color: white"] label,
-[style*="background-color: white"] li, [style*="background-color: white"] a, [style*="background-color: white"] div,
+[style*="background-color: white"] p, [style*="background-color: white"] span:not(.section-badge):not(.badge):not(.profile-tab-btn), [style*="background-color: white"] label,
+[style*="background-color: white"] li, [style*="background-color: white"] a:not(.btn):not(.profile-tab-btn), [style*="background-color: white"] div:not(.profile-tab-btn),
 [style*="background-color: white"] td, [style*="background-color: white"] th, [style*="background-color: white"] small,
 .bot-bubble h1, .bot-bubble h2, .bot-bubble h3, .bot-bubble h4, .bot-bubble h5, .bot-bubble h6,
 .bot-bubble p, .bot-bubble span, .bot-bubble div, .bot-bubble li, .bot-bubble a,
@@ -3841,12 +3841,74 @@ body {
   color: #000000 !important;
 }
 
+/* Force specific ID-based sections with white backgrounds to have clear black text */
+#about h1, #about h2, #about h3, #about h4, #about h5, #about h6,
+#about p, #about label, #about li, #about td, #about th, #about small,
+#about span:not(.section-badge):not(.badge):not(.profile-tab-btn),
+#about a:not(.btn):not(.profile-tab-btn),
+#services h1, #services h2, #services h3, #services h4, #services h5, #services h6,
+#services p, #services label, #services li, #services td, #services th, #services small,
+#services span:not(.section-badge):not(.badge),
+#services a:not(.btn),
+#gallery h1, #gallery h2, #gallery h3, #gallery h4, #gallery h5, #gallery h6,
+#gallery p, #gallery label, #gallery li, #gallery td, #gallery th, #gallery small,
+#gallery span:not(.section-badge):not(.badge),
+#gallery a:not(.btn),
+#socials h1, #socials h2, #socials h3, #socials h4, #socials h5, #socials h6,
+#socials p, #socials label, #socials li, #socials td, #socials th, #socials small,
+#socials span:not(.section-badge):not(.badge),
+#socials a:not(.btn),
+#partners h1, #partners h2, #partners h3, #partners h4, #partners h5, #partners h6,
+#partners p, #partners label, #partners li, #partners td, #partners th, #partners small,
+#partners span:not(.section-badge):not(.badge),
+#partners a:not(.btn),
+#contact h1, #contact h2, #contact h3, #contact h4, #contact h5, #contact h6,
+#contact p, #contact label, #contact li, #contact td, #contact th, #contact small,
+#contact span:not(.section-badge):not(.badge),
+#contact a:not(.btn) {
+  color: #000000 !important;
+}
+
+/* Inactive profile tab button styles (black text/icons on white bg) */
+.profile-tab-btn {
+  color: #000000 !important;
+}
+.profile-tab-btn:hover {
+  color: var(--color-primary-light) !important;
+}
+.profile-tab-btn svg {
+  color: #000000 !important;
+}
+.profile-tab-btn:hover svg {
+  color: var(--color-primary-light) !important;
+}
+
+/* Active profile tab button has white text and white icon */
+.profile-tab-btn[style*="background-color: var(--color-primary)"],
+.profile-tab-btn[style*="color: #ffffff"],
+.profile-tab-btn[style*="color: rgb(255, 255, 255)"],
+.profile-tab-btn[style*="color: rgb(255,255,255)"] {
+  color: #ffffff !important;
+}
+.profile-tab-btn[style*="background-color: var(--color-primary)"] svg,
+.profile-tab-btn[style*="color: #ffffff"] svg,
+.profile-tab-btn[style*="color: rgb(255, 255, 255)"] svg,
+.profile-tab-btn[style*="color: rgb(255,255,255)"] svg {
+  color: #ffffff !important;
+}
+
 /* Ensure links on white backgrounds have clear dark styles */
 [style*="background-color: #ffffff"] a,
 [style*="background-color: #fff"] a,
 [style*="background: #ffffff"] a,
 [style*="background: #fff"] a,
-[style*="background-color: white"] a {
+[style*="background-color: white"] a,
+#about a:not(.btn):not(.profile-tab-btn),
+#services a:not(.btn),
+#gallery a:not(.btn),
+#socials a:not(.btn),
+#partners a:not(.btn),
+#contact a:not(.btn) {
   color: #1b4332 !important;
   text-decoration: underline !important;
 }
@@ -3854,6 +3916,12 @@ body {
 [style*="background-color: #fff"] a:hover,
 [style*="background: #ffffff"] a:hover,
 [style*="background: #fff"] a:hover,
-[style*="background-color: white"] a:hover {
+[style*="background-color: white"] a:hover,
+#about a:not(.btn):not(.profile-tab-btn):hover,
+#services a:not(.btn):hover,
+#gallery a:not(.btn):hover,
+#socials a:not(.btn):hover,
+#partners a:not(.btn):hover,
+#contact a:not(.btn):hover {
   color: #2d6a4f !important;
 }

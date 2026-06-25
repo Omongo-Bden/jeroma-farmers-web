@@ -161,7 +161,7 @@ export default function About({ lang, activeTab = 'overview', setActiveTab, tran
                   fontSize: '0.85rem',
                   cursor: 'pointer',
                   backgroundColor: activeTab === tab.id ? 'var(--color-primary)' : 'transparent',
-                  color: activeTab === tab.id ? '#ffffff' : 'var(--color-text-light)',
+                  color: activeTab === tab.id ? '#ffffff' : '#000000',
                   transition: 'all 0.2s ease',
                   boxShadow: activeTab === tab.id ? '0 4px 12px rgba(27,67,50,0.2)' : 'none'
                 }}
@@ -462,19 +462,19 @@ export default function About({ lang, activeTab = 'overview', setActiveTab, tran
                       </tr>
                       <tr style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
                         <td style={{ padding: '12px 16px', fontWeight: 700 }}>NSSF (National Social Security Fund)</td>
-                        <td style={{ padding: '12px 16px', color: 'var(--color-text-light)' }}>Registered / Compliant</td>
+                        <td style={{ padding: '12px 16px', color: '#333333' }}>Registered / Compliant</td>
                         <td style={{ padding: '12px 16px' }}>-</td>
                         <td style={{ padding: '12px 16px', color: 'green', fontWeight: 600 }}>Open</td>
                       </tr>
                       <tr style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
                         <td style={{ padding: '12px 16px', fontWeight: 700 }}>MAAIF (Ministry of Agriculture, Animal Industry & Fisheries)</td>
-                        <td style={{ padding: '12px 16px', color: 'var(--color-text-light)' }}>Licensed Agro-input Dealer</td>
+                        <td style={{ padding: '12px 16px', color: '#333333' }}>Licensed Agro-input Dealer</td>
                         <td style={{ padding: '12px 16px' }}>-</td>
                         <td style={{ padding: '12px 16px', color: 'green', fontWeight: 600 }}>Active</td>
                       </tr>
                       <tr style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
                         <td style={{ padding: '12px 16px', fontWeight: 700 }}>PPDA (Public Procurement & Disposal Authority)</td>
-                        <td style={{ padding: '12px 16px', color: 'var(--color-text-light)' }}>Registered Provider</td>
+                        <td style={{ padding: '12px 16px', color: '#333333' }}>Registered Provider</td>
                         <td style={{ padding: '12px 16px' }}>-</td>
                         <td style={{ padding: '12px 16px', color: 'green', fontWeight: 600 }}>Active</td>
                       </tr>
@@ -496,7 +496,7 @@ export default function About({ lang, activeTab = 'overview', setActiveTab, tran
                       <h4 style={{ margin: '0 0 6px 0', fontSize: '0.9rem', color: 'var(--color-primary)', fontWeight: 800 }}>
                         ✨ {val.title}
                       </h4>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.4' }}>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#333333', lineHeight: '1.4' }}>
                         {val.desc}
                       </p>
                     </div>
