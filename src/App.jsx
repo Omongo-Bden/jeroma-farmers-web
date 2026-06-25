@@ -260,7 +260,7 @@ function App() {
   };
 
   return (
-    <div className={`App ${fontScale === 'large' ? 'font-large' : ''} ${contrastMode === 'high' ? 'high-contrast' : ''}`}>
+    <div className={`App view-${currentView} ${fontScale === 'large' ? 'font-large' : ''} ${contrastMode === 'high' ? 'high-contrast' : ''}`}>
       
       {/* Dynamic Header & Navigation (Only shown when not in full-screen Dashboard mode) */}
       {currentView !== 'dashboard' && (

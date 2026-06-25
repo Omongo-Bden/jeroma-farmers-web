@@ -425,6 +425,37 @@ if (!dbState.manual) {
   dbState.manual = [...DEFAULT_MANUAL];
 }
 
+// Database migration to repair manual image paths
+if (dbState.manual && Array.isArray(dbState.manual)) {
+  let wasUpdated = false;
+  dbState.manual = dbState.manual.map(stage => {
+    if (stage.id === 'site-selection' && stage.image === '/sunflower_field.png') {
+      stage.image = '/sunflower_field.webp';
+      wasUpdated = true;
+    }
+    if (stage.id === 'farmer-profiling' && stage.image === '/farmers_training_1.png') {
+      stage.image = '/farmers_training_1.jpg';
+      wasUpdated = true;
+    }
+    if (stage.id === 'quality-inputs' && stage.image === '/farmer_man_seedco.png') {
+      stage.image = '/farmer_man_seedco.webp';
+      wasUpdated = true;
+    }
+    if (stage.id === 'harvesting' && stage.image === '/four_men_sunflowers.png') {
+      stage.image = '/four_men_sunflowers.webp';
+      wasUpdated = true;
+    }
+    if (stage.id === 'milling-processing' && stage.image === '/jeroma_maize_flour_bag.png') {
+      stage.image = '/jeroma_maize_flour_bag.webp';
+      wasUpdated = true;
+    }
+    return stage;
+  });
+  if (wasUpdated) {
+    saveDb();
+  }
+}
+
 // Database interfaces
 module.exports = {
   hashPassword,

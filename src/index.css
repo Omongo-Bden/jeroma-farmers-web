@@ -77,7 +77,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
   line-height: 1.25;
-  color: #ffffff;
+  color: var(--color-text-white);
 }
 
 a {
@@ -2437,7 +2437,7 @@ img {
   background-color: var(--color-bg-white);
   padding: 32px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: var(--border-light);
   box-shadow: var(--shadow-sm);
   color: var(--color-text-dark);
 }
@@ -3925,3 +3925,147 @@ body {
 #contact a:not(.btn):hover {
   color: #2d6a4f !important;
 }
+
+/* ==========================================================================
+   Theme Variable Overrides (Dynamic View-Based Themes)
+   ========================================================================== */
+
+/* Root / App Base styling */
+.App {
+  min-height: 100vh;
+  background-color: var(--color-bg-light);
+  color: var(--color-text-dark);
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* Green Theme (Default / Home / Manual) */
+.App.view-home,
+.App.view-manual {
+  --color-bg-light: #123c2a;
+  --color-bg-white: #1b4e37;
+  --color-text-dark: #ffffff;
+  --color-text-light: #d8f3dc;
+  --color-text-white: #ffffff;
+  --color-card-bg-light: rgba(27, 78, 55, 0.85);
+  --color-card-bg-dark: rgba(18, 60, 42, 0.85);
+  --border-light: 1px solid rgba(255, 255, 255, 0.08);
+  --border-glass-light: 1px solid rgba(255, 255, 255, 0.15);
+  --border-glass-dark: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* White/Light Theme (Portal / Dashboard) */
+.App.view-portal,
+.App.view-dashboard {
+  --color-bg-light: #ffffff;
+  --color-bg-white: #f4f7f6;
+  --color-text-dark: #1b4332;
+  --color-text-light: #477660;
+  --color-text-white: #1b4332;
+  --color-card-bg-light: rgba(255, 255, 255, 0.95);
+  --color-card-bg-dark: rgba(244, 247, 246, 0.95);
+  --border-light: 1px solid rgba(27, 67, 50, 0.08);
+  --border-glass-light: 1px solid rgba(27, 67, 50, 0.12);
+  --border-glass-dark: 1px solid rgba(27, 67, 50, 0.06);
+}
+
+/* Adjust dashboard layout elements for Light Theme */
+.App.view-dashboard {
+  background-color: #faf9f6 !important;
+}
+
+/* Custom Header Styling per theme */
+.App.view-portal .header,
+.App.view-dashboard .header {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid rgba(27, 67, 50, 0.1) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+}
+
+.App.view-portal .logo-title,
+.App.view-dashboard .logo-title {
+  color: var(--color-primary-dark) !important;
+}
+
+.App.view-portal .logo-subtitle,
+.App.view-dashboard .logo-subtitle {
+  color: var(--color-primary-light) !important;
+}
+
+.App.view-portal .nav-toggle,
+.App.view-dashboard .nav-toggle {
+  color: var(--color-primary-dark) !important;
+  border-color: rgba(27, 67, 50, 0.2) !important;
+  background: rgba(27, 67, 50, 0.04) !important;
+}
+
+.App.view-portal .desktop-only-tabs-container,
+.App.view-dashboard .desktop-only-tabs-container {
+  border-top: 1px solid rgba(27, 67, 50, 0.1) !important;
+}
+
+.App.view-portal .nav-link,
+.App.view-dashboard .nav-link {
+  color: var(--color-primary-dark) !important;
+}
+
+.App.view-portal .nav-link.active,
+.App.view-dashboard .nav-link.active {
+  color: var(--color-primary-light) !important;
+}
+
+.App.view-portal .nav-link:hover,
+.App.view-dashboard .nav-link:hover {
+  color: var(--color-accent) !important;
+}
+
+.App.view-portal .lang-switcher-btn,
+.App.view-dashboard .lang-switcher-btn {
+  color: var(--color-primary-dark) !important;
+  background: rgba(27, 67, 50, 0.04) !important;
+  border: 1px solid rgba(27, 67, 50, 0.12) !important;
+}
+
+.App.view-portal .lang-switcher-btn svg,
+.App.view-dashboard .lang-switcher-btn svg {
+  color: var(--color-primary-dark) !important;
+}
+
+/* Training Manual Isolated Theme Container */
+.training-manual-container {
+  --color-bg-light: #123c2a !important;
+  --color-bg-white: #1b4e37 !important;
+  --color-text-dark: #ffffff !important;
+  --color-text-light: #d8f3dc !important;
+  --color-text-white: #ffffff !important;
+  --color-card-bg-light: rgba(27, 78, 55, 0.85) !important;
+  --color-card-bg-dark: rgba(18, 60, 42, 0.85) !important;
+  --border-light: 1px solid rgba(255, 255, 255, 0.08) !important;
+  --border-glass-light: 1px solid rgba(255, 255, 255, 0.15) !important;
+  --border-glass-dark: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background-color: #123c2a !important;
+  color: #ffffff !important;
+}
+
+.training-manual-container h1,
+.training-manual-container h2,
+.training-manual-container h3,
+.training-manual-container h4,
+.training-manual-container h5,
+.training-manual-container h6 {
+  color: #ffffff !important;
+}
+
+.training-manual-container .glass-panel {
+  background: rgba(27, 78, 55, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.training-manual-container .btn-outline {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.training-manual-container .manual-toolbar {
+  background-color: #1b4e37 !important;
+}
+

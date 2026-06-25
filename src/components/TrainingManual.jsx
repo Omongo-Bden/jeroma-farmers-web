@@ -10,7 +10,7 @@ const DEFAULT_STAGES = [
     title_luo: 'Yer Lobo Pur',
     subtitle_en: 'Choose the right land for your crops',
     subtitle_luo: 'Yer lobo ma ber pi cam',
-    image: '/sunflower_field.png',
+    image: '/sunflower_field.webp',
     points: [
       'Select well-drained soils with good organic matter content.',
       'Avoid waterlogged areas and steep slopes to prevent erosion and root suffocation.',
@@ -27,7 +27,7 @@ const DEFAULT_STAGES = [
     title_luo: 'Pwonj kede Profiling Opur',
     subtitle_en: 'Know your farmers, build their capacity',
     subtitle_luo: 'Nge opur miri kede dongo twerogi',
-    image: '/farmers_training_1.png',
+    image: '/farmers_training_1.jpg',
     points: [
       'Farmer registration and profiling (location, farm size, crops, and household info).',
       'Classroom and field-based training on modern Good Agricultural Practices (GAP).',
@@ -44,7 +44,7 @@ const DEFAULT_STAGES = [
     title_luo: 'Yer Kodi kede Agro-Inputs Maber',
     subtitle_en: 'Start with certified seeds',
     subtitle_luo: 'Cak kede kodi ma okadi maber',
-    image: '/farmer_man_seedco.png',
+    image: '/farmer_man_seedco.webp',
     points: [
       'Use only certified seeds from trusted, licensed suppliers like Jeroma.',
       'Select improved varieties suited to your specific agro-ecological zone and season.',
@@ -171,7 +171,7 @@ const DEFAULT_STAGES = [
     title_luo: 'Keyo Cam i Poto',
     subtitle_en: 'Harvest at the right physiological maturity',
     subtitle_luo: 'Keyo cam ka odongo maber woko',
-    image: '/four_men_sunflowers.png',
+    image: '/four_men_sunflowers.webp',
     points: [
       'Maize: Harvest when moisture content is 18–20% (grains are hard and shiny, black layer visible).',
       'Sunflower: Harvest when the back of the head turns yellow-brown and outer bracts dry out.',
@@ -223,7 +223,7 @@ const DEFAULT_STAGES = [
     title_luo: 'Goyo kede Loko Cam i Jeroma',
     subtitle_en: 'Value addition multiplies farmer income',
     subtitle_luo: 'Miyo value addition pi wel mapol',
-    image: '/jeroma_maize_flour_bag.png',
+    image: '/jeroma_maize_flour_bag.webp',
     points: [
       'Deliver quality grain to Jeroma\'s modern milling plant in Lira City.',
       'Pneumatic milling with cyclone separation ensures clean, sand-free flour.',
@@ -351,7 +351,7 @@ export default function TrainingManual({ lang, onBackToHome }) {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--color-bg-light)', color: '#ffffff', minHeight: '100vh', fontFamily: 'var(--font-body)' }}>
+    <div className="training-manual-container" style={{ backgroundColor: 'var(--color-bg-light)', color: '#ffffff', minHeight: '100vh', fontFamily: 'var(--font-body)' }}>
       {/* ── Header Toolbar (Hidden in Print) ── */}
       <div className="manual-toolbar" style={{
         position: 'sticky', top: '80px', zIndex: 900,

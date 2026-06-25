@@ -5,7 +5,7 @@
 // In production, enforce standard secure TLS validation:
 // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : '';
 
 // Global in-memory cache for duplicate queries (30-minute expiration)
 const chatCache = {};

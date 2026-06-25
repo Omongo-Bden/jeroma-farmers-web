@@ -151,14 +151,14 @@ export default function Navbar({
               borderRadius: 'var(--radius-full)',
               fontSize: '0.75rem',
               fontWeight: 700,
-              color: isOnline ? '#ffffff' : '#d97706',
+              color: isOnline ? 'var(--color-text-white)' : '#d97706',
               userSelect: 'none'
             }}>
               <span style={{ 
                 width: '8px', 
                 height: '8px', 
                 borderRadius: '50%', 
-                backgroundColor: isOnline ? '#ffffff' : '#f4a261', 
+                backgroundColor: isOnline ? 'var(--color-text-white)' : '#f4a261', 
                 display: 'inline-block',
                 animation: 'wa-pulse 1.5s infinite'
               }}></span>
@@ -341,40 +341,124 @@ export default function Navbar({
             )}
           </div>
 
-          {/* Mobile Hamburger toggle */}
-          <button 
-            className="nav-toggle" 
-            onClick={toggleMenu} 
-            aria-label="Toggle navigation menu"
-            aria-expanded={isMenuOpen}
-            style={{
-              padding: '9px',
-              borderRadius: '8px',
-              border: '1.5px solid rgba(255, 255, 255, 0.2)',
-              background: isMenuOpen ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-              color: '#ffffff',
-              minWidth: '44px',
-              minHeight: '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease',
-              cursor: 'pointer'
-            }}
-          >
-            {isMenuOpen ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            )}
-          </button>
+          {/* Mobile Hamburger toggle and Portal/Login button */}
+          {isMobile ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {currentUser ? (
+                <button 
+                  className="btn btn-primary" 
+                  onClick={onDashboardClick}
+                  style={{ 
+                    padding: '8px 12px', 
+                    fontSize: '0.8rem', 
+                    height: '38px',
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 10px rgba(82, 183, 136, 0.15)',
+                    border: 'none',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Icons.Users size={14} />
+                  <span>Portal</span>
+                </button>
+              ) : (
+                <button 
+                  onClick={onPortalClick}
+                  style={{ 
+                    padding: '8px 12px', 
+                    fontSize: '0.8rem', 
+                    height: '38px',
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    borderRadius: '8px',
+                    background: 'var(--color-secondary)',
+                    color: 'var(--color-primary-dark)',
+                    border: 'none',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-heading)',
+                    boxShadow: '0 4px 10px rgba(233,196,106,0.25)'
+                  }}
+                >
+                  <Icons.Users size={14} />
+                  <span>Login</span>
+                </button>
+              )}
+              
+              <button 
+                className="nav-toggle" 
+                onClick={toggleMenu} 
+                aria-label="Toggle navigation menu"
+                aria-expanded={isMenuOpen}
+                style={{
+                  padding: '9px',
+                  borderRadius: '8px',
+                  border: '1.5px solid rgba(255, 255, 255, 0.2)',
+                  background: isMenuOpen ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                  color: '#ffffff',
+                  minWidth: '44px',
+                  minHeight: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer'
+                }}
+              >
+                {isMenuOpen ? (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                ) : (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </svg>
+                )}
+              </button>
+            </div>
+          ) : (
+            <button 
+              className="nav-toggle" 
+              onClick={toggleMenu} 
+              aria-label="Toggle navigation menu"
+              aria-expanded={isMenuOpen}
+              style={{
+                padding: '9px',
+                borderRadius: '8px',
+                border: '1.5px solid rgba(255, 255, 255, 0.2)',
+                background: isMenuOpen ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                color: '#ffffff',
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                cursor: 'pointer'
+              }}
+            >
+              {isMenuOpen ? (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+              )}
+            </button>
+          )}
 
         </div>
 
