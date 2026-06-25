@@ -709,10 +709,10 @@ exports.handler = async (event, _context) => {
 
   // ── Model waterfall: try each model in order until one succeeds ─────────────
   const MODEL_WATERFALL = [
-    'gemini-flash-latest',
-    'gemini-2.0-flash-lite',
     'gemini-2.5-flash-lite',
     'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-flash-latest',
   ];
 
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -761,8 +761,7 @@ exports.handler = async (event, _context) => {
         lastErrText = await res.text();
         console.error(`Gemini API error (${model}): ${lastStatus}`, lastErrText.substring(0, 300));
 
-        // Don't retry on quota (429) — it applies across models
-        if (lastStatus === 429) break;
+        // Continue to other models even on 429, since quotas can be model-specific
 
       } catch (fetchErr) {
         console.error(`Fetch error (${model}):`, fetchErr.message);
