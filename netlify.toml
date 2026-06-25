@@ -1,0 +1,21 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Redirect /api/chat to the AI chat function
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
+
+# Redirect all other /api/* requests to Netlify Serverless Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Direct all other routes to index.html for React Router SPA capability
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

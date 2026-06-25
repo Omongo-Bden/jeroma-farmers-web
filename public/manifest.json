@@ -1,0 +1,25 @@
+{
+  "name": "Jeroma Farmers Collection Centre Ltd",
+  "short_name": "Jeroma Farmers",
+  "description": "Empowering local smallholder farmers in Lira, Uganda with certified crop moisture grading, climate warehousing, subsidized organic inputs, and logistics.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#faf9f6",
+  "theme_color": "#0f3020",
+  "categories": ["agriculture", "utilities", "business"],
+  "icons": [
+    {
+      "src": "/logo.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    }
+  ]
+}

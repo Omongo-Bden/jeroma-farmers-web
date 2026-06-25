@@ -1,0 +1,196 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Jeroma Farmers API",
+    "description": "API Specification for Jeroma Farmers Collection Centre Ltd agricultural portal, enabling local PWA clients, logistics partners, and regional integrations.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Local Netlify Serverless Functions / Node standalone server"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Farmer & Admin Login",
+        "description": "Authenticate user credentials and retrieve a session JWT token. Sets HttpOnly cookie.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                },
+                "required": ["username", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "token": { "type": "string" },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "username": { "type": "string" },
+                        "name": { "type": "string" },
+                        "role": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/crops": {
+      "get": {
+        "summary": "Get Crop Pricing List",
+        "description": "Returns current Grade A/B crop payout rates, target moisture configurations, and grading rules.",
+        "responses": {
+          "200": {
+            "description": "List of active crop structures",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "name": { "type": "string" },
+                      "moisture": { "type": "string" },
+                      "payoutRate": { "type": "string" },
+                      "gradingGuide": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Update Crop Details",
+        "description": "Update price indexes and moisture requirements (Admin only).",
+        "responses": {
+          "200": { "description": "Crops updated successfully" }
+        }
+      }
+    },
+    "/deliveries": {
+      "get": {
+        "summary": "Get Deliveries Log",
+        "description": "Retrieves delivery receipts. Returns all for admins, or matching records for clients.",
+        "responses": {
+          "200": { "description": "List of delivery logs" }
+        }
+      },
+      "post": {
+        "summary": "Log a New Delivery",
+        "description": "Create a new crop receipt record after grading (Admin only).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "farmerName": { "type": "string" },
+                  "cropId": { "type": "string" },
+                  "cropName": { "type": "string" },
+                  "weight": { "type": "number" },
+                  "grade": { "type": "string" },
+                  "rate": { "type": "number" },
+                  "payout": { "type": "number" }
+                },
+                "required": ["username", "farmerName", "cropId", "cropName", "weight", "grade", "rate", "payout"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Delivery logged successfully" }
+        }
+      }
+    },
+    "/payouts": {
+      "post": {
+        "summary": "Trigger Mobile Money Payout",
+        "description": "Disburse agricultural payouts to farmers via MTN MoMo or Airtel Money (Admin only).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deliveryId": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "amount": { "type": "number" },
+                  "provider": { "type": "string", "enum": ["MTN", "Airtel"] }
+                },
+                "required": ["deliveryId", "phone", "amount", "provider"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payout completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "transactionId": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "description": "Gateway timeout" }
+        }
+      }
+    },
+    "/chat": {
+      "post": {
+        "summary": "AI Chatbot Assistant Query",
+        "description": "Sends messages and attachments (images/audio) to the agricultural specialist bot.",
+        "responses": {
+          "200": {
+            "description": "AI response payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reply": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
