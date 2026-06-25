@@ -351,12 +351,12 @@ export default function TrainingManual({ lang, onBackToHome }) {
   };
 
   return (
-    <div style={{ backgroundColor: '#ffffff', color: '#1b4332', minHeight: '100vh', fontFamily: 'var(--font-body)' }}>
+    <div style={{ backgroundColor: 'var(--color-bg-light)', color: '#ffffff', minHeight: '100vh', fontFamily: 'var(--font-body)' }}>
       {/* ── Header Toolbar (Hidden in Print) ── */}
       <div className="manual-toolbar" style={{
         position: 'sticky', top: '80px', zIndex: 900,
-        backgroundColor: '#ffffff', borderBottom: '1px solid rgba(27,67,50,0.1)',
-        padding: '12px 0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        backgroundColor: 'var(--color-bg-white)', borderBottom: '1px solid rgba(255,255,255,0.08)',
+        padding: '12px 0', boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
       }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button onClick={onBackToHome} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', padding: '8px 16px' }}>
@@ -379,9 +379,9 @@ export default function TrainingManual({ lang, onBackToHome }) {
         {/* ── Sidebar Navigation (Hidden in Print) ── */}
         <aside className="manual-sidebar" style={{
           width: '280px', position: 'sticky', top: '160px', height: 'calc(100vh - 180px)',
-          overflowY: 'auto', flexShrink: 0, paddingRight: '12px', borderRight: '1px solid rgba(27,67,50,0.08)'
+          overflowY: 'auto', flexShrink: 0, paddingRight: '12px', borderRight: '1px solid rgba(255,255,255,0.08)'
         }}>
-          <h3 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary-light)', letterSpacing: '0.05em', margin: '0 0 16px 0' }}>
+          <h3 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-secondary)', letterSpacing: '0.05em', margin: '0 0 16px 0' }}>
             {lang === 'en' ? 'Table of Contents' : 'Koko me Pwonj'}
           </h3>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>

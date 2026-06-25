@@ -18,11 +18,11 @@
   --color-accent: #52b788;          /* Bright leaf sprout */
   
   /* Backgrounds */
-  --color-bg-light: #081c15;        /* Signature Dark Green (fine green theme) */
-  --color-bg-white: #113024;        /* Deep Forest Green (fine green theme cards) */
-  --color-bg-dark: #05100c;         /* Ultra dark green */
-  --color-card-bg-light: rgba(17, 48, 36, 0.85); /* Semi-transparent fine green */
-  --color-card-bg-dark: rgba(8, 28, 21, 0.85);
+  --color-bg-light: #123c2a;        /* Lighter Forest Green (fine green theme) */
+  --color-bg-white: #1b4e37;        /* Medium Forest Green (fine green theme cards) */
+  --color-bg-dark: #0d2d1f;         /* Dark green footer */
+  --color-card-bg-light: rgba(27, 78, 55, 0.85); /* Semi-transparent medium forest green */
+  --color-card-bg-dark: rgba(18, 60, 42, 0.85);
   
   /* Text */
   --color-text-dark: #ffffff;       /* Pure white text for body readability */
@@ -837,7 +837,7 @@ img {
 .form-group label {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--color-text-light);
+  color: #ffffff;
 }
 
 .form-input {
@@ -963,7 +963,7 @@ img {
 .result-row span:last-child {
   font-weight: 700;
   font-family: var(--font-heading);
-  color: var(--color-secondary);
+  color: #ffffff;
 }
 
 .result-value-highlight {

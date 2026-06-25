@@ -151,14 +151,14 @@ export default function Navbar({
               borderRadius: 'var(--radius-full)',
               fontSize: '0.75rem',
               fontWeight: 700,
-              color: isOnline ? 'var(--color-primary-light)' : '#d97706',
+              color: isOnline ? '#ffffff' : '#d97706',
               userSelect: 'none'
             }}>
               <span style={{ 
                 width: '8px', 
                 height: '8px', 
                 borderRadius: '50%', 
-                backgroundColor: isOnline ? 'var(--color-accent)' : '#f4a261', 
+                backgroundColor: isOnline ? '#ffffff' : '#f4a261', 
                 display: 'inline-block',
                 animation: 'wa-pulse 1.5s infinite'
               }}></span>
@@ -491,7 +491,7 @@ export default function Navbar({
                 </button>
               </div>
 
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase' }}>
                 ⚙️ {lang === 'en' ? 'Visual Settings' : 'Nen me Settings'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px' }}>
@@ -536,7 +536,7 @@ export default function Navbar({
               <li style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px' }}>
                 <button 
                   className="btn btn-outline" 
-                  style={{ width: '100%', justifyContent: 'center', borderColor: 'var(--color-primary-light)', color: 'var(--color-primary-light)' }}
+                  style={{ width: '100%', justifyContent: 'center', borderColor: 'rgba(255, 255, 255, 0.3)', color: '#ffffff' }}
                   onClick={() => { setIsMenuOpen(false); onPortalClick(); }}
                 >
                   <Icons.Users size={16} />
@@ -655,7 +655,7 @@ export default function Navbar({
                   href="#manual"
                   className={`nav-link ${currentView === 'manual' ? 'active' : ''}`}
                   onClick={(e) => { e.preventDefault(); if (onManualClick) onManualClick(); }}
-                  style={{ color: 'var(--color-primary)', fontWeight: 700 }}
+                  style={{ color: '#ffffff', fontWeight: 700 }}
                 >
                   📖 {lang === 'en' ? 'Training Manual' : 'Leb me Pwonj'}
                 </a>
