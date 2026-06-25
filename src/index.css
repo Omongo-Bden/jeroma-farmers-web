@@ -3786,3 +3786,74 @@ body {
   .chatbot-launcher,
   .chatbot-panel { display: none !important; }
 }
+
+/* ==========================================================================
+   Global Contrast Overrides (Black Text on White Backgrounds)
+   ========================================================================== */
+
+/* Match any container with an inline white background style, and force its text to be black */
+[style*="background-color: #ffffff"],
+[style*="background-color: #fff"],
+[style*="background-color: rgb(255, 255, 255)"],
+[style*="background-color: white"],
+[style*="background-color: #F9F9F9"],
+[style*="background-color: #f9f9f9"],
+[style*="background: #ffffff"],
+[style*="background: #fff"],
+[style*="background: white"],
+.bot-bubble,
+.chatbot-input,
+.quick-reply-chip {
+  color: #000000 !important;
+}
+
+/* Force all child elements under white backgrounds to be black for readability */
+[style*="background-color: #ffffff"] h1, [style*="background-color: #ffffff"] h2, [style*="background-color: #ffffff"] h3,
+[style*="background-color: #ffffff"] h4, [style*="background-color: #ffffff"] h5, [style*="background-color: #ffffff"] h6,
+[style*="background-color: #ffffff"] p, [style*="background-color: #ffffff"] span, [style*="background-color: #ffffff"] label,
+[style*="background-color: #ffffff"] li, [style*="background-color: #ffffff"] a, [style*="background-color: #ffffff"] div,
+[style*="background-color: #ffffff"] td, [style*="background-color: #ffffff"] th, [style*="background-color: #ffffff"] small,
+[style*="background-color: #fff"] h1, [style*="background-color: #fff"] h2, [style*="background-color: #fff"] h3,
+[style*="background-color: #fff"] h4, [style*="background-color: #fff"] h5, [style*="background-color: #fff"] h6,
+[style*="background-color: #fff"] p, [style*="background-color: #fff"] span, [style*="background-color: #fff"] label,
+[style*="background-color: #fff"] li, [style*="background-color: #fff"] a, [style*="background-color: #fff"] div,
+[style*="background-color: #fff"] td, [style*="background-color: #fff"] th, [style*="background-color: #fff"] small,
+[style*="background: #ffffff"] h1, [style*="background: #ffffff"] h2, [style*="background: #ffffff"] h3,
+[style*="background: #ffffff"] h4, [style*="background: #ffffff"] h5, [style*="background: #ffffff"] h6,
+[style*="background: #ffffff"] p, [style*="background: #ffffff"] span, [style*="background: #ffffff"] label,
+[style*="background: #ffffff"] li, [style*="background: #ffffff"] a, [style*="background: #ffffff"] div,
+[style*="background: #ffffff"] td, [style*="background: #ffffff"] th, [style*="background: #ffffff"] small,
+[style*="background: #fff"] h1, [style*="background: #fff"] h2, [style*="background: #fff"] h3,
+[style*="background: #fff"] h4, [style*="background: #fff"] h5, [style*="background: #fff"] h6,
+[style*="background: #fff"] p, [style*="background: #fff"] span, [style*="background: #fff"] label,
+[style*="background: #fff"] li, [style*="background: #fff"] a, [style*="background: #fff"] div,
+[style*="background: #fff"] td, [style*="background: #fff"] th, [style*="background: #fff"] small,
+[style*="background-color: white"] h1, [style*="background-color: white"] h2, [style*="background-color: white"] h3,
+[style*="background-color: white"] h4, [style*="background-color: white"] h5, [style*="background-color: white"] h6,
+[style*="background-color: white"] p, [style*="background-color: white"] span, [style*="background-color: white"] label,
+[style*="background-color: white"] li, [style*="background-color: white"] a, [style*="background-color: white"] div,
+[style*="background-color: white"] td, [style*="background-color: white"] th, [style*="background-color: white"] small,
+.bot-bubble h1, .bot-bubble h2, .bot-bubble h3, .bot-bubble h4, .bot-bubble h5, .bot-bubble h6,
+.bot-bubble p, .bot-bubble span, .bot-bubble div, .bot-bubble li, .bot-bubble a,
+.chatbot-input-area h1, .chatbot-input-area h2, .chatbot-input-area h3, .chatbot-input-area h4,
+.chatbot-input-area p, .chatbot-input-area span, .chatbot-input-area div,
+.chatbot-footer-note {
+  color: #000000 !important;
+}
+
+/* Ensure links on white backgrounds have clear dark styles */
+[style*="background-color: #ffffff"] a,
+[style*="background-color: #fff"] a,
+[style*="background: #ffffff"] a,
+[style*="background: #fff"] a,
+[style*="background-color: white"] a {
+  color: #1b4332 !important;
+  text-decoration: underline !important;
+}
+[style*="background-color: #ffffff"] a:hover,
+[style*="background-color: #fff"] a:hover,
+[style*="background: #ffffff"] a:hover,
+[style*="background: #fff"] a:hover,
+[style*="background-color: white"] a:hover {
+  color: #2d6a4f !important;
+}
