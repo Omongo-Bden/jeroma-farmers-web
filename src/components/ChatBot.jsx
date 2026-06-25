@@ -981,7 +981,7 @@ export default function ChatBot({ lang }) {
               </div>
             </div>
             <p className="chatbot-footer-note">
-              powered by Jeroma · <a href="tel:+256773623196" style={{ color: 'var(--color-accent)' }}>+256 773 623 196</a>
+              powered by Jeroma
             </p>
           </>
         )}
