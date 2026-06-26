@@ -7,7 +7,13 @@
 
 const fallbackKey = Buffer.from('QVEuQWI4Uk42TEp1eG10V0V2MGtDQ0xyazhFY0FWZDFSM1RfYldma0h3ZmNOOU1HQjNTQQ==', 'base64').toString('utf8');
 const rawKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : '';
-const GEMINI_API_KEY = (rawKey && (rawKey.startsWith('AIzaSy') || rawKey.startsWith('AQ.'))) ? rawKey : fallbackKey;
+const isCustomKey = rawKey && (
+  rawKey.startsWith('AIzaSy') || 
+  rawKey.startsWith('AQ.') || 
+  rawKey.startsWith('sk-or-') || 
+  rawKey.startsWith('gsk_')
+);
+const apiKey = isCustomKey ? rawKey : fallbackKey;
 
 // Global in-memory cache for duplicate queries (30-minute expiration)
 const chatCache = {};
@@ -619,20 +625,24 @@ exports.handler = async (event, _context) => {
   }
 
   // 2. Perform API key checks
-  if (!GEMINI_API_KEY) {
+  if (!apiKey) {
     return jsonResponse(200, {
       reply: "Our AI assistant needs an API key to function. Please contact us at +256 773 623 196 or info@jeromafarmers.co.ug for assistance. 🌾"
     });
   }
 
-  if (!GEMINI_API_KEY.startsWith('AIzaSy') && !GEMINI_API_KEY.startsWith('AQ.')) {
+  const isGoogleKey = apiKey.startsWith('AIzaSy') || apiKey.startsWith('AQ.');
+  const isOpenRouterKey = apiKey.startsWith('sk-or-');
+  const isGroqKey = apiKey.startsWith('gsk_');
+
+  if (!isGoogleKey && !isOpenRouterKey && !isGroqKey) {
     return jsonResponse(200, {
       reply: "The AI service key appears to be misconfigured. Please contact us at +256 773 623 196 or info@jeromafarmers.co.ug for assistance. 🌾"
     });
   }
 
   // Determine auth method: AQ. keys use Bearer token auth; AIzaSy keys use ?key= query param
-  const usesBearerAuth = GEMINI_API_KEY.startsWith('AQ.');
+  const usesBearerAuth = apiKey.startsWith('AQ.');
 
   // Merge admin links with the pre-configured default knowledge links (deduplicate by URL)
   const adminUrls = new Set((knowledgeLinks || []).map(l => l.url));
@@ -709,22 +719,64 @@ exports.handler = async (event, _context) => {
     ],
   };
 
-  // ── Model waterfall: try each model in order until one succeeds ─────────────
-  const MODEL_WATERFALL = [
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-flash-latest',
-  ];
+  // ── OpenAI Message Format Helper for OpenRouter/Groq ────────────────────────
+  const formatOpenaiMessages = () => {
+    const openaiMessages = [
+      { role: 'system', content: systemText }
+    ];
 
+    history.forEach(msg => {
+      openaiMessages.push({
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content
+      });
+    });
+
+    if (body.media) {
+      let base64Part = body.media.data;
+      if (base64Part.includes(',')) {
+        base64Part = base64Part.split(',')[1];
+      }
+      const mediaUrl = `data:${body.media.mimeType};base64,${base64Part}`;
+      
+      const contentArray = [];
+      let textContent = message.trim();
+      if (!textContent && body.media) {
+        if (body.media.type === 'image') {
+          textContent = "Please analyze this image. Identify if it shows crops, soil, pests, diseases, or livestock, and provide agricultural advice or answer any question if clear.";
+        } else if (body.media.type === 'audio') {
+          textContent = "Please listen to this voice message and respond to the request or answer the agricultural question asked.";
+        }
+      }
+      
+      if (textContent) {
+        contentArray.push({ type: 'text', text: textContent });
+      }
+      
+      if (body.media.type === 'image') {
+        contentArray.push({
+          type: 'image_url',
+          image_url: { url: mediaUrl }
+        });
+      } else {
+        contentArray.push({ type: 'text', text: `[Attached media file: ${body.media.mimeType || body.media.type}]` });
+      }
+      
+      openaiMessages.push({ role: 'user', content: contentArray });
+    } else if (message.trim()) {
+      openaiMessages.push({ role: 'user', content: message.trim() });
+    }
+    
+    return openaiMessages;
+  };
+
+  // ── Fetch Helpers ───────────────────────────────────────────────────────────
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   const tryGemini = async (model) => {
-    // AQ. tokens from Google AI Studio use x-goog-api-key header (not ?key= query param)
-    // AIzaSy keys use the standard ?key= query param
     const url = usesBearerAuth
       ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-      : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const headers = {
       'Content-Type': 'application/json',
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -734,7 +786,7 @@ exports.handler = async (event, _context) => {
       'Referer': 'https://generativelanguage.googleapis.com/'
     };
     if (usesBearerAuth) {
-      headers['x-goog-api-key'] = GEMINI_API_KEY;
+      headers['x-goog-api-key'] = apiKey;
     }
     const res = await fetch(url, {
       method: 'POST',
@@ -744,42 +796,148 @@ exports.handler = async (event, _context) => {
     return { res, model };
   };
 
+  const tryOpenRouter = async (model) => {
+    const url = 'https://openrouter.ai/api/v1/chat/completions';
+    const openaiMessages = formatOpenaiMessages();
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': 'https://jeromafarmers.com',
+      'X-Title': 'Jeroma Farmers AI'
+    };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: openaiMessages,
+        temperature: 0.65,
+        max_tokens: 800
+      })
+    });
+    return { res, model };
+  };
+
+  const tryGroq = async (model) => {
+    const url = 'https://api.groq.com/openai/v1/chat/completions';
+    const openaiMessages = formatOpenaiMessages();
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    };
+    
+    // Map to plain content strings since some Groq models don't support multi-part content arrays
+    const groqMessages = openaiMessages.map(m => {
+      if (Array.isArray(m.content)) {
+        const textParts = m.content.filter(p => p.type === 'text').map(p => p.text).join('\n');
+        const hasImage = m.content.some(p => p.type === 'image_url');
+        return {
+          role: m.role,
+          content: hasImage ? `${textParts}\n[Attached Image (not supported by this model)]` : textParts
+        };
+      }
+      return m;
+    });
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model,
+        messages: groqMessages,
+        temperature: 0.65,
+        max_tokens: 800
+      })
+    });
+    return { res, model };
+  };
+
   try {
     let lastStatus = 503;
     let lastErrText = '';
 
-    for (let i = 0; i < MODEL_WATERFALL.length; i++) {
-      const model = MODEL_WATERFALL[i];
-      try {
-        if (i > 0) await sleep(1000); // brief pause before fallback attempt
-        const { res } = await tryGemini(model);
-
-        if (res.ok) {
-          const geminiData = await res.json();
-          const reply =
-            geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
-            "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
-          console.log(`Jeroma AI responded via model: ${model}`);
-          
-          // Write successful response to cache
-          chatCache[cacheKey] = { reply, timestamp: now };
-          
-          return jsonResponse(200, { reply });
+    if (isOpenRouterKey) {
+      const OPENROUTER_MODELS = [
+        'google/gemini-2.5-flash:free',
+        'google/gemini-2.5-flash',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3-8b-instruct:free'
+      ];
+      for (let i = 0; i < OPENROUTER_MODELS.length; i++) {
+        const model = OPENROUTER_MODELS[i];
+        try {
+          if (i > 0) await sleep(1000);
+          const { res, model: triedModel } = await tryOpenRouter(model);
+          if (res.ok) {
+            const data = await res.json();
+            const reply = data?.choices?.[0]?.message?.content || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            console.log(`Jeroma AI responded via OpenRouter model: ${triedModel}`);
+            chatCache[cacheKey] = { reply, timestamp: now };
+            return jsonResponse(200, { reply });
+          }
+          lastStatus = res.status;
+          lastErrText = await res.text();
+          console.error(`OpenRouter error (${model}): ${lastStatus}`, lastErrText.substring(0, 300));
+        } catch (err) {
+          console.error(`OpenRouter fetch error (${model}):`, err.message);
+          lastErrText = err.message;
         }
-
-        lastStatus = res.status;
-        lastErrText = await res.text();
-        console.error(`Gemini API error (${model}): ${lastStatus}`, lastErrText.substring(0, 300));
-
-        // Continue to other models even on 429, since quotas can be model-specific
-
-      } catch (fetchErr) {
-        console.error(`Fetch error (${model}):`, fetchErr.message);
-        lastErrText = fetchErr.message;
+      }
+    } else if (isGroqKey) {
+      const GROQ_MODELS = [
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant'
+      ];
+      for (let i = 0; i < GROQ_MODELS.length; i++) {
+        const model = GROQ_MODELS[i];
+        try {
+          if (i > 0) await sleep(1000);
+          const { res, model: triedModel } = await tryGroq(model);
+          if (res.ok) {
+            const data = await res.json();
+            const reply = data?.choices?.[0]?.message?.content || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            console.log(`Jeroma AI responded via Groq model: ${triedModel}`);
+            chatCache[cacheKey] = { reply, timestamp: now };
+            return jsonResponse(200, { reply });
+          }
+          lastStatus = res.status;
+          lastErrText = await res.text();
+          console.error(`Groq error (${model}): ${lastStatus}`, lastErrText.substring(0, 300));
+        } catch (err) {
+          console.error(`Groq fetch error (${model}):`, err.message);
+          lastErrText = err.message;
+        }
+      }
+    } else {
+      // Default: Google Direct API
+      const MODEL_WATERFALL = [
+        'gemini-2.5-flash-lite',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-flash-latest',
+      ];
+      for (let i = 0; i < MODEL_WATERFALL.length; i++) {
+        const model = MODEL_WATERFALL[i];
+        try {
+          if (i > 0) await sleep(1000);
+          const { res, model: triedModel } = await tryGemini(model);
+          if (res.ok) {
+            const geminiData = await res.json();
+            const reply = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            console.log(`Jeroma AI responded via direct Gemini model: ${triedModel}`);
+            chatCache[cacheKey] = { reply, timestamp: now };
+            return jsonResponse(200, { reply });
+          }
+          lastStatus = res.status;
+          lastErrText = await res.text();
+          console.error(`Gemini API error (${model}): ${lastStatus}`, lastErrText.substring(0, 300));
+        } catch (err) {
+          console.error(`Gemini fetch error (${model}):`, err.message);
+          lastErrText = err.message;
+        }
       }
     }
 
-    // All models failed — return a helpful response based on the final error
     if (lastStatus === 429) {
       return jsonResponse(429, {
         error: 'AI quota exceeded. Please try again shortly or call +256 773 623 196.'
@@ -794,3 +952,4 @@ exports.handler = async (event, _context) => {
     return jsonResponse(500, { error: 'An unexpected error occurred. Please call +256 773 623 196.' });
   }
 };
+
