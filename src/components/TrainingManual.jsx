@@ -666,10 +666,22 @@ export default function TrainingManual({ lang, onBackToHome }) {
         
         /* Print Optimized Styling */
         @media print {
-          body {
-            background: #ffffff !important;
-            color: #000000 !important;
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          body, html {
+            background-color: #123c2a !important;
+            color: #ffffff !important;
             font-size: 11pt !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          .training-manual-container {
+            background-color: #123c2a !important;
+            color: #ffffff !important;
           }
           
           /* Hide non-print content */
@@ -702,53 +714,75 @@ export default function TrainingManual({ lang, onBackToHome }) {
           /* Format page sections nicely as separate pages */
           .manual-page-section {
             box-shadow: none !important;
-            border: 1px solid #ddd !important;
-            border-radius: 12px !important;
-            padding: 30px !important;
+            border: 1px solid var(--color-accent) !important;
+            border-radius: 20px !important;
+            padding: 36px !important;
             margin-bottom: 40px !important;
+            background: #123c2a !important;
+            color: #ffffff !important;
             page-break-inside: avoid !important;
+          }
+          
+          .manual-page-section h1,
+          .manual-page-section h2,
+          .manual-page-section h3,
+          .manual-page-section h4 {
+            color: #ffffff !important;
+          }
+          
+          .manual-page-section p {
+            color: rgba(255, 255, 255, 0.8) !important;
+          }
+          
+          .manual-page-section span {
+            color: var(--color-secondary) !important;
           }
           
           #cover {
             page-break-after: always !important;
             min-height: 100% !important;
-            border: 2px solid #1b4332 !important;
+            background: #123c2a !important;
+            border: 2px solid var(--color-accent) !important;
+          }
+          
+          #cover h1, #cover h2, #cover h3, #cover p, #cover div, #cover strong {
+            color: #ffffff !important;
           }
           
           #commitment {
             page-break-before: always !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-            border: 2px solid #1b4332 !important;
+            background: #123c2a !important;
+            color: #ffffff !important;
+            border: 2px solid var(--color-accent) !important;
           }
           
           #commitment h2, #commitment h4 {
-            color: #1b4332 !important;
+            color: #ffffff !important;
           }
           
           #commitment p {
-            color: #333333 !important;
+            color: rgba(255, 255, 255, 0.85) !important;
           }
           
           #commitment div {
-            background: #f9f9f9 !important;
-            border: 1px solid #ddd !important;
-            color: #000000 !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
           }
           
           #commitment div p {
-            color: #555555 !important;
+            color: rgba(255, 255, 255, 0.75) !important;
           }
 
           .naro-advice {
-            background: #f4faf6 !important;
-            border: 1px solid #a7f3d0 !important;
-            color: #1b4332 !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
           }
           
           /* Limit image heights in print for cleaner page transitions */
           .manual-page-section img {
-            max-height: 180px !important;
+            max-height: 220px !important;
             width: 100% !important;
             object-fit: cover !important;
           }

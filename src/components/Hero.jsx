@@ -104,17 +104,7 @@ export default function Hero({ lang, translations: dynamicTranslations }) {
             <p className="hero-description">{t.heroDesc}</p>
 
             {/* Live Market Price Mini-Widget */}
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: '10px',
-              padding: '10px 16px',
-              marginBottom: '20px',
-              transition: 'all 0.4s ease'
-            }}>
+            <div className="hero-price-widget">
               <span style={{
                 width: '8px', height: '8px', borderRadius: '50%',
                 backgroundColor: priceFlash ? '#f4a261' : 'var(--color-accent)',
@@ -122,20 +112,14 @@ export default function Hero({ lang, translations: dynamicTranslations }) {
                 transition: 'background-color 0.3s',
                 animation: 'wa-pulse 2s infinite'
               }}></span>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <span className="hero-price-label">
                 {lang === 'en' ? 'Live Price' : 'Wel Kati'}
               </span>
-              <span style={{
-                fontSize: '0.9rem', fontWeight: 700, color: '#ffffff',
-                transition: 'opacity 0.3s ease'
-              }}>
+              <span className="hero-price-crop">
                 {currentPrice.crop}:
               </span>
-              <span style={{
-                fontSize: '0.9rem', fontWeight: 800,
-                color: 'var(--color-secondary)',
-              }}>
-                {currentPrice.price} <span style={{ fontSize: '0.75rem' }}>{currentPrice.trend}</span>
+              <span className="hero-price-value">
+                {currentPrice.price} <span className="hero-price-trend">{currentPrice.trend}</span>
               </span>
             </div>
 

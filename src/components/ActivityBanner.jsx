@@ -165,12 +165,13 @@ export default function ActivityBanner({ lang }) {
 
   return (
     <div
+      className="activity-banner-container"
       style={{
         position: 'relative',
         width: '100%',
         height: isMobile ? '460px' : '400px',
         overflow: 'hidden',
-        backgroundColor: '#081c15',
+        backgroundColor: 'var(--color-bg-white)',
         zIndex: 490,
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
@@ -183,7 +184,7 @@ export default function ActivityBanner({ lang }) {
           height: isMobile ? '190px' : '100%',
           position: 'relative',
           order: isMobile ? 1 : 2,
-          backgroundColor: '#081c15',
+          backgroundColor: 'var(--color-bg-white)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -213,7 +214,7 @@ export default function ActivityBanner({ lang }) {
               left: 0,
               width: '16px',
               height: '100%',
-              background: `linear-gradient(to right, #081c15, transparent)`,
+              background: `linear-gradient(to right, var(--color-bg-white), transparent)`,
               pointerEvents: 'none',
               zIndex: 2,
             }}
@@ -249,9 +250,9 @@ export default function ActivityBanner({ lang }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span
               style={{
-                background: 'rgba(255, 255, 255, 0.12)',
-                color: '#ffffff',
-                border: `1px solid #52b788`,
+                background: 'rgba(82, 183, 136, 0.15)',
+                color: 'var(--color-primary-dark)',
+                border: `1px solid var(--color-accent)`,
                 fontSize: '0.7rem',
                 fontWeight: 900,
                 letterSpacing: '0.12em',
@@ -266,7 +267,7 @@ export default function ActivityBanner({ lang }) {
               <span>{slide.icon || '📢'}</span>
               <span>{slideTag}</span>
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.78rem', fontWeight: 600 }}>
+            <span style={{ color: 'var(--color-text-light)', opacity: 0.8, fontSize: '0.78rem', fontWeight: 600 }}>
               {current + 1} / {slides.length}
             </span>
           </div>
@@ -277,9 +278,9 @@ export default function ActivityBanner({ lang }) {
               margin: 0,
               fontSize: isMobile ? '1.25rem' : '1.9rem',
               fontWeight: 800,
-              color: '#ffffff',
+              color: 'var(--color-text-white)',
               lineHeight: 1.25,
-              textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              textShadow: 'var(--shadow-text-sm, 0 1px 1px rgba(0,0,0,0.15))',
               letterSpacing: '-0.01em',
             }}
           >
@@ -291,9 +292,9 @@ export default function ActivityBanner({ lang }) {
             style={{
               margin: 0,
               fontSize: isMobile ? '0.82rem' : '0.94rem',
-              color: 'rgba(255,255,255,0.85)',
+              color: 'var(--color-text-light)',
               lineHeight: '1.55',
-              textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              textShadow: 'none',
               display: '-webkit-box',
               WebkitLineClamp: isMobile ? 3 : 4,
               WebkitBoxOrient: 'vertical',
@@ -324,7 +325,7 @@ export default function ActivityBanner({ lang }) {
                     height: '8px',
                     borderRadius: '4px',
                     border: 'none',
-                    background: i === current ? '#52b788' : 'rgba(255,255,255,0.3)',
+                    background: i === current ? 'var(--color-accent)' : 'rgba(82, 183, 136, 0.3)',
                     cursor: 'pointer',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     padding: 0,
@@ -343,9 +344,9 @@ export default function ActivityBanner({ lang }) {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(0,0,0,0.25)',
-                  color: '#ffffff',
+                  border: '1px solid rgba(27,67,50,0.12)',
+                  background: 'rgba(27,67,50,0.04)',
+                  color: 'var(--color-primary-dark)',
                   cursor: 'pointer',
                   fontSize: '0.8rem',
                   display: 'flex',
@@ -355,14 +356,14 @@ export default function ActivityBanner({ lang }) {
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#52b788';
-                  e.currentTarget.style.color = '#000000';
-                  e.currentTarget.style.borderColor = '#52b788';
+                  e.currentTarget.style.background = 'var(--color-accent)';
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.borderColor = 'var(--color-accent)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(0,0,0,0.25)';
-                  e.currentTarget.style.color = '#ffffff';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                  e.currentTarget.style.background = 'rgba(27,67,50,0.04)';
+                  e.currentTarget.style.color = 'var(--color-primary-dark)';
+                  e.currentTarget.style.borderColor = 'rgba(27,67,50,0.12)';
                 }}
               >
                 ◀
@@ -374,9 +375,9 @@ export default function ActivityBanner({ lang }) {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(0,0,0,0.25)',
-                  color: '#ffffff',
+                  border: '1px solid rgba(27,67,50,0.12)',
+                  background: 'rgba(27,67,50,0.04)',
+                  color: 'var(--color-primary-dark)',
                   cursor: 'pointer',
                   fontSize: '0.8rem',
                   display: 'flex',
@@ -386,14 +387,14 @@ export default function ActivityBanner({ lang }) {
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#52b788';
-                  e.currentTarget.style.color = '#000000';
-                  e.currentTarget.style.borderColor = '#52b788';
+                  e.currentTarget.style.background = 'var(--color-accent)';
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.borderColor = 'var(--color-accent)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(0,0,0,0.25)';
-                  e.currentTarget.style.color = '#ffffff';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                  e.currentTarget.style.background = 'rgba(27,67,50,0.04)';
+                  e.currentTarget.style.color = 'var(--color-primary-dark)';
+                  e.currentTarget.style.borderColor = 'rgba(27,67,50,0.12)';
                 }}
               >
                 ▶
@@ -411,7 +412,7 @@ export default function ActivityBanner({ lang }) {
           left: 0,
           width: '100%',
           height: '4px',
-          background: `linear-gradient(90deg, #081c15, #52b788, #081c15)`,
+          background: `linear-gradient(90deg, var(--color-primary-dark), var(--color-accent), var(--color-primary-dark))`,
           zIndex: 20,
         }}
       />
