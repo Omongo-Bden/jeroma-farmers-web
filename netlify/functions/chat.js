@@ -786,11 +786,7 @@ exports.handler = async (event, _context) => {
       });
     }
     return jsonResponse(502, {
-      error: 'AI service is temporarily busy. Please try again in a few seconds or call +256 773 623 196.',
-      debug: {
-        lastStatus,
-        lastErrText: lastErrText ? lastErrText.substring(0, 500) : ''
-      }
+      error: 'AI service is temporarily busy. Please try again in a few seconds or call +256 773 623 196.'
     });
 
   } catch (err) {
