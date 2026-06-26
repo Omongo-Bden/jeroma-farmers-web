@@ -725,9 +725,17 @@ exports.handler = async (event, _context) => {
     const url = usesBearerAuth
       ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
       : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-    const headers = usesBearerAuth
-      ? { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY }
-      : { 'Content-Type': 'application/json' };
+    const headers = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Origin': 'https://generativelanguage.googleapis.com',
+      'Referer': 'https://generativelanguage.googleapis.com/'
+    };
+    if (usesBearerAuth) {
+      headers['x-goog-api-key'] = GEMINI_API_KEY;
+    }
     const res = await fetch(url, {
       method: 'POST',
       headers,
