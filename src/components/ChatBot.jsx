@@ -724,7 +724,7 @@ export default function ChatBot({ lang }) {
           {/* ── Floating Launcher Button ─────────────────────────── */}
           <button
             className="chatbot-toggle"
-            onClick={toggleChat}
+            onClick={toggleOpen}
             aria-label="Open chat assistant"
             title="Chat with Jeroma"
           >
