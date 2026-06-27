@@ -140,7 +140,7 @@ export default function Partners({ lang, translations: _translations }) {
   const selectedTitle = titles[lang] || titles.en;
 
   return (
-    <section id="partners" className="partners-section" ref={sectionRef} style={{ padding: '40px 0', backgroundColor: 'var(--color-bg-light)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+    <section id="partners" className="partners-section" ref={sectionRef} style={{ padding: '40px 0', backgroundColor: '#ffffff', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
       <div className="container">
         {/* Section header */}
         <div className="partners-section-header" style={{

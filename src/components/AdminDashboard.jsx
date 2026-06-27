@@ -14,6 +14,7 @@ import {
   registerUser,
   registerAdmin,
   deleteUser,
+  updateUser,
   resetToDefaults,
   updateTranslation,
   resetTranslations,
@@ -711,6 +712,23 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     }
   };
 
+  const handleToggleUserRole = async (username, currentRole) => {
+    const newRole = currentRole === 'admin' ? 'client' : 'admin';
+    if (window.confirm(`Are you sure you want to change the role of ${username} to ${newRole.toUpperCase()}?`)) {
+      await updateUser(username, { role: newRole });
+      await loadData();
+    }
+  };
+
+  const handleToggleUserStatus = async (username, currentStatus) => {
+    const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
+    const action = newStatus === 'suspended' ? 'suspend' : 'activate';
+    if (window.confirm(`Are you sure you want to ${action} user ${username}?`)) {
+      await updateUser(username, { status: newStatus });
+      await loadData();
+    }
+  };
+
   const handleResetDb = async () => {
     if (window.confirm(t.resetWarning)) {
       await resetToDefaults();
@@ -1369,6 +1387,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                       <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Username</th>
                       <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Name</th>
                       <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Role</th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Status</th>
                       <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Details</th>
                       <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)', textAlign: 'center' }}>Actions</th>
                     </tr>
@@ -1387,18 +1406,45 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             {u.role.toUpperCase()}
                           </span>
                         </td>
+                        <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
+                          <span style={{
+                            padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
+                            backgroundColor: u.status === 'suspended' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(82, 183, 136, 0.15)',
+                            color: u.status === 'suspended' ? '#d90429' : '#1b4332'
+                          }}>
+                            {u.status === 'suspended' ? 'SUSPENDED' : 'ACTIVE'}
+                          </span>
+                        </td>
                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
                           {u.phone} {u.district ? `· ${u.district}` : ''}
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          <button
-                            onClick={() => handleDeleteUser(u.username)}
-                            className="btn btn-outline"
-                            style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: '#d90429', color: '#d90429' }}
-                            disabled={u.username === user.username}
-                          >
-                            Delete
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => handleToggleUserRole(u.username, u.role)}
+                              className="btn btn-outline"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                              disabled={u.username === user.username}
+                            >
+                              {u.role === 'admin' ? 'Demote' : 'Make Admin'}
+                            </button>
+                            <button
+                              onClick={() => handleToggleUserStatus(u.username, u.status)}
+                              className="btn btn-outline"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: u.status === 'suspended' ? '#1b4332' : '#f77f00', color: u.status === 'suspended' ? '#1b4332' : '#f77f00' }}
+                              disabled={u.username === user.username}
+                            >
+                              {u.status === 'suspended' ? 'Activate' : 'Suspend'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.username)}
+                              className="btn btn-outline"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: '#d90429', color: '#d90429' }}
+                              disabled={u.username === user.username}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1762,7 +1808,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
 
                       {/* Image Path and Device Upload */}
                       <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>Photo URL / Path</label>
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>Photo / Video URL or Path</label>
                         <div style={{ display: 'flex', gap: '10px' }}>
                           <input className="form-input" type="text" value={stageImage} onChange={e => setStageImage(e.target.value)} placeholder="/sunflower_field.webp" style={{ flex: 1, boxSizing: 'border-box' }} />
                           <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -1773,18 +1819,18 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                               onClick={() => document.getElementById('manual-stage-file-input').click()}
                               disabled={isManualUploading}
                             >
-                              📁 {isManualUploading ? 'Uploading...' : 'Upload Photo'}
+                              📁 {isManualUploading ? 'Uploading...' : 'Upload Photo/Video'}
                             </button>
                             <input
                               id="manual-stage-file-input"
                               type="file"
-                              accept="image/*"
+                              accept="image/*,video/*"
                               onChange={handleManualImageUpload}
                               style={{ display: 'none' }}
                             />
                           </div>
                         </div>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '4px' }}>Upload a photo directly from your device, or input a public path.</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '4px' }}>Upload a photo or video directly from your device, or input a public path.</p>
                       </div>
 
                       {/* Points List */}
@@ -2142,9 +2188,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                       <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>Icon (emoji)</label>
                       <input className="form-input" type="text" value={slideIcon} onChange={e => setSlideIcon(e.target.value)} placeholder="📢" style={{ width: '100%', boxSizing: 'border-box' }} />
                     </div>
-                    {/* Image Path */}
+                    {/* Image / Video Path */}
                     <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>Image Path</label>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>Image / Video Path</label>
                       <div style={{ display: 'flex', gap: '10px' }}>
                         <input className="form-input" type="text" value={slideImage} onChange={e => setSlideImage(e.target.value)} placeholder="/community_gathering.webp" style={{ flex: 1, boxSizing: 'border-box' }} />
                         <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -2155,18 +2201,18 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             onClick={() => document.getElementById('slide-file-input').click()}
                             disabled={isUploading}
                           >
-                            📁 {isUploading ? 'Uploading...' : 'Upload Photo'}
+                            📁 {isUploading ? 'Uploading...' : 'Upload Photo/Video'}
                           </button>
                           <input
                             id="slide-file-input"
                             type="file"
-                            accept="image/*"
+                            accept="image/*,video/*"
                             onChange={handleImageUpload}
                             style={{ display: 'none' }}
                           />
                         </div>
                       </div>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '4px' }}>Use paths like /community_gathering.webp or click the button to upload a photo from your device.</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '4px' }}>Use paths like /community_gathering.webp or click the button to upload a photo or video from your device.</p>
                     </div>
                     {/* Image Fit */}
                     <div className="form-group">
@@ -2243,7 +2289,11 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         width: '72px', height: '52px', borderRadius: '8px', overflow: 'hidden',
                         flexShrink: 0, border: '2px solid rgba(82,183,136,0.3)', background: '#0d2b1c'
                       }}>
-                        <img src={slide.image} alt={slide.title_en} style={{ width: '100%', height: '100%', objectFit: slide.fit || 'cover' }} />
+                        {slide.image && (slide.image.endsWith('.mp4') || slide.image.endsWith('.webm') || slide.image.endsWith('.ogg')) ? (
+                          <video src={slide.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                        ) : (
+                          <img src={slide.image} alt={slide.title_en} style={{ width: '100%', height: '100%', objectFit: slide.fit || 'cover' }} />
+                        )}
                       </div>
                       {/* Content */}
                       <div style={{ flex: 1, minWidth: '180px' }}>

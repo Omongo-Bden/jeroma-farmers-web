@@ -104,7 +104,7 @@ export default function About({ lang, activeTab = 'overview', setActiveTab, tran
   ];
 
   return (
-    <section id="about" className="section" style={{ backgroundColor: 'var(--color-bg-light)', padding: '40px 0' }} ref={sectionRef}>
+    <section id="about" className="section" style={{ backgroundColor: '#ffffff', padding: '40px 0' }} ref={sectionRef}>
       <div className="container">
         
         {/* Section Header */}

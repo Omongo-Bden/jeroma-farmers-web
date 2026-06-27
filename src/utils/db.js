@@ -201,6 +201,9 @@ export const validateLogin = async (username, password) => {
     const hashed = await hashPassword(password);
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === hashed);
     if (user) {
+      if (user.status === 'suspended') {
+        throw new Error('Account has been suspended. Please contact the administrator.');
+      }
       const { password: _password, ...userSession } = user;
       return userSession;
     }

@@ -147,6 +147,10 @@ exports.handler = async (event, _context) => {
         return jsonResponse(401, { error: 'Invalid username or password' }, event);
       }
       
+      if (user.status === 'suspended') {
+        return jsonResponse(403, { error: 'Account has been suspended. Please contact the administrator.' }, event);
+      }
+      
       const token = jwt.sign(
         { username: user.username, role: user.role, name: user.name },
         JWT_SECRET,
@@ -433,16 +437,16 @@ exports.handler = async (event, _context) => {
         return jsonResponse(400, { error: 'Missing filename or base64 data' }, event);
       }
 
-      // 1. Enforce max size validation (5MB max)
+      // 1. Enforce max size validation (25MB max for videos/images)
       const bufferSize = Buffer.byteLength(base64, 'base64');
-      if (bufferSize > 5 * 1024 * 1024) {
-        return jsonResponse(400, { error: 'File size too large. Maximum size is 5MB.' }, event);
+      if (bufferSize > 25 * 1024 * 1024) {
+        return jsonResponse(400, { error: 'File size too large. Maximum size is 25MB.' }, event);
       }
 
       const pathLib = require('path');
       const ext = pathLib.extname(filename).toLowerCase() || '.png';
-      if (!['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext)) {
-        return jsonResponse(400, { error: 'Invalid file type. Only images are allowed.' }, event);
+      if (!['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.webm', '.ogg'].includes(ext)) {
+        return jsonResponse(400, { error: 'Invalid file type. Only images (.png, .jpg, .jpeg, .gif, .webp) and videos (.mp4, .webm, .ogg) are allowed.' }, event);
       }
 
       const safeName = 'upload-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8) + ext;

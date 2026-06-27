@@ -548,12 +548,24 @@ export default function TrainingManual({ lang, onBackToHome }) {
                   marginBottom: '24px', border: '1px solid rgba(255,255,255,0.15)',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.25)'
                 }}>
-                  <img
-                    src={stage.image}
-                    alt={stage.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
-                    loading="lazy"
-                  />
+                  {stage.image && (stage.image.endsWith('.mp4') || stage.image.endsWith('.webm') || stage.image.endsWith('.ogg')) ? (
+                    <video
+                      src={stage.image}
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+                    />
+                  ) : (
+                    <img
+                      src={stage.image}
+                      alt={stage.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }}
+                      loading="lazy"
+                    />
+                  )}
                 </div>
 
                 {/* Bullet points */}

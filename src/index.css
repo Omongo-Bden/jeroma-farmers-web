@@ -3845,11 +3845,22 @@ body {
   color: #000000 !important;
 }
 
-/* Force specific ID-based sections with white backgrounds to have clear black text (Dashboard Preview mode only) */
-.App.view-dashboard #about h1, .App.view-dashboard #about h2, .App.view-dashboard #about h3, .App.view-dashboard #about h4, .App.view-dashboard #about h5, .App.view-dashboard #about h6,
-.App.view-dashboard #about p, .App.view-dashboard #about label, .App.view-dashboard #about li, .App.view-dashboard #about td, .App.view-dashboard #about th, .App.view-dashboard #about small,
-.App.view-dashboard #about span:not(.section-badge):not(.badge):not(.profile-tab-btn),
-.App.view-dashboard #about a:not(.btn):not(.profile-tab-btn),
+/* Force specific ID-based sections with white backgrounds to have clear black text */
+#about h1, #about h2, #about h3, #about h4, #about h5, #about h6,
+#about p, #about label, #about li, #about td, #about th, #about small,
+#about span:not(.section-badge):not(.badge):not(.profile-tab-btn),
+#about a:not(.btn):not(.profile-tab-btn),
+#partners h1, #partners h2, #partners h3, #partners h4, #partners h5, #partners h6,
+#partners p, #partners label, #partners li, #partners td, #partners th, #partners small,
+#partners span:not(.section-badge):not(.badge),
+#partners a:not(.btn),
+#contact h1, #contact h2, #contact h3, #contact h4, #contact h5, #contact h6,
+#contact p, #contact label, #contact li, #contact td, #contact th, #contact small,
+#contact span:not(.section-badge):not(.badge),
+#contact a:not(.btn) {
+  color: #000000 !important;
+}
+
 .App.view-dashboard #services h1, .App.view-dashboard #services h2, .App.view-dashboard #services h3, .App.view-dashboard #services h4, .App.view-dashboard #services h5, .App.view-dashboard #services h6,
 .App.view-dashboard #services p, .App.view-dashboard #services label, .App.view-dashboard #services li, .App.view-dashboard #services td, .App.view-dashboard #services th, .App.view-dashboard #services small,
 .App.view-dashboard #services span:not(.section-badge):not(.badge),
@@ -3861,17 +3872,10 @@ body {
 .App.view-dashboard #socials h1, .App.view-dashboard #socials h2, .App.view-dashboard #socials h3, .App.view-dashboard #socials h4, .App.view-dashboard #socials h5, .App.view-dashboard #socials h6,
 .App.view-dashboard #socials p, .App.view-dashboard #socials label, .App.view-dashboard #socials li, .App.view-dashboard #socials td, .App.view-dashboard #socials th, .App.view-dashboard #socials small,
 .App.view-dashboard #socials span:not(.section-badge):not(.badge),
-.App.view-dashboard #socials a:not(.btn),
-.App.view-dashboard #partners h1, .App.view-dashboard #partners h2, .App.view-dashboard #partners h3, .App.view-dashboard #partners h4, .App.view-dashboard #partners h5, .App.view-dashboard #partners h6,
-.App.view-dashboard #partners p, .App.view-dashboard #partners label, .App.view-dashboard #partners li, .App.view-dashboard #partners td, .App.view-dashboard #partners th, .App.view-dashboard #partners small,
-.App.view-dashboard #partners span:not(.section-badge):not(.badge),
-.App.view-dashboard #partners a:not(.btn),
-.App.view-dashboard #contact h1, .App.view-dashboard #contact h2, .App.view-dashboard #contact h3, .App.view-dashboard #contact h4, .App.view-dashboard #contact h5, .App.view-dashboard #contact h6,
-.App.view-dashboard #contact p, .App.view-dashboard #contact label, .App.view-dashboard #contact li, .App.view-dashboard #contact td, .App.view-dashboard #contact th, .App.view-dashboard #contact small,
-.App.view-dashboard #contact span:not(.section-badge):not(.badge),
-.App.view-dashboard #contact a:not(.btn) {
+.App.view-dashboard #socials a:not(.btn) {
   color: #000000 !important;
 }
+
 
 /* Inactive profile tab button styles (black text/icons on white bg) */
 .profile-tab-btn {
