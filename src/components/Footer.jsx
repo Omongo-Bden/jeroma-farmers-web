@@ -100,14 +100,14 @@ export default function Footer({ lang, translations: _translations }) {
               <a href="http://www.jeromafarmers.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-secondary)' }}>🌐 www.jeromafarmers.com</a>
             </div>
             <div className="footer-social-links" style={{ marginTop: '4px' }}>
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="Facebook">
-                <Icons.Facebook size={18} />
+              <a href="https://www.facebook.com/jeromafarmers" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="Facebook">
+                <Icons.FacebookOriginal size={18} />
               </a>
               <a href="https://wa.me/256773623196" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="WhatsApp">
                 <Icons.MessageCircle size={18} />
               </a>
-              <a href="https://tiktok.com/@jeromafarmers" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="TikTok">
-                <Icons.Video size={18} />
+              <a href="https://www.tiktok.com/@jeromafarmers" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="TikTok">
+                <Icons.TikTokOriginal size={18} />
               </a>
             </div>
           </div>

@@ -224,4 +224,18 @@ export const Globe = ({ size = 24, color = 'currentColor', strokeWidth = 2 }) =>
   </svg>
 );
 
+export const FacebookOriginal = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#1877F2" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <circle cx="12" cy="12" r="12" fill="#1877F2" />
+    <path d="M14.5 12h-2v7h-3v-7h-1.5v-2.5h1.5v-1.5c0-1.8 1.1-2.8 2.8-2.8 0.8 0 1.5.1 1.7.1v2h-1.2c-0.9 0-1.1.4-1.1 1.1v1.1h2.2l-0.2 2.5z" fill="#ffffff" />
+  </svg>
+);
+
+export const TikTokOriginal = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <circle cx="12" cy="12" r="12" fill="#000000" />
+    <path d="M15.8 8.1c-0.8 0-1.5-0.3-2-0.8V13c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4c0.2 0 0.5 0 0.7 0.1v2.1c-0.2 0-0.5-0.1-0.7-0.1-1.1 0-2 0.9-2 2s0.9 2 2 2 2-0.9 2-2V4h2c0 1.1 0.9 2 2 2v2.1z" fill="#ffffff" />
+  </svg>
+);
+
 

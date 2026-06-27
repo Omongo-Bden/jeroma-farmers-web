@@ -619,8 +619,9 @@ function isQueryOffTopic(msg) {
   if (!m) return true;
 
   const ALLOWED_STEMS = [
-    // Greetings/Conversation starters/politeness
-    'hello', 'hi', 'hey', 'greetings', 'morning', 'afternoon', 'evening', 'how are you', 'who are you', 'what is your name', 'what can you do', 'help', 'info', 'support', 'clear', 'reset', 'thank', 'thanks', 'bye', 'goodbye', 'welcome', 'cop ango', 'ibeere', 'yo',
+    // Greetings/Conversation starters/politeness/conversational replies
+    'hello', 'hi', 'hey', 'greetings', 'morning', 'afternoon', 'evening', 'how are you', 'who are you', 'what is your name', 'what can you do', 'help', 'info', 'support', 'clear', 'reset', 'thank', 'thanks', 'bye', 'goodbye', 'welcome', 'cop ango', 'ibeere', 'yo', 'yes', 'no', 'okay', 'ok', 'yeah', 'yup', 'sure', 'fine', 'correct', 'agree', 'please', 'good', 'nice',
+
     // Jeroma Company specific info
     'jeroma', 'farmer', 'company', 'business', 'centre', 'center', 'lira', 'uganda', 'office', 'hour', 'contact', 'phone', 'whatsapp', 'email', 'address', 'location', 'p.o.box', 'website', 'mission', 'vision', 'service', 'collection', 'logistics', 'weigh', 'grade', 'grading', 'store', 'storage', 'warehouse', 'silo', 'input', 'supply', 'supplies', 'seed', 'fertilizer', 'spray', 'credit', 'pay', 'payout', 'price', 'rate', 'cost', 'fee', 'shilling', 'ugx', 'money', 'register', 'join', 'account', 'portal', 'login', 'signin', 'signup', 'transit', 'dispatch', 'pickup', 'truck', 'transport', 'deliver', 'delivery', 'receipt',
     // General Agriculture, Farming, Soil, Pests, Weeds

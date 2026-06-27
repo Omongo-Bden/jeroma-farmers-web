@@ -3393,8 +3393,8 @@ body {
 /* ── Launcher Button ─────────────────────────────────────────────────── */
 .chatbot-launcher {
   position: fixed;
-  bottom: 28px;
-  left: 28px;
+  top: 90px;
+  right: 24px;
   z-index: 1400;
   display: flex;
   align-items: center;
@@ -3459,8 +3459,8 @@ body {
 /* ── Chat Panel ──────────────────────────────────────────────────────── */
 .chatbot-panel {
   position: fixed;
-  bottom: 90px;
-  left: 28px;
+  top: 154px;
+  right: 24px;
   z-index: 1399;
   width: 370px;
   max-height: 580px;
@@ -3470,8 +3470,8 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transform: scale(0.85) translateY(20px);
-  transform-origin: bottom left;
+  transform: scale(0.85) translateY(-20px);
+  transform-origin: top right;
   opacity: 0;
   pointer-events: none;
   transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -3763,13 +3763,17 @@ body {
     left: 12px;
     right: 12px;
     width: auto;
-    bottom: 80px;
-    max-height: 70vh;
+    top: 144px;
+    bottom: auto;
+    max-height: 60vh;
     border-radius: 16px;
+    transform-origin: top right;
   }
   .chatbot-launcher {
-    left: 16px;
-    bottom: 16px;
+    top: 90px;
+    right: 16px;
+    bottom: auto;
+    left: auto;
     padding: 12px 16px 12px 14px;
   }
   .chatbot-launcher.open {
@@ -3841,31 +3845,31 @@ body {
   color: #000000 !important;
 }
 
-/* Force specific ID-based sections with white backgrounds to have clear black text */
-#about h1, #about h2, #about h3, #about h4, #about h5, #about h6,
-#about p, #about label, #about li, #about td, #about th, #about small,
-#about span:not(.section-badge):not(.badge):not(.profile-tab-btn),
-#about a:not(.btn):not(.profile-tab-btn),
-#services h1, #services h2, #services h3, #services h4, #services h5, #services h6,
-#services p, #services label, #services li, #services td, #services th, #services small,
-#services span:not(.section-badge):not(.badge),
-#services a:not(.btn),
-#gallery h1, #gallery h2, #gallery h3, #gallery h4, #gallery h5, #gallery h6,
-#gallery p, #gallery label, #gallery li, #gallery td, #gallery th, #gallery small,
-#gallery span:not(.section-badge):not(.badge),
-#gallery a:not(.btn),
-#socials h1, #socials h2, #socials h3, #socials h4, #socials h5, #socials h6,
-#socials p, #socials label, #socials li, #socials td, #socials th, #socials small,
-#socials span:not(.section-badge):not(.badge),
-#socials a:not(.btn),
-#partners h1, #partners h2, #partners h3, #partners h4, #partners h5, #partners h6,
-#partners p, #partners label, #partners li, #partners td, #partners th, #partners small,
-#partners span:not(.section-badge):not(.badge),
-#partners a:not(.btn),
-#contact h1, #contact h2, #contact h3, #contact h4, #contact h5, #contact h6,
-#contact p, #contact label, #contact li, #contact td, #contact th, #contact small,
-#contact span:not(.section-badge):not(.badge),
-#contact a:not(.btn) {
+/* Force specific ID-based sections with white backgrounds to have clear black text (Dashboard Preview mode only) */
+.App.view-dashboard #about h1, .App.view-dashboard #about h2, .App.view-dashboard #about h3, .App.view-dashboard #about h4, .App.view-dashboard #about h5, .App.view-dashboard #about h6,
+.App.view-dashboard #about p, .App.view-dashboard #about label, .App.view-dashboard #about li, .App.view-dashboard #about td, .App.view-dashboard #about th, .App.view-dashboard #about small,
+.App.view-dashboard #about span:not(.section-badge):not(.badge):not(.profile-tab-btn),
+.App.view-dashboard #about a:not(.btn):not(.profile-tab-btn),
+.App.view-dashboard #services h1, .App.view-dashboard #services h2, .App.view-dashboard #services h3, .App.view-dashboard #services h4, .App.view-dashboard #services h5, .App.view-dashboard #services h6,
+.App.view-dashboard #services p, .App.view-dashboard #services label, .App.view-dashboard #services li, .App.view-dashboard #services td, .App.view-dashboard #services th, .App.view-dashboard #services small,
+.App.view-dashboard #services span:not(.section-badge):not(.badge),
+.App.view-dashboard #services a:not(.btn),
+.App.view-dashboard #gallery h1, .App.view-dashboard #gallery h2, .App.view-dashboard #gallery h3, .App.view-dashboard #gallery h4, .App.view-dashboard #gallery h5, .App.view-dashboard #gallery h6,
+.App.view-dashboard #gallery p, .App.view-dashboard #gallery label, .App.view-dashboard #gallery li, .App.view-dashboard #gallery td, .App.view-dashboard #gallery th, .App.view-dashboard #gallery small,
+.App.view-dashboard #gallery span:not(.section-badge):not(.badge),
+.App.view-dashboard #gallery a:not(.btn),
+.App.view-dashboard #socials h1, .App.view-dashboard #socials h2, .App.view-dashboard #socials h3, .App.view-dashboard #socials h4, .App.view-dashboard #socials h5, .App.view-dashboard #socials h6,
+.App.view-dashboard #socials p, .App.view-dashboard #socials label, .App.view-dashboard #socials li, .App.view-dashboard #socials td, .App.view-dashboard #socials th, .App.view-dashboard #socials small,
+.App.view-dashboard #socials span:not(.section-badge):not(.badge),
+.App.view-dashboard #socials a:not(.btn),
+.App.view-dashboard #partners h1, .App.view-dashboard #partners h2, .App.view-dashboard #partners h3, .App.view-dashboard #partners h4, .App.view-dashboard #partners h5, .App.view-dashboard #partners h6,
+.App.view-dashboard #partners p, .App.view-dashboard #partners label, .App.view-dashboard #partners li, .App.view-dashboard #partners td, .App.view-dashboard #partners th, .App.view-dashboard #partners small,
+.App.view-dashboard #partners span:not(.section-badge):not(.badge),
+.App.view-dashboard #partners a:not(.btn),
+.App.view-dashboard #contact h1, .App.view-dashboard #contact h2, .App.view-dashboard #contact h3, .App.view-dashboard #contact h4, .App.view-dashboard #contact h5, .App.view-dashboard #contact h6,
+.App.view-dashboard #contact p, .App.view-dashboard #contact label, .App.view-dashboard #contact li, .App.view-dashboard #contact td, .App.view-dashboard #contact th, .App.view-dashboard #contact small,
+.App.view-dashboard #contact span:not(.section-badge):not(.badge),
+.App.view-dashboard #contact a:not(.btn) {
   color: #000000 !important;
 }
 
@@ -4288,5 +4292,20 @@ body {
 
 .training-manual-container .manual-toolbar {
   background-color: #1b4e37 !important;
+}
+
+/* --- Mobile Menu Drawer: Green Theme Override --- */
+.App.view-home .nav-menu,
+.App.view-portal .nav-menu {
+  background-color: #0a6c35 !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15) !important;
+}
+.App.view-home .nav-menu .nav-link,
+.App.view-portal .nav-menu .nav-link {
+  color: #ffffff !important;
+}
+.App.view-home .nav-menu .nav-link.active,
+.App.view-portal .nav-menu .nav-link.active {
+  color: #e9c46a !important; /* Gold/yellow active tab marker */
 }
 

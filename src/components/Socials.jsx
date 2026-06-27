@@ -202,7 +202,7 @@ export default function Socials({ lang, translations: _translations }) {
                 </div>
               </div>
               <div className="social-badge-icon bg-fb">
-                <Icons.Facebook size={20} />
+                <Icons.FacebookOriginal size={20} />
               </div>
             </div>
 
@@ -220,13 +220,13 @@ export default function Socials({ lang, translations: _translations }) {
             </div>
 
             <a
-              href="https://facebook.com"
+              href="https://www.facebook.com/jeromafarmers"
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline"
               style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
             >
-              <Icons.Facebook size={16} /> {selectedSocial.fbBtn}
+              <Icons.FacebookOriginal size={16} /> {selectedSocial.fbBtn}
             </a>
           </div>
 
@@ -296,7 +296,7 @@ export default function Socials({ lang, translations: _translations }) {
                 </div>
               </div>
               <div className="social-badge-icon bg-tk">
-                <Icons.Video size={20} />
+                <Icons.TikTokOriginal size={20} />
               </div>
             </div>
 
@@ -317,13 +317,13 @@ export default function Socials({ lang, translations: _translations }) {
             </div>
 
             <a
-              href="https://tiktok.com/@jeromafarmers"
+              href="https://www.tiktok.com/@jeromafarmers"
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-outline"
               style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
             >
-              <Icons.Video size={16} /> {selectedSocial.tkBtn}
+              <Icons.TikTokOriginal size={16} /> {selectedSocial.tkBtn}
             </a>
           </div>
         </div>

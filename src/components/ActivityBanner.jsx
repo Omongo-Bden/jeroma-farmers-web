@@ -177,7 +177,7 @@ export default function ActivityBanner({ lang }) {
         flexDirection: isMobile ? 'column' : 'row',
       }}
     >
-      {/* ── IMAGE SECTION (PC: Right 45% Column, Mobile: Top 190px Row) ── */}
+      {/* ── IMAGE/VIDEO SECTION (PC: Right 45% Column, Mobile: Top 190px Row) ── */}
       <div
         style={{
           width: isMobile ? '100%' : '45%',
@@ -191,19 +191,38 @@ export default function ActivityBanner({ lang }) {
           overflow: 'hidden',
         }}
       >
-        <img
-          src={slide.image}
-          alt={slideTitle}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: slide.fit || 'cover',
-            padding: slide.fit === 'contain' ? (isMobile ? '8px' : '20px') : '0',
-            boxSizing: 'border-box',
-            transition: 'opacity 0.3s ease-in-out',
-            opacity: animating ? 0.2 : 1,
-          }}
-        />
+        {slide.video || (slide.image && (slide.image.endsWith('.mp4') || slide.image.endsWith('.webm') || slide.image.endsWith('.ogg'))) ? (
+          <video
+            src={slide.video || slide.image}
+            controls
+            autoPlay
+            muted
+            loop
+            playsInline
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              boxSizing: 'border-box',
+              transition: 'opacity 0.3s ease-in-out',
+              opacity: animating ? 0.2 : 1,
+            }}
+          />
+        ) : (
+          <img
+            src={slide.image}
+            alt={slideTitle}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: slide.fit || 'cover',
+              padding: slide.fit === 'contain' ? (isMobile ? '8px' : '20px') : '0',
+              boxSizing: 'border-box',
+              transition: 'opacity 0.3s ease-in-out',
+              opacity: animating ? 0.2 : 1,
+            }}
+          />
+        )}
 
         {/* Desktop Edge Blend - very narrow to prevent dark shadow overlay */}
         {!isMobile && slide.fit !== 'contain' && (
