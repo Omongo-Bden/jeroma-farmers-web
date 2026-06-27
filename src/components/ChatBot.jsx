@@ -686,7 +686,7 @@ export default function ChatBot({ lang }) {
       const botMsg = {
         role: 'assistant',
         content: currentAttachment
-          ? "I couldn't process your media right now. Please try again or describe your question in text. For help, call +256 773 623 196. 🌾"
+          ? "I couldn't process your media right now. Please try again or describe your question in text."
           : getLocalFallback(userMsg),
         ts: Date.now(),
       };
@@ -723,14 +723,13 @@ export default function ChatBot({ lang }) {
         <>
           {/* ── Floating Launcher Button ─────────────────────────── */}
           <button
-            id="chatbot-launcher"
-            className={`chatbot-launcher ${isOpen ? 'open' : ''}`}
-            onClick={toggleOpen}
-            aria-label="Open AI assistant"
-            title="Chat with Jeroma AI"
+            className="chatbot-toggle"
+            onClick={toggleChat}
+            aria-label="Open chat assistant"
+            title="Chat with Jeroma"
           >
         {isOpen ? (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         ) : (
@@ -743,20 +742,20 @@ export default function ChatBot({ lang }) {
             <span className="chatbot-badge">{unread}</span>
           )}
           {!isOpen && (
-            <span className="chatbot-label">Ask Jeroma AI</span>
+            <span className="chatbot-label">Ask Jeroma</span>
           )}
         </button>
 
           {/* ── Chat Panel ───────────────────────────────────────── */}
           <div className={`chatbot-panel ${isOpen ? 'open' : ''} ${isMinimized ? 'minimized' : ''}`}
-            role="dialog" aria-label="Jeroma AI Assistant" aria-modal="true">
+            role="dialog" aria-label="Jeroma Assistant" aria-modal="true">
 
         {/* Header */}
         <div className="chatbot-header">
           <div className="chatbot-header-info">
             <div className="chatbot-header-avatar">🌾</div>
             <div>
-              <p className="chatbot-header-name">Jeroma AI</p>
+              <p className="chatbot-header-name">Jeroma</p>
               <p className="chatbot-header-status">
                 <span className="status-dot" /> Jeroma Farmers Assistant
               </p>
@@ -1054,7 +1053,7 @@ export default function ChatBot({ lang }) {
                   textAlign: 'center', fontSize: '0.72rem', color: 'rgba(167,243,208,0.6)',
                   padding: '0 18px 14px', margin: 0
                 }}>
-                  Point your camera at crops, soil, pests, or any farming concern. Jeroma AI will analyze the photo and provide advice.
+                  Point your camera at crops, soil, pests, or any farming concern. Jeroma will analyze the photo and provide advice.
                 </p>
               </div>
             </div>

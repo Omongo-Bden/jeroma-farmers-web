@@ -89,7 +89,7 @@ export default function Socials({ lang, translations: _translations }) {
   }, [bulletinsList.length]);
 
   return (
-    <section id="socials" className="section" style={{ backgroundColor: '#ffffff' }}>
+    <section id="socials" className="section" style={{ backgroundColor: 'var(--color-bg-light)' }}>
       <div className="container">
         
         {/* Section Header */}

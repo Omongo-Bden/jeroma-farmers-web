@@ -108,7 +108,7 @@ export default function Contact({ lang, translations: dynamicTranslations }) {
   };
 
   return (
-    <section id="contact" className="section" style={{ backgroundColor: '#ffffff' }}>
+    <section id="contact" className="section" style={{ backgroundColor: 'var(--color-bg-light)' }}>
       <div className="container">
         <div className="section-header">
           <span className="section-badge">{t.contactBadge}</span>

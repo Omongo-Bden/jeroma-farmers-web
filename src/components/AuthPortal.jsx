@@ -168,7 +168,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
   const clearState = () => { setError(''); setSuccess(''); };
 
   return (
-    <section className="section auth-section" style={{ display: 'flex', background: '#ffffff' }}>
+    <section className="section auth-section" style={{ display: 'flex', background: 'var(--color-bg-light)' }}>
       <div className="container" style={{ maxWidth: '480px', width: '100%' }}>
 
         {/* Header Branding */}

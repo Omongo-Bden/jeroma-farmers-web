@@ -98,7 +98,7 @@ export default function Services({ lang, crops, translations: dynamicTranslation
   const localPayout = currentCrop.payoutRate;
 
   return (
-    <section id="services" className="section" style={{ backgroundColor: '#ffffff' }}>
+    <section id="services" className="section" style={{ backgroundColor: 'var(--color-bg-light)' }}>
       <div className="container">
         <div className="section-header">
           <span className="section-badge section-badge-gold">{t.servicesBadge}</span>

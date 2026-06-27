@@ -5,8 +5,8 @@ const path = require('path');
 const os = require('os');
 const bcrypt = require('bcryptjs');
 
-// Path to the persistent database file in the operating system's temp folder
-const DB_FILE = path.join(os.tmpdir(), 'jeroma_db.json');
+// Path to the persistent database file in the operating system's temp folder or custom persistent directory
+const DB_FILE = process.env.DB_PATH || path.join(__dirname, '..', '..', 'jeroma_db.json');
 
 // Secure password hashing helper using Bcrypt
 const hashPassword = (password) => {

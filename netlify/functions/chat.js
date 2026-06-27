@@ -14,6 +14,7 @@ const isCustomKey = rawKey && (
   rawKey.startsWith('gsk_')
 );
 const apiKey = isCustomKey ? rawKey : fallbackKey;
+const db = require('./utils/serverDb');
 
 // Global in-memory cache for duplicate queries (30-minute expiration)
 const chatCache = {};
@@ -564,6 +565,53 @@ function formatWebsiteContext(context) {
   return text;
 }
 
+async function getLiveDatabaseContext() {
+  try {
+    const crops = await db.getCrops();
+    const slides = await db.getSlides();
+    const manual = await db.getManual();
+    const users = await db.getUsers();
+    
+    let text = '\n\nLIVE SYSTEM DATABASE CONTEXT (Current real-time state on the website):';
+    
+    if (crops) {
+      text += '\n- DYNAMIC CROP PRICING & DETAILS:';
+      Object.entries(crops).forEach(([id, c]) => {
+        text += `\n  * Crop: "${c.name}" | Moisture Target: "${c.moisture}" | Payout: "${c.payoutRate}" | Grading: "${c.gradingGuide}" | Tips: "${c.tips}"`;
+      });
+    }
+    
+    if (users) {
+      const staffList = users.filter(u => u.role === 'admin');
+      if (staffList.length > 0) {
+        text += '\n- REGISTERED JEROMA STAFF & ADMINISTRATORS:';
+        staffList.forEach(s => {
+          text += `\n  * Name: "${s.name}" | Username: "${s.username}" | Phone: "${s.phone || 'N/A'}" | District: "${s.district || 'N/A'}" (Role: ${s.role})`;
+        });
+      }
+    }
+    
+    if (slides) {
+      text += '\n- RECENT SLIDES & ANNOUNCEMENTS (shown on Home Banner):';
+      slides.forEach(s => {
+        text += `\n  * [Slide ${s.id}] Title (EN): "${s.title_en}" | Body (EN): "${s.body_en}"`;
+      });
+    }
+
+    if (manual) {
+      text += '\n- TRAINING MANUAL SECTIONS (latest version):';
+      manual.forEach(m => {
+        text += `\n  * Stage ${m.num}: "${m.title_en}" (${m.subtitle_en}) - Points: ${m.points ? m.points.join('; ') : ''}`;
+      });
+    }
+
+    return text;
+  } catch (err) {
+    console.error('Error generating live database context:', err);
+    return '';
+  }
+}
+
 function isQueryOffTopic(msg) {
   if (!msg || typeof msg !== 'string') return true;
   const m = msg.toLowerCase().trim();
@@ -702,8 +750,9 @@ exports.handler = async (event, _context) => {
 
   const ugDateText = `\n\nCURRENT DATE & TIME IN UGANDA (Africa/Kampala): ${new Date().toLocaleString('en-US', { timeZone: 'Africa/Kampala', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
   const dbContextText = formatWebsiteContext(websiteContext);
+  const liveDbContext = await getLiveDatabaseContext();
   const notesText = customNotes?.trim() ? `\n\nADDITIONAL BUSINESS NOTES FROM ADMIN (treat as authoritative):\n${customNotes.trim()}` : '';
-  const systemText = `${JEROMA_SYSTEM_PROMPT}${ugDateText}${notesText}${dbContextText}${linksText}`;
+  const systemText = `${JEROMA_SYSTEM_PROMPT}${ugDateText}${notesText}${dbContextText}${liveDbContext}${linksText}`;
 
   const requestBody = {
     system_instruction: { parts: [{ text: systemText }] },

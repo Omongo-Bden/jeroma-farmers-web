@@ -3952,9 +3952,7 @@ body {
   --border-glass-dark: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* White/Light Theme (Home / Portal / Dashboard) */
-.App.view-home,
-.App.view-portal,
+/* White/Light Theme (Dashboard only) */
 .App.view-dashboard {
   --color-bg-light: #ffffff;
   --color-bg-white: #f4f7f6;
@@ -3968,176 +3966,233 @@ body {
   --border-glass-dark: 1px solid rgba(27, 67, 50, 0.06);
 }
 
+/* Vibrant Green Theme (Home & Portal) */
+.App.view-home,
+.App.view-portal {
+  --color-bg-light: #0b7c3d;         /* Vibrant Green Background */
+  --color-bg-white: #0a6c35;         /* Medium Vibrant Green */
+  --color-text-dark: #ffffff;        /* Pure white text */
+  --color-text-light: #c2eed3;       /* Soft light green for subtext */
+  --color-text-white: #ffffff;       /* Pure white text */
+  --color-card-bg-light: rgba(10, 108, 53, 0.95); /* Vibrant Green Card */
+  --color-card-bg-dark: rgba(7, 76, 37, 0.95);
+  --border-light: 1px solid rgba(255, 255, 255, 0.12);
+  --border-glass-light: 1px solid rgba(255, 255, 255, 0.2);
+  --border-glass-dark: 1px solid rgba(255, 255, 255, 0.1);
+  --color-primary-dark: #ffffff;    /* Makes section titles white */
+  --color-primary: #0a6c35;
+  --color-primary-light: #c2eed3;
+  --color-accent: #76c006;           /* Lime Green Accent */
+}
+
 /* Adjust dashboard layout elements for Light Theme */
 .App.view-dashboard {
   background-color: #faf9f6 !important;
 }
 
 /* Custom Header Styling per theme */
-.App.view-home .header,
-.App.view-portal .header,
 .App.view-dashboard .header {
   background: rgba(255, 255, 255, 0.96) !important;
   border-bottom: 1px solid rgba(27, 67, 50, 0.1) !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
 }
 
-.App.view-home .logo-title,
-.App.view-portal .logo-title,
+.App.view-home .header,
+.App.view-portal .header {
+  background: rgba(11, 124, 61, 0.96) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
 .App.view-dashboard .logo-title {
   color: var(--color-primary-dark) !important;
 }
+.App.view-home .logo-title,
+.App.view-portal .logo-title {
+  color: #ffffff !important;
+}
 
-.App.view-home .logo-subtitle,
-.App.view-portal .logo-subtitle,
 .App.view-dashboard .logo-subtitle {
   color: var(--color-primary-light) !important;
 }
+.App.view-home .logo-subtitle,
+.App.view-portal .logo-subtitle {
+  color: #c2eed3 !important;
+}
 
-.App.view-home .nav-toggle,
-.App.view-portal .nav-toggle,
 .App.view-dashboard .nav-toggle {
   color: var(--color-primary-dark) !important;
   border-color: rgba(27, 67, 50, 0.2) !important;
   background: rgba(27, 67, 50, 0.04) !important;
 }
+.App.view-home .nav-toggle,
+.App.view-portal .nav-toggle {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
 
-.App.view-home .desktop-only-tabs-container,
-.App.view-portal .desktop-only-tabs-container,
 .App.view-dashboard .desktop-only-tabs-container {
   border-top: 1px solid rgba(27, 67, 50, 0.1) !important;
 }
+.App.view-home .desktop-only-tabs-container,
+.App.view-portal .desktop-only-tabs-container {
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
 
-.App.view-home .nav-link,
-.App.view-portal .nav-link,
 .App.view-dashboard .nav-link {
   color: var(--color-primary-dark) !important;
 }
+.App.view-home .nav-link,
+.App.view-portal .nav-link {
+  color: #ffffff !important;
+}
 
-.App.view-home .nav-link.active,
-.App.view-portal .nav-link.active,
 .App.view-dashboard .nav-link.active {
   color: var(--color-primary-light) !important;
 }
+.App.view-home .nav-link.active,
+.App.view-portal .nav-link.active {
+  color: #e9c46a !important; /* Gold/yellow active tab */
+}
 
-.App.view-home .nav-link:hover,
-.App.view-portal .nav-link:hover,
 .App.view-dashboard .nav-link:hover {
   color: var(--color-accent) !important;
 }
+.App.view-home .nav-link:hover,
+.App.view-portal .nav-link:hover {
+  color: #52b788 !important;
+}
 
-.App.view-home .lang-switcher-btn,
-.App.view-portal .lang-switcher-btn,
 .App.view-dashboard .lang-switcher-btn {
   color: var(--color-primary-dark) !important;
   background: rgba(27, 67, 50, 0.04) !important;
   border: 1px solid rgba(27, 67, 50, 0.12) !important;
 }
+.App.view-home .lang-switcher-btn,
+.App.view-portal .lang-switcher-btn {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
 
-.App.view-home .lang-switcher-btn svg,
-.App.view-portal .lang-switcher-btn svg,
 .App.view-dashboard .lang-switcher-btn svg {
   color: var(--color-primary-dark) !important;
+}
+.App.view-home .lang-switcher-btn svg,
+.App.view-portal .lang-switcher-btn svg {
+  color: #ffffff !important;
 }
 
 /* Mobile Hero and Section overrides for Home view */
 @media (max-width: 991px) {
   .App.view-home .hero-section {
-    background: #ffffff !important;
+    background: var(--color-bg-light) !important;
   }
   .App.view-home .hero-title {
-    color: var(--color-primary-dark) !important;
+    color: #ffffff !important;
   }
   .App.view-home .hero-description {
-    color: var(--color-text-light) !important;
+    color: #c2eed3 !important;
   }
   .App.view-home .hero-stat-label {
-    color: var(--color-text-light) !important;
+    color: #c2eed3 !important;
   }
 }
 
-/* Light theme News Ticker */
+/* Vibrant green News Ticker */
 .App.view-home .news-ticker-container {
-  background-color: #f4f7f6 !important;
-  border-bottom: 1px solid rgba(27, 67, 50, 0.1) !important;
+  background-color: #075027 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 .App.view-home .ticker-text-scroll {
-  color: var(--color-primary-dark) !important;
+  color: #ffffff !important;
 }
 .App.view-home .news-ticker-label {
-  background: var(--color-primary) !important;
+  background: #00a825 !important;
   color: #ffffff !important;
 }
 
-/* Light theme footer styling overrides */
+/* Vibrant green footer styling overrides */
 .App.view-home .footer,
 .App.view-portal .footer {
-  background-color: #faf9f6 !important;
-  color: #477660 !important;
-  border-top: 1px solid rgba(27, 67, 50, 0.12) !important;
+  background-color: #062012 !important;
+  color: #c2eed3 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .App.view-home .footer-logo,
 .App.view-portal .footer-logo {
-  color: #1b4332 !important;
+  color: #ffffff !important;
 }
 
 .App.view-home .footer-desc,
 .App.view-portal .footer-desc {
-  color: #477660 !important;
+  color: #c2eed3 !important;
 }
 
 .App.view-home .footer-social-btn,
 .App.view-portal .footer-social-btn {
-  background-color: rgba(27, 67, 50, 0.05) !important;
-  color: #1b4332 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
 }
 
 .App.view-home .footer-social-btn:hover,
 .App.view-portal .footer-social-btn:hover {
-  background-color: var(--color-primary) !important;
+  background-color: var(--color-accent) !important;
   color: #ffffff !important;
 }
 
 .App.view-home .footer-col h4,
 .App.view-portal .footer-col h4 {
-  color: #1b4332 !important;
+  color: #ffffff !important;
 }
 
 .App.view-home .footer-links a,
 .App.view-portal .footer-links a {
-  color: #477660 !important;
+  color: #c2eed3 !important;
 }
 
 .App.view-home .footer-links a:hover,
 .App.view-portal .footer-links a:hover {
-  color: var(--color-accent) !important;
+  color: #e9c46a !important;
 }
 
 .App.view-home .footer-bottom,
 .App.view-portal .footer-bottom {
-  border-top: 1px solid rgba(27, 67, 50, 0.1) !important;
-  color: #477660 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #c2eed3 !important;
 }
 
 .App.view-home .footer p,
 .App.view-portal .footer p {
-  color: #477660 !important;
+  color: #c2eed3 !important;
 }
 
 .App.view-home .footer a,
 .App.view-portal .footer a {
-  color: #1b4332 !important;
+  color: #ffffff !important;
 }
 
 .App.view-home .footer-newsletter p {
-  color: #477660 !important;
+  color: #c2eed3 !important;
 }
 
 .App.view-home .footer div[style*="background: rgba(233,196,106,0.08)"],
 .App.view-portal .footer div[style*="background: rgba(233,196,106,0.08)"] {
-  background: rgba(27, 67, 50, 0.04) !important;
-  border: 1px solid rgba(27, 67, 50, 0.15) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Glass Panels and Cards on Green Views */
+.App.view-home .glass-panel,
+.App.view-portal .glass-panel {
+  background: rgba(8, 60, 34, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
+  color: #ffffff !important;
 }
 
 /* Live Price Widget Styles */
@@ -4178,22 +4233,22 @@ body {
   font-size: 0.75rem;
 }
 
-/* Light theme overrides for Live Price Widget */
+/* Green theme overrides for Live Price Widget */
 .App.view-home .hero-price-widget {
-  background: rgba(27, 67, 50, 0.04) !important;
-  border: 1px solid rgba(27, 67, 50, 0.12) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 .App.view-home .hero-price-label {
-  color: var(--color-text-light) !important;
+  color: #c2eed3 !important;
 }
 
 .App.view-home .hero-price-crop {
-  color: var(--color-primary-dark) !important;
+  color: #ffffff !important;
 }
 
 .App.view-home .hero-price-value {
-  color: var(--color-primary-light) !important;
+  color: #e9c46a !important;
 }
 
 /* Training Manual Isolated Theme Container */

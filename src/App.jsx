@@ -122,13 +122,43 @@ function App() {
         try {
           const parsed = JSON.parse(savedUser);
           setCurrentUser(parsed);
-          setCurrentView('dashboard');
+          if (!window.location.hash || window.location.hash === '#home') {
+            setCurrentView('dashboard');
+          }
         } catch (e) {
           localStorage.removeItem('jeroma_logged_user');
         }
       }
     };
     bootstrap();
+  }, []);
+
+  // Hash-based routing effect
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#portal' || hash === '#login') {
+        setCurrentView('portal');
+      } else if (hash === '#manual') {
+        setCurrentView('manual');
+      } else if (hash === '#dashboard') {
+        const savedUser = localStorage.getItem('jeroma_logged_user');
+        if (savedUser) {
+          setCurrentView('dashboard');
+        } else {
+          setCurrentView('portal');
+          window.location.hash = '#portal';
+        }
+      } else if (hash === '' || hash === '#home') {
+        setCurrentView('home');
+      }
+    };
+    
+    // Check hash on load
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const handleStateChange = async () => {
@@ -262,8 +292,8 @@ function App() {
   return (
     <div className={`App view-${currentView} ${fontScale === 'large' ? 'font-large' : ''} ${contrastMode === 'high' ? 'high-contrast' : ''}`}>
       
-      {/* Dynamic Header & Navigation (Only shown when not in full-screen Dashboard mode) */}
-      {currentView !== 'dashboard' && (
+      {/* Dynamic Header & Navigation (Only shown when not in full-screen Dashboard/Portal mode) */}
+      {currentView !== 'dashboard' && currentView !== 'portal' && (
         <>
           {/* Offline Mode Pulse Banner (Only appears when offline) */}
           {!isOnline && (
@@ -305,7 +335,7 @@ function App() {
             isMobile={isMobile}
             currentView={currentView}
             currentUser={currentUser}
-            onPortalClick={() => setCurrentView('portal')}
+            onPortalClick={() => window.open('#portal', '_blank')}
             onDashboardClick={() => setCurrentView('dashboard')}
             onLogout={handleLogout}
             translations={translations}
@@ -418,7 +448,7 @@ function App() {
         )}
       </main>
       
-      {currentView !== 'dashboard' && currentView !== 'manual' && (
+      {currentView !== 'dashboard' && currentView !== 'manual' && currentView !== 'portal' && (
         <>
           <Footer lang={lang} translations={translations} />
           <WhatsAppFloat lang={lang} />

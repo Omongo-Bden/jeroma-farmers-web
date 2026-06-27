@@ -196,7 +196,7 @@ export default function Gallery({ lang, translations: dynamicTranslations }) {
   }, [activeImage]);
 
   return (
-    <section id="gallery" className="section" style={{ backgroundColor: '#ffffff' }}>
+    <section id="gallery" className="section" style={{ backgroundColor: 'var(--color-bg-light)' }}>
       <div className="container">
         <div className="section-header">
           <span className="section-badge">{t.navGallery}</span>
