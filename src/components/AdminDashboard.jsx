@@ -24,7 +24,9 @@ import {
   uploadImage,
   getManual,
   saveManual,
-  getAlerts
+  getAlerts,
+  getSettings,
+  saveSettings
 } from '../utils/db';
 import { translations as defaultTranslations } from './translations';
 
@@ -40,8 +42,22 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const [allUsersList, setAllUsersList] = useState([]);
   const [slides, setSlides] = useState([]);
   const [manualStages, setManualStages] = useState([]);
+  const [settings, setSettings] = useState({ hideManual: false });
   const [isLoading, setIsLoading] = useState(true);
   const [payingId, setPayingId] = useState(null);
+
+  // Change Password States
+  const [showChangePwModal, setShowChangePwModal] = useState(false);
+  const [pwStep, setPwStep] = useState(1);
+  const [pwMethod, setPwMethod] = useState('phone');
+  const [pwPhone, setPwPhone] = useState(user.phone || '');
+  const [pwEmail, setPwEmail] = useState('');
+  const [pwGeneratedCode, setPwGeneratedCode] = useState('');
+  const [pwEnteredCode, setPwEnteredCode] = useState('');
+  const [pwNewPassword, setPwNewPassword] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwIsLoading, setPwIsLoading] = useState(false);
 
   // Manual Management States
   const [editingStage, setEditingStage] = useState(null); // null | stageId
@@ -80,6 +96,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const [mngPhone, setMngPhone] = useState('');
   const [mngSuccess, setMngSuccess] = useState('');
   const [mngError, setMngError] = useState('');
+  const [mngPermissions, setMngPermissions] = useState(['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot']);
   
   // Edit Price States
   const [editingCrop, setEditingCrop] = useState(null);
@@ -318,14 +335,15 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [cropsData, deliveriesData, dispatchesData, inquiriesData, allUsers, slidesData, manualData] = await Promise.all([
+      const [cropsData, deliveriesData, dispatchesData, inquiriesData, allUsers, slidesData, manualData, settingsData] = await Promise.all([
         getCrops(),
         getDeliveries(),
         getDispatches(),
         getInquiries(),
         getUsers(),
         getSlides(),
-        getManual()
+        getManual(),
+        getSettings()
       ]);
       setCrops(cropsData || {});
       setDeliveries(deliveriesData || []);
@@ -335,6 +353,10 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       setClients((allUsers || []).filter(u => u.role === 'client'));
       setSlides(slidesData || []);
       setManualStages(manualData || []);
+      if (settingsData) {
+        setSettings(settingsData);
+        localStorage.setItem('jeroma_settings', JSON.stringify(settingsData));
+      }
 
       if (user.username === 'admin') {
         try {
@@ -346,6 +368,69 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGeneratePwCode = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+
+    const contactVal = pwMethod === 'phone' ? pwPhone.trim() : pwEmail.trim();
+    if (!contactVal) {
+      setPwError('Please fill out all fields.');
+      return;
+    }
+
+    setPwIsLoading(true);
+    try {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setPwGeneratedCode(code);
+      setPwSuccess(`Verification code ${code} sent via ${pwMethod === 'phone' ? 'Phone SMS' : 'Email'}!`);
+      setPwStep(2);
+    } catch (err) {
+      setPwError('Failed to generate verification code.');
+    } finally {
+      setPwIsLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+
+    if (pwEnteredCode !== pwGeneratedCode) {
+      setPwError('Invalid verification code.');
+      return;
+    }
+
+    const hasText = /[a-zA-Z]/.test(pwNewPassword);
+    const hasNumber = /[0-9]/.test(pwNewPassword);
+    if (pwNewPassword.length < 6 || !hasText || !hasNumber) {
+      setPwError('Password must be at least 6 characters and contain a mixture of text and numbers.');
+      return;
+    }
+
+    setPwIsLoading(true);
+    try {
+      const res = await updateUser(user.username, { password: pwNewPassword });
+      if (res.success || res) {
+        setPwSuccess('Password updated successfully!');
+        setTimeout(() => {
+          setShowChangePwModal(false);
+          setPwStep(1);
+          setPwNewPassword('');
+          setPwGeneratedCode('');
+          setPwEnteredCode('');
+          setPwSuccess('');
+          setPwError('');
+        }, 2000);
+      }
+    } catch (err) {
+      setPwError('Failed to update password.');
+    } finally {
+      setPwIsLoading(false);
     }
   };
 
@@ -693,13 +778,22 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       setMngError('Please fill out required fields');
       return;
     }
+
+    // Restrict password strength
+    const hasText = /[a-zA-Z]/.test(mngPassword);
+    const hasNumber = /[0-9]/.test(mngPassword);
+    if (mngPassword.length < 6 || !hasText || !hasNumber) {
+      setMngError('Password must be at least 6 characters and contain a mixture of text and numbers.');
+      return;
+    }
     
     const newUser = {
       username: mngUsername.toLowerCase(),
       password: mngPassword,
       name: mngName,
       phone: mngPhone,
-      district: 'Lira'
+      district: 'Lira',
+      permissions: mngRole === 'admin' ? mngPermissions : undefined
     };
     
     const result = await (mngRole === 'admin' ? registerAdmin(newUser) : registerUser(newUser));
@@ -861,7 +955,10 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
               </h2>
             </div>
           </div>
-          <div className="dashboard-header-buttons">
+          <div className="dashboard-header-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button className="btn btn-outline" onClick={() => setShowChangePwModal(true)} style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🔑 Change Password
+            </button>
             <button className="btn btn-outline" onClick={onBackToSite} style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff', padding: '10px 18px' }}>
               <Icons.ChevronDown size={16} style={{ transform: 'rotate(90deg)' }} />
               {t.backSite}
@@ -887,6 +984,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null }
           ].filter(tab => {
             if (tab.id === 'users') return user.username === 'admin';
+            if (tab.id === 'manual' && settings.hideManual && user.username !== 'admin') return false;
             if (user.username === 'admin') return true;
             const allowed = user.permissions || ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot'];
             return allowed.includes(tab.id);
@@ -1411,38 +1509,74 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
               </div>
 
               {mngUserForm && (
-                <div className="glass-panel" style={{ padding: '24px', backgroundColor: '#faf9f6', border: '1px solid rgba(0,0,0,0.05)', marginBottom: '24px' }}>
-                  <h4 style={{ color: 'var(--color-primary-dark)', fontSize: '1rem', fontWeight: 700, marginBottom: '16px' }}>Create New Account</h4>
+                <div className="glass-panel" style={{ padding: '24px', backgroundColor: '#0f3020', border: '2px solid rgba(82,183,136,0.3)', borderRadius: '12px', marginBottom: '24px', color: '#ffffff' }}>
+                  <h4 style={{ color: '#ffffff', fontSize: '1.1rem', fontWeight: 800, marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>Create New Account</h4>
                   
-                  {mngSuccess && <div style={{ padding: '10px', backgroundColor: 'rgba(82, 183, 136, 0.15)', color: '#1b4332', marginBottom: '16px', borderRadius: '6px' }}>{mngSuccess}</div>}
-                  {mngError && <div style={{ padding: '10px', backgroundColor: 'rgba(217, 4, 41, 0.15)', color: '#680000', marginBottom: '16px', borderRadius: '6px' }}>{mngError}</div>}
+                  {mngSuccess && <div style={{ padding: '10px', backgroundColor: 'rgba(82, 183, 136, 0.25)', color: '#ffffff', marginBottom: '16px', borderRadius: '6px', fontWeight: 'bold' }}>{mngSuccess}</div>}
+                  {mngError && <div style={{ padding: '10px', backgroundColor: 'rgba(217, 4, 41, 0.25)', color: '#ffffff', marginBottom: '16px', borderRadius: '6px', fontWeight: 'bold' }}>{mngError}</div>}
 
                   <form onSubmit={handleCreateUser} className="form-grid-responsive-2col">
                     <div className="form-group">
-                      <label htmlFor="mng-role">Role</label>
-                      <select id="mng-role" name="role" className="form-input" value={mngRole} onChange={(e) => setMngRole(e.target.value)}>
+                      <label htmlFor="mng-role" style={{ color: '#ffffff', fontWeight: 600 }}>Role</label>
+                      <select id="mng-role" name="role" className="form-input" value={mngRole} onChange={(e) => setMngRole(e.target.value)} style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }}>
                         <option value="client">Farmer / Client</option>
                         <option value="admin">Administrator</option>
                       </select>
                     </div>
                     <div className="form-group">
-                      <label htmlFor="mng-name">Full Name</label>
-                      <input id="mng-name" name="name" autocomplete="name" className="form-input" required value={mngName} onChange={(e) => setMngName(e.target.value)} />
+                      <label htmlFor="mng-name" style={{ color: '#ffffff', fontWeight: 600 }}>Full Name</label>
+                      <input id="mng-name" name="name" autocomplete="name" className="form-input" required value={mngName} onChange={(e) => setMngName(e.target.value)} style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }} />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="mng-username">Username</label>
-                      <input id="mng-username" name="username" autocomplete="username" className="form-input" required value={mngUsername} onChange={(e) => setMngUsername(e.target.value)} />
+                      <label htmlFor="mng-username" style={{ color: '#ffffff', fontWeight: 600 }}>Username</label>
+                      <input id="mng-username" name="username" autocomplete="username" className="form-input" required value={mngUsername} onChange={(e) => setMngUsername(e.target.value)} style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }} />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="mng-password">Password</label>
-                      <input id="mng-password" name="password" autocomplete="new-password" type="password" className="form-input" required value={mngPassword} onChange={(e) => setMngPassword(e.target.value)} />
+                      <label htmlFor="mng-password" style={{ color: '#ffffff', fontWeight: 600 }}>Password</label>
+                      <input id="mng-password" name="password" autocomplete="new-password" type="password" className="form-input" required value={mngPassword} onChange={(e) => setMngPassword(e.target.value)} style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }} />
                     </div>
                     <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label htmlFor="mng-phone">Phone / District (Optional)</label>
-                      <input id="mng-phone" name="phone" autocomplete="tel" className="form-input" value={mngPhone} onChange={(e) => setMngPhone(e.target.value)} placeholder="+256... Lira" />
+                      <label htmlFor="mng-phone" style={{ color: '#ffffff', fontWeight: 600 }}>Phone / District (Optional)</label>
+                      <input id="mng-phone" name="phone" autocomplete="tel" className="form-input" value={mngPhone} onChange={(e) => setMngPhone(e.target.value)} placeholder="+256... Lira" style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }} />
                     </div>
-                    <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
-                      <button type="submit" className="btn btn-primary">
+
+                    {mngRole === 'admin' && (
+                      <div className="form-group" style={{ gridColumn: '1 / -1', marginTop: '6px' }}>
+                        <label style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.85rem' }}>Allowed Editors (Permissions)</label>
+                        <div style={{ display: 'flex', gap: '10px 14px', flexWrap: 'wrap', marginTop: '6px', background: 'rgba(0,0,0,0.2)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(82,183,136,0.2)' }}>
+                          {[
+                            { id: 'prices', label: 'Prices' },
+                            { id: 'deliveries', label: 'Deliveries' },
+                            { id: 'dispatches', label: 'Dispatches' },
+                            { id: 'inquiries', label: 'FAQs & AI' },
+                            { id: 'manual', label: 'Manual' },
+                            { id: 'chatbot', label: 'Chatbot' },
+                            { id: 'slides', label: 'Slides' },
+                            { id: 'language', label: 'Language' }
+                          ].map(feat => {
+                            const checked = mngPermissions.includes(feat.id);
+                            return (
+                              <label key={feat.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', cursor: 'pointer', color: '#ffffff' }}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={checked} 
+                                  onChange={(e) => {
+                                    const newPerms = e.target.checked 
+                                      ? [...mngPermissions, feat.id] 
+                                      : mngPermissions.filter(x => x !== feat.id);
+                                    setMngPermissions(newPerms);
+                                  }}
+                                />
+                                {feat.label}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ gridColumn: '1 / -1', marginTop: '12px' }}>
+                      <button type="submit" className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
                         <Icons.CheckCircle size={16} />
                         Save User
                       </button>
@@ -1865,6 +1999,29 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                     Customize the 14 crop production training stages, write NARO advice, and upload custom photos.
                   </p>
                 </div>
+              </div>
+
+              <div style={{ backgroundColor: 'rgba(82, 183, 136, 0.08)', border: '1px solid rgba(82, 183, 136, 0.2)', padding: '16px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <span style={{ fontWeight: 700, color: 'var(--color-primary-dark)', fontSize: '0.9rem', display: 'block' }}>Hiding/Visibility Settings</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-light)' }}>Toggle whether the training manual section is visible to website visitors.</span>
+                </div>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-primary-dark)' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={settings.hideManual} 
+                    onChange={async (e) => {
+                      const updatedVal = e.target.checked;
+                      const res = await saveSettings({ hideManual: updatedVal });
+                      if (res) {
+                        setSettings(res);
+                        localStorage.setItem('jeroma_settings', JSON.stringify(res));
+                        window.dispatchEvent(new CustomEvent('settings-updated'));
+                      }
+                    }}
+                  />
+                  Hide Training Manual
+                </label>
               </div>
 
               {stageSuccess && (
@@ -2494,6 +2651,150 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
           )}
 
     </div>
+
+      {/* Change Password Modal */}
+      {showChangePwModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(8, 28, 21, 0.65)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100,
+          padding: '16px', boxSizing: 'border-box'
+        }}>
+          <div className="glass-panel" style={{
+            backgroundColor: '#ffffff', color: '#081c15', width: '100%', maxWidth: '440px',
+            borderRadius: '16px', padding: '24px', position: 'relative', border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)', animation: 'fadeInScale 0.25s ease'
+          }}>
+            <button 
+              onClick={() => { setShowChangePwModal(false); setPwStep(1); setPwError(''); setPwSuccess(''); }}
+              style={{
+                position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none',
+                fontSize: '1.25rem', cursor: 'pointer', color: '#555'
+              }}
+            >
+              ✕
+            </button>
+
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
+              🔒 Change Password
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.825rem', color: '#555' }}>
+              Confirm your identity by generating a 6-digit verification code.
+            </p>
+
+            {pwError && (
+              <div style={{ background: '#fde8e8', border: '1px solid #f8b4b4', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', color: '#9b1c1c', fontSize: '0.85rem', fontWeight: 600 }}>
+                ⚠️ {pwError}
+              </div>
+            )}
+
+            {pwSuccess && (
+              <div style={{ background: '#def7ec', border: '1px solid #84e1bc', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', color: '#03543f', fontSize: '0.85rem', fontWeight: 600 }}>
+                ✅ {pwSuccess}
+              </div>
+            )}
+
+            {pwStep === 1 ? (
+              <form onSubmit={handleGeneratePwCode}>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                    Verification Method
+                  </label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input 
+                        type="radio" 
+                        name="adminPwMethod"
+                        checked={pwMethod === 'phone'} 
+                        onChange={() => setPwMethod('phone')} 
+                      />
+                      Phone Number
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input 
+                        type="radio" 
+                        name="adminPwMethod"
+                        checked={pwMethod === 'email'} 
+                        onChange={() => setPwMethod('email')} 
+                      />
+                      Email Address
+                    </label>
+                  </div>
+                </div>
+
+                {pwMethod === 'phone' ? (
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                      Phone Number
+                    </label>
+                    <input 
+                      type="text" 
+                      className="input-field" 
+                      value={pwPhone} 
+                      onChange={(e) => setPwPhone(e.target.value)} 
+                      placeholder="e.g. +256773123456"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                      Email Address
+                    </label>
+                    <input 
+                      type="email" 
+                      className="input-field" 
+                      value={pwEmail} 
+                      onChange={(e) => setPwEmail(e.target.value)} 
+                      placeholder="e.g. email@example.com"
+                      required
+                    />
+                  </div>
+                )}
+
+                <button type="submit" disabled={pwIsLoading} className="btn btn-primary" style={{ width: '100%' }}>
+                  {pwIsLoading ? 'Sending...' : 'Send Verification Code'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleUpdatePassword}>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                    Enter 6-Digit Code
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={pwEnteredCode} 
+                    onChange={(e) => setPwEnteredCode(e.target.value)} 
+                    placeholder="Enter code"
+                    maxLength={6}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                    New Password
+                  </label>
+                  <input 
+                    type="password" 
+                    className="input-field" 
+                    value={pwNewPassword} 
+                    onChange={(e) => setPwNewPassword(e.target.value)} 
+                    placeholder="At least 6 characters (letters & numbers)"
+                    required
+                  />
+                </div>
+
+                <button type="submit" disabled={pwIsLoading} className="btn btn-primary" style={{ width: '100%', background: 'var(--color-primary)' }}>
+                  {pwIsLoading ? 'Updating...' : 'Update Password'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,7 +14,7 @@ import ActivityBanner from './components/ActivityBanner';
 import AuthPortal from './components/AuthPortal';
 import TrainingManual from './components/TrainingManual';
 import * as Icons from './components/Icons';
-import { initDb, getCrops, initTranslations, getTranslations, syncOfflineData } from './utils/db';
+import { initDb, getCrops, initTranslations, getTranslations, syncOfflineData, getSettings } from './utils/db';
 import { translations as defaultTranslations } from './components/translations';
 
 // Helper to retry dynamic imports when a redeploy changes the chunk hashes (prevents ChunkLoadErrors)
@@ -58,6 +58,14 @@ function App() {
   // Accessibility States (saved to localStorage for persistent offline use)
   const [fontScale, setFontScale] = useState(() => localStorage.getItem('jeroma_font_scale') || 'standard');
   const [contrastMode, setContrastMode] = useState(() => localStorage.getItem('jeroma_contrast_mode') || 'standard');
+  const [settings, setSettings] = useState(() => {
+    try {
+      const cached = localStorage.getItem('jeroma_settings');
+      return cached ? JSON.parse(cached) : { hideManual: false };
+    } catch {
+      return { hideManual: false };
+    }
+  });
 
   // Responsive & Scroll Tracking for 2-Row Header Layout
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 992 : false);
@@ -131,6 +139,17 @@ function App() {
       const cropsData = await getCrops();
       setCrops(cropsData || {});
 
+      // Fetch settings
+      try {
+        const s = await getSettings();
+        if (s) {
+          setSettings(s);
+          localStorage.setItem('jeroma_settings', JSON.stringify(s));
+        }
+      } catch (err) {
+        console.error('Failed to load settings at boot', err);
+      }
+
       // Seed translations if not already stored
       await initTranslations(defaultTranslations);
       const translationsData = await getTranslations();
@@ -162,6 +181,22 @@ function App() {
     bootstrap();
   }, []);
 
+  useEffect(() => {
+    const handleSettingsUpdate = async () => {
+      try {
+        const s = await getSettings();
+        if (s) {
+          setSettings(s);
+          localStorage.setItem('jeroma_settings', JSON.stringify(s));
+        }
+      } catch (err) {
+        console.error('Failed to sync settings', err);
+      }
+    };
+    window.addEventListener('settings-updated', handleSettingsUpdate);
+    return () => window.removeEventListener('settings-updated', handleSettingsUpdate);
+  }, []);
+
   // Hash-based routing effect
   useEffect(() => {
     const handleHashChange = () => {
@@ -169,7 +204,13 @@ function App() {
       if (hash === '#portal' || hash === '#login') {
         setCurrentView('portal');
       } else if (hash === '#manual') {
-        setCurrentView('manual');
+        const cachedSettings = JSON.parse(localStorage.getItem('jeroma_settings') || '{"hideManual":false}');
+        if (cachedSettings.hideManual) {
+          setCurrentView('home');
+          window.location.hash = '';
+        } else {
+          setCurrentView('manual');
+        }
       } else if (hash === '#dashboard') {
         const savedUser = localStorage.getItem('jeroma_logged_user');
         if (savedUser) {
@@ -373,6 +414,7 @@ function App() {
             onHomeClick={() => setCurrentView('home')}
             showInstallBtn={showInstallBtn}
             onInstallApp={handleInstallApp}
+            hideManual={settings.hideManual}
           />
           
           {/* Horizontal News Ticker / Moving News - hidden on manual view */}
@@ -439,7 +481,7 @@ function App() {
           </>
         )}
 
-        {currentView === 'manual' && (
+        {currentView === 'manual' && !settings.hideManual && (
           <TrainingManual
             lang={lang}
             onBackToHome={() => setCurrentView('home')}
@@ -479,11 +521,12 @@ function App() {
         )}
       </main>
       
+      <ChatBot lang={lang} />
+
       {currentView !== 'dashboard' && currentView !== 'manual' && currentView !== 'portal' && (
         <>
           <Footer lang={lang} translations={translations} showInstallBtn={showInstallBtn} onInstallApp={handleInstallApp} />
           <WhatsAppFloat lang={lang} />
-          <ChatBot lang={lang} />
         </>
       )}
 

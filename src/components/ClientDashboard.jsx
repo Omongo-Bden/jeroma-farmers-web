@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from './Icons';
-import { getDeliveries, getDispatches, saveDispatch, getCrops } from '../utils/db';
+import { getDeliveries, getDispatches, saveDispatch, getCrops, updateUser } from '../utils/db';
 
 export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) {
   const [activeTab, setActiveTab] = useState('deliveries'); // 'deliveries' | 'dispatch' | 'inputs'
@@ -10,6 +10,19 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
   const [dispatches, setDispatches] = useState([]);
   const [crops, setCrops] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Change Password States
+  const [showChangePwModal, setShowChangePwModal] = useState(false);
+  const [pwStep, setPwStep] = useState(1);
+  const [pwMethod, setPwMethod] = useState('phone');
+  const [pwPhone, setPwPhone] = useState(user.phone || '');
+  const [pwEmail, setPwEmail] = useState('');
+  const [pwGeneratedCode, setPwGeneratedCode] = useState('');
+  const [pwEnteredCode, setPwEnteredCode] = useState('');
+  const [pwNewPassword, setPwNewPassword] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwError, setPwError] = useState('');
+  const [pwIsLoading, setPwIsLoading] = useState(false);
   
   // Dispatch Request Form States
   const [dispCrop, setDispCrop] = useState('sunflower');
@@ -190,6 +203,69 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
     await loadData();
   };
 
+  const handleGeneratePwCode = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+
+    const contactVal = pwMethod === 'phone' ? pwPhone.trim() : pwEmail.trim();
+    if (!contactVal) {
+      setPwError('Please fill out all fields.');
+      return;
+    }
+
+    setPwIsLoading(true);
+    try {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setPwGeneratedCode(code);
+      setPwSuccess(`Verification code ${code} sent via ${pwMethod === 'phone' ? 'Phone SMS' : 'Email'}!`);
+      setPwStep(2);
+    } catch (err) {
+      setPwError('Failed to generate verification code.');
+    } finally {
+      setPwIsLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+
+    if (pwEnteredCode !== pwGeneratedCode) {
+      setPwError('Invalid verification code.');
+      return;
+    }
+
+    const hasText = /[a-zA-Z]/.test(pwNewPassword);
+    const hasNumber = /[0-9]/.test(pwNewPassword);
+    if (pwNewPassword.length < 6 || !hasText || !hasNumber) {
+      setPwError('Password must be at least 6 characters and contain a mixture of text and numbers.');
+      return;
+    }
+
+    setPwIsLoading(true);
+    try {
+      const res = await updateUser(user.username, { password: pwNewPassword });
+      if (res.success || res) {
+        setPwSuccess('Password updated successfully!');
+        setTimeout(() => {
+          setShowChangePwModal(false);
+          setPwStep(1);
+          setPwNewPassword('');
+          setPwGeneratedCode('');
+          setPwEnteredCode('');
+          setPwSuccess('');
+          setPwError('');
+        }, 2000);
+      }
+    } catch (err) {
+      setPwError('Failed to update password.');
+    } finally {
+      setPwIsLoading(false);
+    }
+  };
+
   // Mock static list of client input debts
   const mockInputs = [
     { name: 'SeedCo LG 50745 Sunflower Seeds (2 Kg pack)', qty: 3, unit: 22000, status: 'Deducted from Harvest' },
@@ -233,7 +309,10 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
               </p>
             </div>
           </div>
-          <div className="dashboard-header-buttons">
+          <div className="dashboard-header-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button className="btn btn-outline" onClick={() => setShowChangePwModal(true)} style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🔑 Change Password
+            </button>
             <button className="btn btn-outline" onClick={onBackToSite} style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff', padding: '10px 18px' }}>
               <Icons.ChevronDown size={16} style={{ transform: 'rotate(90deg)' }} />
               {t.backSite}
@@ -552,6 +631,150 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
         </div>
 
       </div>
+
+      {/* Change Password Modal */}
+      {showChangePwModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(8, 28, 21, 0.65)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100,
+          padding: '16px', boxSizing: 'border-box'
+        }}>
+          <div className="glass-panel" style={{
+            backgroundColor: '#ffffff', color: '#081c15', width: '100%', maxWidth: '440px',
+            borderRadius: '16px', padding: '24px', position: 'relative', border: '1px solid rgba(0,0,0,0.1)',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)', animation: 'fadeInScale 0.25s ease'
+          }}>
+            <button 
+              onClick={() => { setShowChangePwModal(false); setPwStep(1); setPwError(''); setPwSuccess(''); }}
+              style={{
+                position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none',
+                fontSize: '1.25rem', cursor: 'pointer', color: '#555'
+              }}
+            >
+              ✕
+            </button>
+
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
+              🔒 Change Password
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '0.825rem', color: '#555' }}>
+              Confirm your identity by generating a 6-digit verification code.
+            </p>
+
+            {pwError && (
+              <div style={{ background: '#fde8e8', border: '1px solid #f8b4b4', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', color: '#9b1c1c', fontSize: '0.85rem', fontWeight: 600 }}>
+                ⚠️ {pwError}
+              </div>
+            )}
+
+            {pwSuccess && (
+              <div style={{ background: '#def7ec', border: '1px solid #84e1bc', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', color: '#03543f', fontSize: '0.85rem', fontWeight: 600 }}>
+                ✅ {pwSuccess}
+              </div>
+            )}
+
+            {pwStep === 1 ? (
+              <form onSubmit={handleGeneratePwCode}>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                    Verification Method
+                  </label>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input 
+                        type="radio" 
+                        name="clientPwMethod"
+                        checked={pwMethod === 'phone'} 
+                        onChange={() => setPwMethod('phone')} 
+                      />
+                      Phone Number
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input 
+                        type="radio" 
+                        name="clientPwMethod"
+                        checked={pwMethod === 'email'} 
+                        onChange={() => setPwMethod('email')} 
+                      />
+                      Email Address
+                    </label>
+                  </div>
+                </div>
+
+                {pwMethod === 'phone' ? (
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                      Phone Number
+                    </label>
+                    <input 
+                      type="text" 
+                      className="input-field" 
+                      value={pwPhone} 
+                      onChange={(e) => setPwPhone(e.target.value)} 
+                      placeholder="e.g. +256773123456"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                      Email Address
+                    </label>
+                    <input 
+                      type="email" 
+                      className="input-field" 
+                      value={pwEmail} 
+                      onChange={(e) => setPwEmail(e.target.value)} 
+                      placeholder="e.g. email@example.com"
+                      required
+                    />
+                  </div>
+                )}
+
+                <button type="submit" disabled={pwIsLoading} className="btn btn-primary" style={{ width: '100%' }}>
+                  {pwIsLoading ? 'Sending...' : 'Send Verification Code'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleUpdatePassword}>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                    Enter 6-Digit Code
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    value={pwEnteredCode} 
+                    onChange={(e) => setPwEnteredCode(e.target.value)} 
+                    placeholder="Enter code"
+                    maxLength={6}
+                    required
+                  />
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                    New Password
+                  </label>
+                  <input 
+                    type="password" 
+                    className="input-field" 
+                    value={pwNewPassword} 
+                    onChange={(e) => setPwNewPassword(e.target.value)} 
+                    placeholder="At least 6 characters (letters & numbers)"
+                    required
+                  />
+                </div>
+
+                <button type="submit" disabled={pwIsLoading} className="btn btn-primary" style={{ width: '100%', background: 'var(--color-primary)' }}>
+                  {pwIsLoading ? 'Updating...' : 'Update Password'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

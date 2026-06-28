@@ -421,6 +421,12 @@ export default function ChatBot({ lang }) {
   }, []);
 
   const toggleOpen = () => {
+    const loggedUser = localStorage.getItem('jeroma_logged_user');
+    if (!loggedUser) {
+      alert(lang === 'en' ? 'Login to access this feature' : 'Keto login me open tic man');
+      window.open('#portal', '_blank');
+      return;
+    }
     setIsOpen(prev => !prev);
     setIsMinimized(false);
     setUnread(0);
@@ -725,7 +731,7 @@ export default function ChatBot({ lang }) {
         <>
           {/* ── Floating Launcher Button ─────────────────────────── */}
           <button
-            className="chatbot-toggle"
+            className="chatbot-launcher"
             onClick={toggleOpen}
             aria-label="Open chat assistant"
             title="Chat with Jeroma"
@@ -757,7 +763,7 @@ export default function ChatBot({ lang }) {
           <div className="chatbot-header-info">
             <div className="chatbot-header-avatar">🌾</div>
             <div>
-              <p className="chatbot-header-name">Jeroma</p>
+              <p className="chatbot-header-name">Ask Jeroma</p>
               <p className="chatbot-header-status">
                 <span className="status-dot" /> Jeroma Farmers Assistant
               </p>

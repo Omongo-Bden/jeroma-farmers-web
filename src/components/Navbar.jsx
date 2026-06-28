@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as Icons from './Icons';
 import { translations } from './translations';
+import { getCrops, getManual } from '../utils/db';
 
 export default function Navbar({ 
   lang, 
@@ -22,12 +23,95 @@ export default function Navbar({
   onManualClick,
   onHomeClick,
   showInstallBtn = false,
-  onInstallApp
+  onInstallApp,
+  hideManual = false
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isPrefsOpen, setIsPrefsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
+
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchDb, setSearchDb] = useState([]);
+
+  useEffect(() => {
+    async function initSearchDb() {
+      try {
+        const crops = await getCrops();
+        const stages = await getManual();
+        
+        const staticItems = [
+          { type: 'page', title: 'Home / Hero Slide Banners', content: 'Jeroma Farmers primary maize and sunflower operations in Lira District northern Uganda.', link: '#home' },
+          { type: 'page', title: 'About Us - Core Values', content: 'Founded to empower local northern Ugandan farmers with modern seed technologies and training.', link: '#about' },
+          { type: 'page', title: 'Staff - Managing Director Acuti Sam', content: 'Managing Director: Acuti Sam, Field Coordinators, Board Members and specialists.', link: '#about' },
+          { type: 'page', title: 'Contact Us - Get In Touch', content: 'Address: Lira-Soroti Highway, Lira City Uganda. Phone: +256 773 623 196. Collaborative Network.', link: '#contact' },
+        ];
+
+        const cropItems = (crops || []).map(c => ({
+          type: 'crop',
+          title: `Crop: ${c.name}`,
+          content: `Price: UGX ${c.price}/kg (Buy), UGX ${c.sellPrice || c.price}/kg (Sell). ${c.description || ''}`,
+          link: '#services'
+        }));
+
+        const stageItems = (stages || []).map(s => ({
+          type: 'manual',
+          title: `Manual Stage: ${s.title}`,
+          content: `${s.description} - Recommendations: ${s.recommendations}`,
+          link: '#manual',
+          stageId: s.id
+        }));
+
+        setSearchDb([...staticItems, ...cropItems, ...stageItems]);
+      } catch (err) {
+        console.error('Failed to init search database', err);
+      }
+    }
+    if (showSearchModal) {
+      initSearchDb();
+    }
+  }, [showSearchModal]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const q = searchQuery.toLowerCase();
+    const matches = searchDb.filter(item => 
+      item.title.toLowerCase().includes(q) || 
+      item.content.toLowerCase().includes(q)
+    );
+    setSearchResults(matches);
+  }, [searchQuery, searchDb]);
+
+  const handleSearchResultClick = (item) => {
+    setShowSearchModal(false);
+    setSearchQuery('');
+    if (item.type === 'manual') {
+      if (onManualClick) {
+        onManualClick();
+        setTimeout(() => {
+          const target = document.getElementById(`manual-stage-${item.stageId}`);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.style.outline = '3px solid var(--color-accent)';
+            setTimeout(() => target.style.outline = 'none', 3000);
+          }
+        }, 200);
+      }
+    } else {
+      if (onHomeClick) onHomeClick();
+      setTimeout(() => {
+        const target = document.querySelector(item.link);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 200);
+    }
+  };
 
   const activeTranslations = dynamicTranslations || translations;
   const t = activeTranslations[lang] || activeTranslations.en;
@@ -315,6 +399,27 @@ export default function Navbar({
               )}
             </div>
 
+            <button 
+              onClick={() => setShowSearchModal(true)}
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1.5px solid rgba(255,255,255,0.15)',
+                borderRadius: '8px',
+                width: '38px',
+                height: '38px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#ffffff',
+                transition: 'all 0.2s',
+                marginRight: '8px'
+              }}
+              title="Search website"
+            >
+              <Icons.Search size={18} />
+            </button>
+
             {currentUser ? (
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
@@ -358,6 +463,63 @@ export default function Navbar({
           {/* Mobile Hamburger toggle and Portal/Login button */}
           {isMobile ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button 
+                onClick={() => setShowSearchModal(true)}
+                aria-label="Search"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  width: '38px',
+                  height: '38px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#ffffff'
+                }}
+                title={lang === 'en' ? 'Search' : 'Yenp'}
+              >
+                <Icons.Search size={18} />
+              </button>
+              <button 
+                onClick={toggleContrastMode}
+                aria-label="Toggle High Contrast"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  width: '38px',
+                  height: '38px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#ffffff'
+                }}
+                title={lang === 'en' ? 'Toggle High Contrast' : 'Contrast Mode'}
+              >
+                <Icons.Eye size={18} />
+              </button>
+              <button 
+                onClick={toggleFontScale}
+                aria-label="Toggle Large Text"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  width: '38px',
+                  height: '38px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#ffffff'
+                }}
+                title={lang === 'en' ? 'Toggle Large Text' : 'Text size scale'}
+              >
+                <Icons.Type size={18} />
+              </button>
               {currentUser ? (
                 <button 
                   className="btn btn-primary" 
@@ -479,6 +641,38 @@ export default function Navbar({
         {/* Mobile Slide-Out Drawer Menu */}
         {isMobile && isMenuOpen && (
           <ul className="nav-menu active" style={{ display: 'flex', flexDirection: 'column' }}>
+            <li className="mobile-only-lang" style={{ marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
+              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase' }}>
+                ⚙️ {lang === 'en' ? 'Visual Settings' : 'Nen me Settings'}
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px' }}>
+                <button 
+                  className="btn btn-outline" 
+                  onClick={toggleFontScale}
+                  style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
+                >
+                  <Icons.Type size={16} />
+                  <span>{fontScale === 'large' ? (lang === 'en' ? 'Use Standard Text' : 'Keto Text me Standard') : (lang === 'en' ? 'Use Large Text (1.25x)' : 'Keto Text me Dongo')}</span>
+                </button>
+                <button 
+                  className="btn btn-outline" 
+                  onClick={toggleContrastMode}
+                  style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
+                >
+                  <Icons.Eye size={16} />
+                  <span>{contrastMode === 'high' ? (lang === 'en' ? 'Use Standard Theme' : 'Keto Theme me Standard') : (lang === 'en' ? 'High Contrast Mode' : 'Contrast Mode Mamit')}</span>
+                </button>
+                {showInstallBtn && (
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => { setIsMenuOpen(false); onInstallApp(); }}
+                    style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem', background: 'var(--color-secondary)', color: 'var(--color-primary-dark)', fontWeight: 800, marginTop: '4px' }}
+                  >
+                    <span>📲 {lang === 'en' ? 'Install Jeroma App' : 'Keto Jeroma App'}</span>
+                  </button>
+                )}
+              </div>
+            </li>
             <li>
               <a 
                 href="#home" 
@@ -559,22 +753,30 @@ export default function Navbar({
                 {t.navContact}
               </a>
             </li>
-            <li>
-              <a
-                href="#manual"
-                className={`nav-link ${currentView === 'manual' ? 'active' : ''}`}
-                onClick={(e) => { e.preventDefault(); setIsMenuOpen(false); if (onManualClick) onManualClick(); }}
-                style={{ color: 'var(--color-secondary)', fontWeight: 700 }}
-              >
-                📖 {lang === 'en' ? 'Training Manual' : 'Leb me Pwonj'}
-              </a>
-            </li>
+            {!hideManual && (
+              <li>
+                <a
+                  href="#manual"
+                  className={`nav-link ${currentView === 'manual' ? 'active' : ''}`}
+                  onClick={(e) => { e.preventDefault(); setIsMenuOpen(false); if (onManualClick) onManualClick(); }}
+                  style={{ color: 'var(--color-secondary)', fontWeight: 700 }}
+                >
+                  📖 {lang === 'en' ? 'Training Manual' : 'Leb me Pwonj'}
+                </a>
+              </li>
+            )}
             <li>
               <button
                 className="nav-link chatbot-nav-trigger"
                 onClick={(e) => { 
                   e.preventDefault(); 
                   setIsMenuOpen(false);
+                  const loggedUser = localStorage.getItem('jeroma_logged_user');
+                  if (!loggedUser) {
+                    alert(lang === 'en' ? 'Login to access this feature' : 'Keto login me open tic man');
+                    window.open('#portal', '_blank');
+                    return;
+                  }
                   const launcher = document.querySelector('.chatbot-launcher');
                   if (launcher) launcher.click();
                 }}
@@ -592,7 +794,7 @@ export default function Navbar({
                   textAlign: 'left'
                 }}
               >
-                💬 <span>{lang === 'en' ? 'Ask Jeroma AI' : 'Penye Jeroma AI'}</span>
+                💬 <span>{lang === 'en' ? 'Ask Jeroma' : 'Penye Jeroma'}</span>
               </button>
             </li>
             
@@ -613,37 +815,6 @@ export default function Navbar({
                 >
                   Luo
                 </button>
-              </div>
-
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase' }}>
-                ⚙️ {lang === 'en' ? 'Visual Settings' : 'Nen me Settings'}
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px' }}>
-                <button 
-                  className="btn btn-outline" 
-                  onClick={toggleFontScale}
-                  style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
-                >
-                  <Icons.Type size={16} />
-                  <span>{fontScale === 'large' ? (lang === 'en' ? 'Use Standard Text' : 'Keto Text me Standard') : (lang === 'en' ? 'Use Large Text (1.25x)' : 'Keto Text me Dongo')}</span>
-                </button>
-                <button 
-                  className="btn btn-outline" 
-                  onClick={toggleContrastMode}
-                  style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
-                >
-                  <Icons.Eye size={16} />
-                  <span>{contrastMode === 'high' ? (lang === 'en' ? 'Use Standard Theme' : 'Keto Theme me Standard') : (lang === 'en' ? 'High Contrast Mode' : 'Contrast Mode Mamit')}</span>
-                </button>
-                {showInstallBtn && (
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={() => { setIsMenuOpen(false); onInstallApp(); }}
-                    style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem', background: 'var(--color-secondary)', color: 'var(--color-primary-dark)', fontWeight: 800, marginTop: '4px' }}
-                  >
-                    <span>📲 {lang === 'en' ? 'Install Jeroma App' : 'Keto Jeroma App'}</span>
-                  </button>
-                )}
               </div>
             </li>
             
@@ -783,21 +954,29 @@ export default function Navbar({
                   {t.navContact}
                 </a>
               </li>
-              <li>
-                <a
-                  href="#manual"
-                  className={`nav-link ${currentView === 'manual' ? 'active' : ''}`}
-                  onClick={(e) => { e.preventDefault(); if (onManualClick) onManualClick(); }}
-                  style={{ color: '#ffffff', fontWeight: 700 }}
-                >
-                  📖 {lang === 'en' ? 'Training Manual' : 'Leb me Pwonj'}
-                </a>
-              </li>
+              {!hideManual && (
+                <li>
+                  <a
+                    href="#manual"
+                    className={`nav-link ${currentView === 'manual' ? 'active' : ''}`}
+                    onClick={(e) => { e.preventDefault(); if (onManualClick) onManualClick(); }}
+                    style={{ color: '#ffffff', fontWeight: 700 }}
+                  >
+                    📖 {lang === 'en' ? 'Training Manual' : 'Leb me Pwonj'}
+                  </a>
+                </li>
+              )}
               <li>
                 <button
                   className="nav-link chatbot-nav-trigger"
                   onClick={(e) => { 
                     e.preventDefault(); 
+                    const loggedUser = localStorage.getItem('jeroma_logged_user');
+                    if (!loggedUser) {
+                      alert(lang === 'en' ? 'Login to access this feature' : 'Keto login me open tic man');
+                      window.open('#portal', '_blank');
+                      return;
+                    }
                     const launcher = document.querySelector('.chatbot-launcher');
                     if (launcher) launcher.click();
                   }}
@@ -813,7 +992,7 @@ export default function Navbar({
                     padding: '8px 12px'
                   }}
                 >
-                  💬 <span>{lang === 'en' ? 'Ask Jeroma AI' : 'Penye Jeroma AI'}</span>
+                  💬 <span>{lang === 'en' ? 'Ask Jeroma' : 'Penye Jeroma'}</span>
                 </button>
               </li>
             </ul>
@@ -821,6 +1000,123 @@ export default function Navbar({
         )}
 
       </div>
+
+      {/* Search Overlay Modal */}
+      {showSearchModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100000,
+            background: 'rgba(10, 45, 29, 0.92)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+            padding: '80px 20px 20px'
+          }}
+          onClick={() => setShowSearchModal(false)}
+        >
+          <div 
+            style={{
+              background: '#0f3020',
+              border: '2px solid rgba(82, 183, 136, 0.4)',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '600px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: '80vh',
+              overflow: 'hidden'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid rgba(82,183,136,0.15)' }}>
+              <Icons.Search size={20} style={{ color: 'var(--color-secondary)', marginRight: '10px' }} />
+              <input 
+                type="text"
+                placeholder={lang === 'en' ? "Search crops, manual, staff, FAQs..." : "Yenp maro, leb pwonj, kede okene..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                style={{
+                  flex: 1,
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  color: '#ffffff',
+                  fontSize: '1.1rem',
+                  fontFamily: 'var(--font-body)',
+                  width: '100%'
+                }}
+              />
+              <button 
+                onClick={() => setShowSearchModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  fontSize: '1.2rem',
+                  opacity: 0.7,
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Results Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+              {searchQuery.trim() === '' ? (
+                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', padding: '24px 0', fontSize: '0.9rem' }}>
+                  🔍 {lang === 'en' ? "Type to search Jeroma Farmers portal..." : "Coo yenp me cako search..."}
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', padding: '24px 0', fontSize: '0.9rem' }}>
+                  No results found for "{searchQuery}"
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {searchResults.map((item, idx) => (
+                    <div 
+                      key={idx}
+                      onClick={() => handleSearchResultClick(item)}
+                      style={{
+                        padding: '12px 16px',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(82, 183, 136, 0.15)',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--color-secondary)' }}>{item.title}</span>
+                        <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', padding: '2px 6px', background: 'rgba(82, 183, 136, 0.2)', borderRadius: '4px', color: '#a7f3d0' }}>
+                          {item.type}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.4, textAlign: 'left' }}>
+                        {item.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

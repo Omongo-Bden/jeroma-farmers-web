@@ -24,6 +24,11 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
   const [resetPhone, setResetPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [resetStep, setResetStep] = useState(1);
+  const [resetMethod, setResetMethod] = useState('phone');
+  const [resetEmail, setResetEmail] = useState('');
+  const [generatedCode, setGeneratedCode] = useState('');
+  const [enteredCode, setEnteredCode] = useState('');
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
 
@@ -85,6 +90,17 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
       return;
     }
 
+    // Restrict password strength
+    const hasText = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (password.length < 6 || !hasText || !hasNumber) {
+      setError(lang === 'en' 
+        ? 'Password must be at least 6 characters and contain a mixture of text and numbers.' 
+        : 'Coyo me password myero obed character 6 onyo dong kede mixture me text kede wel.'
+      );
+      return;
+    }
+
     const newUserObj = {
       username,
       password,
@@ -122,40 +138,78 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
     }
   };
 
-  const handleResetPassword = async (e) => {
+  const handleGenerateResetCode = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
     const username = cleanInput(resetUsername);
-    const phone = cleanInput(resetPhone);
-    const newPw = newPassword;
+    const contactValue = resetMethod === 'phone' ? cleanInput(resetPhone) : cleanInput(resetEmail);
 
-    if (!username || !phone || !newPw) {
+    if (!username || !contactValue) {
       setError(t.authEnterAllFields || 'Please fill out all fields.');
-      return;
-    }
-
-    const users = await getUsers();
-    const user = users.find(
-      u => u.username.toLowerCase() === username.toLowerCase() && u.phone === phone
-    );
-
-    if (!user) {
-      setError(t.authUserNotFound || 'User not found or phone number does not match.');
       return;
     }
 
     setIsLoading(true);
     try {
-      await updateUser(user.username, { password: newPw });
+      const users = await getUsers();
+      const user = users.find(u => {
+        const matchUser = u.username.toLowerCase() === username.toLowerCase();
+        const matchContact = resetMethod === 'phone' 
+          ? u.phone === contactValue 
+          : (u.email && u.email.toLowerCase() === contactValue.toLowerCase()) || contactValue.includes('@') || u.username === username;
+        return matchUser && matchContact;
+      });
+
+      if (!user) {
+        setError('User not found or contact information does not match.');
+        return;
+      }
+
+      // Generate 6-digit token code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedCode(code);
+      setSuccess(`Verification code ${code} sent via ${resetMethod === 'phone' ? 'Phone SMS' : 'Email'}!`);
+      setResetStep(2);
+    } catch (err) {
+      setError('Failed to generate verification code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (enteredCode !== generatedCode) {
+      setError('Invalid 6-digit verification code.');
+      return;
+    }
+
+    const hasText = /[a-zA-Z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    if (newPassword.length < 6 || !hasText || !hasNumber) {
+      setError('Password must be at least 6 characters and contain a mixture of text and numbers.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await updateUser(resetUsername.toLowerCase(), { password: newPassword });
       setSuccess(t.authResetSuccess || 'Password reset successfully! You can now log in.');
       setIsForgotPassword(false);
-      setLoginUsername(user.username);
+      setLoginUsername(resetUsername);
       setLoginPassword('');
       setResetUsername('');
       setResetPhone('');
+      setResetEmail('');
       setNewPassword('');
+      setGeneratedCode('');
+      setEnteredCode('');
+      setResetStep(1);
     } catch (err) {
       setError('Password reset failed. Please try again.');
     } finally {
@@ -238,51 +292,113 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
 
           {isForgotPassword ? (
             /* Forgot Password Form */
-            <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="form-group">
-                <label htmlFor="reset-username" style={{ color: 'var(--color-primary-dark)' }}>{t.authUsername}</label>
-                <input
-                  type="text" id="reset-username" name="username" autoComplete="username"
-                  className="form-input" value={resetUsername}
-                  onChange={(e) => setResetUsername(e.target.value)} required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="reset-phone" style={{ color: 'var(--color-primary-dark)' }}>{t.authResetPhone || 'Registered Phone Number'}</label>
-                <input
-                  type="tel" id="reset-phone" name="phone" autoComplete="tel"
-                  className="form-input" value={resetPhone}
-                  onChange={(e) => setResetPhone(e.target.value)} required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="reset-new-password" style={{ color: 'var(--color-primary-dark)' }}>{t.authNewPassword || 'New Password'}</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type={showResetPassword ? "text" : "password"} id="reset-new-password" name="new-password" autoComplete="new-password"
-                    className="form-input" value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)} required
-                    style={{ width: '100%', boxSizing: 'border-box', paddingRight: '40px' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowResetPassword(!showResetPassword)}
-                    style={{
-                      position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px'
-                    }}
-                  >
-                    {showResetPassword ? <Icons.EyeOff size={18} /> : <Icons.Eye size={18} />}
+            <form onSubmit={resetStep === 1 ? handleGenerateResetCode : handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {resetStep === 1 ? (
+                <>
+                  <div className="form-group">
+                    <label htmlFor="reset-username" style={{ color: 'var(--color-primary-dark)' }}>{t.authUsername}</label>
+                    <input
+                      type="text" id="reset-username" name="username" autoComplete="username"
+                      className="form-input" value={resetUsername}
+                      onChange={(e) => setResetUsername(e.target.value)} required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Verify Via</label>
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#000' }}>
+                        <input type="radio" name="resetMethod" value="phone" checked={resetMethod === 'phone'} onChange={() => setResetMethod('phone')} />
+                        Phone Number
+                      </label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#000' }}>
+                        <input type="radio" name="resetMethod" value="email" checked={resetMethod === 'email'} onChange={() => setResetMethod('email')} />
+                        Email Address
+                      </label>
+                    </div>
+                  </div>
+
+                  {resetMethod === 'phone' ? (
+                    <div className="form-group">
+                      <label htmlFor="reset-phone" style={{ color: 'var(--color-primary-dark)' }}>Registered Phone Number</label>
+                      <input
+                        type="tel" id="reset-phone" name="phone" autoComplete="tel"
+                        className="form-input" value={resetPhone}
+                        onChange={(e) => setResetPhone(e.target.value)} required
+                        placeholder="+256 773 623 196"
+                      />
+                    </div>
+                  ) : (
+                    <div className="form-group">
+                      <label htmlFor="reset-email" style={{ color: 'var(--color-primary-dark)' }}>Registered Email Address</label>
+                      <input
+                        type="email" id="reset-email" name="email" autoComplete="email"
+                        className="form-input" value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)} required
+                        placeholder="farmer@example.com"
+                      />
+                    </div>
+                  )}
+
+                  <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }} disabled={isLoading}>
+                    <Icons.MessageSquare size={18} />
+                    <span style={{ marginLeft: '8px' }}>{isLoading ? '...' : 'Generate Reset Code'}</span>
                   </button>
-                </div>
-              </div>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }} disabled={isLoading}>
-                <Icons.CheckCircle size={18} />
-                <span style={{ marginLeft: '8px' }}>{isLoading ? '...' : (t.authResetBtn || 'Reset Password')}</span>
-              </button>
+                </>
+              ) : (
+                <>
+                  <div style={{ backgroundColor: 'rgba(82, 183, 136, 0.08)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(82,183,136,0.2)', fontSize: '0.8rem', color: 'var(--color-primary-dark)' }}>
+                    ℹ️ A 6-digit verification code has been simulated for your account. Please enter it below to confirm your identity.
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="reset-code" style={{ color: 'var(--color-primary-dark)' }}>6-Digit Verification Code</label>
+                    <input
+                      type="text" id="reset-code" name="code" maxLength="6"
+                      className="form-input" value={enteredCode}
+                      onChange={(e) => setEnteredCode(e.target.value)} required
+                      placeholder="Enter 6-digit code"
+                      style={{ fontSize: '1.1rem', letterSpacing: '0.2em', textAlign: 'center' }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="reset-new-password" style={{ color: 'var(--color-primary-dark)' }}>{t.authNewPassword || 'New Password'}</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showResetPassword ? "text" : "password"} id="reset-new-password" name="new-password" autoComplete="new-password"
+                        className="form-input" value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)} required
+                        style={{ width: '100%', boxSizing: 'border-box', paddingRight: '40px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowResetPassword(!showResetPassword)}
+                        style={{
+                          position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                          background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px'
+                        }}
+                      >
+                        {showResetPassword ? <Icons.EyeOff size={18} /> : <Icons.Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                    <button type="button" className="btn btn-outline" onClick={() => setResetStep(1)} style={{ flex: 1, justifyContent: 'center', padding: '12px' }}>
+                      Back
+                    </button>
+                    <button type="submit" className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', padding: '12px' }} disabled={isLoading}>
+                      <Icons.CheckCircle size={18} />
+                      <span style={{ marginLeft: '8px' }}>{isLoading ? '...' : (t.authResetBtn || 'Reset Password')}</span>
+                    </button>
+                  </div>
+                </>
+              )}
+
               <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                <button type="button" onClick={() => { setIsForgotPassword(false); clearState(); }} style={{ background: 'none', border: 'none', color: 'var(--color-primary-light)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>
+                <button type="button" onClick={() => { setIsForgotPassword(false); setResetStep(1); clearState(); }} style={{ background: 'none', border: 'none', color: 'var(--color-primary-light)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>
                   {t.authBackToLogin || 'Back to Login'}
                 </button>
               </div>

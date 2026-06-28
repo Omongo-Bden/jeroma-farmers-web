@@ -799,6 +799,12 @@ export const syncOfflineData = async () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+      } else if (actionType === 'saveSettings') {
+        res = await fetchWithAuth(`${API_BASE}/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
       }
 
       if (res && res.ok) {
@@ -934,4 +940,42 @@ export const getAlerts = async () => {
     console.error('Error fetching system alerts:', e);
   }
   return [];
+};
+
+export const getSettings = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/settings`);
+    if (res.ok) {
+      const settings = await res.json();
+      await idbPut('settings', { id: 'all', data: settings });
+      return settings;
+    }
+  } catch (e) {
+    console.error('Offline or error getting settings:', e);
+  }
+  const cached = await idbGet('settings', 'all');
+  return cached ? cached.data : { hideManual: false };
+};
+
+export const saveSettings = async (settings) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/settings`, {
+      method: 'POST',
+      body: JSON.stringify(settings)
+    });
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success) {
+        await idbPut('settings', { id: 'all', data: result.settings });
+        return result.settings;
+      }
+    }
+  } catch (e) {
+    console.error('Offline or error saving settings:', e);
+  }
+  const current = await getSettings();
+  const updated = { ...current, ...settings };
+  await idbPut('settings', { id: 'all', data: updated });
+  await queueOfflineAction('saveSettings', settings);
+  return updated;
 };

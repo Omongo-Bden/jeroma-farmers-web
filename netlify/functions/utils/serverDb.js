@@ -605,6 +605,20 @@ module.exports = {
     saveDb();
     return newAlert;
   },
+  getSettings: async () => {
+    if (!dbState.settings) {
+      dbState.settings = { hideManual: false };
+    }
+    return dbState.settings;
+  },
+  saveSettings: async (settings) => {
+    if (!dbState.settings) {
+      dbState.settings = { hideManual: false };
+    }
+    dbState.settings = { ...dbState.settings, ...settings };
+    saveDb();
+    return dbState.settings;
+  },
   resetDatabase: async () => {
     dbState = {
       crops: { ...DEFAULT_CROPS },
@@ -615,7 +629,8 @@ module.exports = {
       translations: null,
       slides: [...DEFAULT_SLIDES],
       manual: [...DEFAULT_MANUAL],
-      alerts: []
+      alerts: [],
+      settings: { hideManual: false }
     };
     saveDb();
   }

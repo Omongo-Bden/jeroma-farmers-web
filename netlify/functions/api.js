@@ -83,7 +83,8 @@ const registerSchema = z.object({
   name: z.string().min(2).max(100),
   phone: z.string().optional(),
   district: z.string().optional(),
-  farmSize: z.string().optional()
+  farmSize: z.string().optional(),
+  permissions: z.array(z.string()).optional()
 });
 
 const deliverySchema = z.object({
@@ -397,6 +398,20 @@ exports.handler = async (event, _context) => {
       }
       const updated = await db.saveSlides(body);
       return jsonResponse(200, { success: true, slides: updated }, event);
+    }
+
+    // ─── Site Settings Endpoints ───────────────────────────────────────────────
+    if (path === '/settings' && method === 'GET') {
+      const settings = await db.getSettings();
+      return jsonResponse(200, settings, event);
+    }
+    if (path === '/settings' && method === 'POST') {
+      const userPayload = authenticateUser(event);
+      if (userPayload.role !== 'admin') {
+        throw new Error('Forbidden: Admin access required');
+      }
+      const updated = await db.saveSettings(body);
+      return jsonResponse(200, { success: true, settings: updated }, event);
     }
 
     // ─── Training Manual Endpoints ──────────────────────────────────────────────
