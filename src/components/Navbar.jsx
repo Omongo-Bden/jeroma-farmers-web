@@ -20,7 +20,9 @@ export default function Navbar({
   translations: dynamicTranslations,
   onAboutTabSelect,
   onManualClick,
-  onHomeClick
+  onHomeClick,
+  showInstallBtn = false,
+  onInstallApp
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -237,6 +239,18 @@ export default function Navbar({
                       <span style={{ fontSize: '0.8rem' }}>{contrastMode === 'high' ? (lang === 'en' ? 'High Contrast (Active)' : 'Contrast Mamit (Active)') : (lang === 'en' ? 'Set High Contrast' : 'Keto Contrast Mode')}</span>
                     </button>
                   </div>
+
+                  {showInstallBtn && (
+                    <div style={{ marginTop: '8px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '8px' }}>
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => { setIsPrefsOpen(false); onInstallApp(); }}
+                        style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem', padding: '6px 10px', background: 'var(--color-secondary)', color: 'var(--color-primary-dark)', fontWeight: 800 }}
+                      >
+                        📲 {lang === 'en' ? 'Install Jeroma App' : 'Keto Jeroma App'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -555,6 +569,32 @@ export default function Navbar({
                 📖 {lang === 'en' ? 'Training Manual' : 'Leb me Pwonj'}
               </a>
             </li>
+            <li>
+              <button
+                className="nav-link chatbot-nav-trigger"
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  setIsMenuOpen(false);
+                  const launcher = document.querySelector('.chatbot-launcher');
+                  if (launcher) launcher.click();
+                }}
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  color: 'var(--color-secondary)',
+                  fontWeight: 700,
+                  padding: '12px 24px',
+                  width: '100%',
+                  textAlign: 'left'
+                }}
+              >
+                💬 <span>{lang === 'en' ? 'Ask Jeroma AI' : 'Penye Jeroma AI'}</span>
+              </button>
+            </li>
             
             <li className="mobile-only-lang" style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px' }}>
               <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase' }}>
@@ -595,6 +635,15 @@ export default function Navbar({
                   <Icons.Eye size={16} />
                   <span>{contrastMode === 'high' ? (lang === 'en' ? 'Use Standard Theme' : 'Keto Theme me Standard') : (lang === 'en' ? 'High Contrast Mode' : 'Contrast Mode Mamit')}</span>
                 </button>
+                {showInstallBtn && (
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => { setIsMenuOpen(false); onInstallApp(); }}
+                    style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem', background: 'var(--color-secondary)', color: 'var(--color-primary-dark)', fontWeight: 800, marginTop: '4px' }}
+                  >
+                    <span>📲 {lang === 'en' ? 'Install Jeroma App' : 'Keto Jeroma App'}</span>
+                  </button>
+                )}
               </div>
             </li>
             
@@ -743,6 +792,29 @@ export default function Navbar({
                 >
                   📖 {lang === 'en' ? 'Training Manual' : 'Leb me Pwonj'}
                 </a>
+              </li>
+              <li>
+                <button
+                  className="nav-link chatbot-nav-trigger"
+                  onClick={(e) => { 
+                    e.preventDefault(); 
+                    const launcher = document.querySelector('.chatbot-launcher');
+                    if (launcher) launcher.click();
+                  }}
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    color: 'var(--color-secondary)',
+                    fontWeight: 700,
+                    padding: '8px 12px'
+                  }}
+                >
+                  💬 <span>{lang === 'en' ? 'Ask Jeroma AI' : 'Penye Jeroma AI'}</span>
+                </button>
               </li>
             </ul>
           </nav>

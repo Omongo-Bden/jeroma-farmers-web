@@ -66,6 +66,35 @@ function App() {
   // Profile Tab state
   const [activeAboutTab, setActiveAboutTab] = useState('overview');
 
+  // PWA Install states
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(true);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install: ${outcome}`);
+      setDeferredPrompt(null);
+      setShowInstallBtn(false);
+    } else {
+      alert(lang === 'en' 
+        ? 'To install Jeroma Farmers App:\n\n- On PC: Click the install icon in the address bar.\n- On Phone: Tap the browser menu (three dots ⋮ or Share icon 📤) and choose "Add to Home screen" or "Install".'
+        : 'Me keto App me Jeroma Farmers:\n\n- I PC: Cwalo install icon ma tye i bar.\n- I Phone: Kud dwe me browser (lunyonyi adek ⋮ or Share icon 📤) iyer "Keto i paco screen" or "Install".'
+      );
+    }
+  };
+
   // Dynamic translations state (seeded in the bootstrap effect; use static defaults until ready)
   const [translations, setTranslations] = useState(defaultTranslations);
 
@@ -342,6 +371,8 @@ function App() {
             onAboutTabSelect={handleAboutTabClick}
             onManualClick={() => setCurrentView('manual')}
             onHomeClick={() => setCurrentView('home')}
+            showInstallBtn={showInstallBtn}
+            onInstallApp={handleInstallApp}
           />
           
           {/* Horizontal News Ticker / Moving News - hidden on manual view */}
@@ -450,7 +481,7 @@ function App() {
       
       {currentView !== 'dashboard' && currentView !== 'manual' && currentView !== 'portal' && (
         <>
-          <Footer lang={lang} translations={translations} />
+          <Footer lang={lang} translations={translations} showInstallBtn={showInstallBtn} onInstallApp={handleInstallApp} />
           <WhatsAppFloat lang={lang} />
           <ChatBot lang={lang} />
         </>

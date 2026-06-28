@@ -159,7 +159,12 @@ exports.handler = async (event, _context) => {
       
       const { password: _pw1, ...userSession } = user;
       
-      // Set secure HttpOnly cookie for session tracking
+      // Log alert for center admin
+      await db.addAlert({
+        type: 'login',
+        message: `User ${user.name} (${user.username}) logged in. Role: ${user.role}.`
+      });
+
       const isProduction = process.env.NODE_ENV === 'production';
       const cookieVal = `token=${token}; HttpOnly; ${isProduction ? 'Secure;' : ''} SameSite=Strict; Path=/; Max-Age=86400`;
 
@@ -187,6 +192,12 @@ exports.handler = async (event, _context) => {
       const isProduction = process.env.NODE_ENV === 'production';
       const cookieVal = `token=${token}; HttpOnly; ${isProduction ? 'Secure;' : ''} SameSite=Strict; Path=/; Max-Age=86400`;
 
+      // Log alert for center admin
+      await db.addAlert({
+        type: 'signup',
+        message: `New User signed up: ${user.name} (${user.username}) from ${user.district || 'Lira'}.`
+      });
+
       return jsonResponse(200, { success: true, token, user: userSession }, event, cookieVal);
     }
 
@@ -210,6 +221,12 @@ exports.handler = async (event, _context) => {
       
       const isProduction = process.env.NODE_ENV === 'production';
       const cookieVal = `token=${token}; HttpOnly; ${isProduction ? 'Secure;' : ''} SameSite=Strict; Path=/; Max-Age=86400`;
+
+      // Log alert for center admin
+      await db.addAlert({
+        type: 'signup_admin',
+        message: `New Administrator registered: ${user.name} (${user.username}).`
+      });
 
       return jsonResponse(200, { success: true, token, user: userSession }, event, cookieVal);
     }
@@ -423,6 +440,23 @@ exports.handler = async (event, _context) => {
       const { username } = body;
       const success = await db.deleteUser(username);
       return jsonResponse(200, { success }, event);
+    }
+    if (path === '/alerts' && method === 'GET') {
+      const userPayload = authenticateUser(event);
+      if (userPayload.username !== 'admin') {
+        throw new Error('Forbidden: Only Center Admin can access system alerts.');
+      }
+      const alerts = await db.getAlerts();
+      return jsonResponse(200, alerts, event);
+    }
+
+    if (path === '/reset-db' && method === 'POST') {
+      const userPayload = authenticateUser(event);
+      if (userPayload.username !== 'admin') {
+        throw new Error('Forbidden: Only Center Admin can reset the database.');
+      }
+      await db.resetDatabase();
+      return jsonResponse(200, { success: true }, event);
     }
 
     // ─── Image Upload Endpoint ────────────────────────────────────────────────

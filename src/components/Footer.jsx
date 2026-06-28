@@ -1,7 +1,7 @@
 import React from 'react';
 import * as Icons from './Icons';
 
-export default function Footer({ lang, translations: _translations }) {
+export default function Footer({ lang, translations: _translations, showInstallBtn = false, onInstallApp }) {
   const handleScrollTo = (sectionId) => {
     const el = document.getElementById(sectionId);
     if (el) {
@@ -110,6 +110,26 @@ export default function Footer({ lang, translations: _translations }) {
                 <Icons.TikTokOriginal size={18} />
               </a>
             </div>
+            {showInstallBtn && (
+              <button 
+                onClick={onInstallApp}
+                className="btn btn-primary"
+                style={{ 
+                  alignSelf: 'flex-start',
+                  fontSize: '0.8rem', 
+                  padding: '8px 14px', 
+                  marginTop: '12px', 
+                  background: 'var(--color-secondary)', 
+                  color: 'var(--color-primary-dark)', 
+                  fontWeight: 800,
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                📲 {lang === 'en' ? 'Install Jeroma App' : 'Keto Jeroma App'}
+              </button>
+            )}
           </div>
 
           {/* Col 2 – Quick Links */}

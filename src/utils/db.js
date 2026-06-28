@@ -599,10 +599,8 @@ export const updateInquiryStatus = async (id, status) => {
 export const resetToDefaults = async () => {
   try {
     // Restore default state on server
-    await fetchWithAuth(`${API_BASE}/crops`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(null) // Server will restore defaults if passed null
+    await fetchWithAuth(`${API_BASE}/reset-db`, {
+      method: 'POST'
     });
   } catch (e) {
     // Offline
@@ -924,4 +922,16 @@ export const saveManual = async (manual) => {
   }
   await idbPut('manual', { id: 'all', data: manual });
   return manual;
+};
+
+export const getAlerts = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/alerts`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (e) {
+    console.error('Error fetching system alerts:', e);
+  }
+  return [];
 };

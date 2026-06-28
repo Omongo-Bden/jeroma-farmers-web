@@ -594,5 +594,29 @@ module.exports = {
     dbState.manual = manual;
     saveDb();
     return dbState.manual;
+  },
+
+  getAlerts: async () => dbState.alerts || [],
+  addAlert: async (alert) => {
+    if (!dbState.alerts) dbState.alerts = [];
+    const newAlert = { id: 'alert-' + Date.now() + '-' + Math.floor(Math.random()*1000), timestamp: new Date().toISOString(), ...alert };
+    dbState.alerts.unshift(newAlert);
+    if (dbState.alerts.length > 100) dbState.alerts = dbState.alerts.slice(0, 100);
+    saveDb();
+    return newAlert;
+  },
+  resetDatabase: async () => {
+    dbState = {
+      crops: { ...DEFAULT_CROPS },
+      users: [...DEFAULT_USERS],
+      deliveries: [...DEFAULT_DELIVERIES],
+      dispatches: [...DEFAULT_DISPATCHES],
+      inquiries: [...DEFAULT_INQUIRIES],
+      translations: null,
+      slides: [...DEFAULT_SLIDES],
+      manual: [...DEFAULT_MANUAL],
+      alerts: []
+    };
+    saveDb();
   }
 };

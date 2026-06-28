@@ -23,7 +23,8 @@ import {
   saveSlides,
   uploadImage,
   getManual,
-  saveManual
+  saveManual,
+  getAlerts
 } from '../utils/db';
 import { translations as defaultTranslations } from './translations';
 
@@ -159,6 +160,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const [cbNewLinkUrl, setCbNewLinkUrl] = useState('');
   const [cbNewLinkLabel, setCbNewLinkLabel] = useState('');
   const [cbLinkError, setCbLinkError] = useState('');
+  const [systemAlerts, setSystemAlerts] = useState([]);
 
   // Translations
   const translations = {
@@ -333,6 +335,15 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       setClients((allUsers || []).filter(u => u.role === 'client'));
       setSlides(slidesData || []);
       setManualStages(manualData || []);
+
+      if (user.username === 'admin') {
+        try {
+          const alertsData = await getAlerts();
+          setSystemAlerts(alertsData || []);
+        } catch (err) {
+          console.error('Failed to load system alerts:', err);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -729,6 +740,11 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     }
   };
 
+  const handleUpdateUserPermissions = async (username, permissions) => {
+    await updateUser(username, { permissions });
+    await loadData();
+  };
+
   const handleResetDb = async () => {
     if (window.confirm(t.resetWarning)) {
       await resetToDefaults();
@@ -869,7 +885,12 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             { id: 'manual', label: lang === 'en' ? '📖 Training Manual Manager' : '📖 Training Manual Manager', icon: null },
             { id: 'chatbot', label: lang === 'en' ? '🤖 Chatbot Manager' : '🤖 Chatbot Manager', icon: null },
             { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null }
-          ].map(tab => (
+          ].filter(tab => {
+            if (tab.id === 'users') return user.username === 'admin';
+            if (user.username === 'admin') return true;
+            const allowed = user.permissions || ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot'];
+            return allowed.includes(tab.id);
+          }).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -880,20 +901,22 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             </button>
           ))}
           
-          <button 
-            type="button" 
-            onClick={handleResetDb} 
-            className="btn-tab"
-            style={{
-              marginLeft: 'auto',
-              border: '1px solid rgba(217, 4, 41, 0.2)',
-              background: 'transparent',
-              color: '#d90429'
-            }}
-          >
-            <Icons.Calendar size={14} />
-            <span>{t.resetDb}</span>
-          </button>
+          {user.username === 'admin' && (
+            <button 
+              type="button" 
+              onClick={handleResetDb} 
+              className="btn-tab"
+              style={{
+                marginLeft: 'auto',
+                border: '1px solid rgba(217, 4, 41, 0.2)',
+                background: 'transparent',
+                color: '#d90429'
+              }}
+            >
+              <Icons.Calendar size={14} />
+              <span>{t.resetDb}</span>
+            </button>
+          )}
         </div>
 
         {/* Tab Contents */}
@@ -1325,6 +1348,54 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
           {activeTab === 'users' && (
             /* User Management Tab */
             <div>
+              {/* Center Admin Activity Alerts Panel */}
+              {user.username === 'admin' && (
+                <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px', background: '#ffffff', border: '1.5px solid rgba(82, 183, 136, 0.3)', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#d90429', display: 'inline-block', animation: 'wa-pulse 1.5s infinite' }}></span>
+                      <h4 style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '1rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        Center Admin Activity Alerts
+                      </h4>
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        const alertsData = await getAlerts();
+                        setSystemAlerts(alertsData || []);
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      🔄 Refresh
+                    </button>
+                  </div>
+                  
+                  {systemAlerts.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-light)', fontStyle: 'italic' }}>
+                      No signups or login activities recorded yet.
+                    </p>
+                  ) : (
+                    <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {systemAlerts.map(alert => (
+                        <div key={alert.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 12px', background: '#f8f9fa', borderRadius: '8px', borderLeft: alert.type.startsWith('signup') ? '4px solid #52b788' : '4px solid #f4a261' }}>
+                          <span style={{ fontSize: '1.1rem' }}>
+                            {alert.type.startsWith('signup') ? '👤' : '🔑'}
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: 0, fontSize: '0.82rem', color: '#1b4332', fontWeight: 600 }}>
+                              {alert.message}
+                            </p>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)' }}>
+                              {new Date(alert.timestamp).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: 0 }}>
                   {t.usersTab || 'User Management'} ({allUsersList.length})
@@ -1416,7 +1487,42 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           </span>
                         </td>
                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
-                          {u.phone} {u.district ? `· ${u.district}` : ''}
+                          <div>{u.phone} {u.district ? `· ${u.district}` : ''}</div>
+                          {u.role === 'admin' && u.username !== 'admin' && (
+                            <div style={{ marginTop: '8px', borderTop: '1px dotted rgba(0,0,0,0.1)', paddingTop: '6px' }}>
+                              <p style={{ margin: '0 0 4px', fontWeight: 'bold', fontSize: '0.72rem', color: 'var(--color-primary-dark)' }}>Allowed Editors:</p>
+                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {[
+                                  { id: 'prices', label: 'Prices' },
+                                  { id: 'deliveries', label: 'Deliveries' },
+                                  { id: 'dispatches', label: 'Dispatches' },
+                                  { id: 'inquiries', label: 'FAQs & AI' },
+                                  { id: 'manual', label: 'Manual' },
+                                  { id: 'chatbot', label: 'Chatbot' },
+                                  { id: 'slides', label: 'Slides' },
+                                  { id: 'language', label: 'Language' }
+                                ].map(feat => {
+                                  const allowed = u.permissions || ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot'];
+                                  const checked = allowed.includes(feat.id);
+                                  return (
+                                    <label key={feat.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', cursor: 'pointer', color: '#000' }}>
+                                      <input 
+                                        type="checkbox" 
+                                        checked={checked} 
+                                        onChange={(e) => {
+                                          const newPerms = e.target.checked 
+                                            ? [...allowed, feat.id] 
+                                            : allowed.filter(x => x !== feat.id);
+                                          handleUpdateUserPermissions(u.username, newPerms);
+                                        }}
+                                      />
+                                      {feat.label}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
