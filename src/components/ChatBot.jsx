@@ -737,12 +737,12 @@ export default function ChatBot({ lang }) {
           height: '600px',
           maxHeight: '85vh',
           borderRadius: '20px',
-          boxShadow: 'var(--shadow-xl)',
-          border: '1px solid rgba(82, 183, 136, 0.25)',
+          boxShadow: '0 20px 60px rgba(15,48,32,0.25)',
+          border: '2px solid rgba(82, 183, 136, 0.4)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#0a2617',
           margin: '0 auto',
           animation: 'fadeIn 0.3s ease'
         }} role="dialog" aria-label="Jeroma Assistant" aria-modal="true">
@@ -771,13 +771,13 @@ export default function ChatBot({ lang }) {
         {!isMinimized && (
           <>
             {/* Messages */}
-            <div className="chatbot-messages" id="chatbot-messages">
+            <div className="chatbot-messages" id="chatbot-messages" style={{ backgroundColor: '#0f3020', backgroundImage: 'linear-gradient(135deg, #0a2617 0%, #0f3020 50%, #112d1e 100%)' }}>
               {messages.length === 0 && (
-                <div className="chatbot-empty">
+                <div className="chatbot-empty" style={{ color: '#a8e6c8' }}>
                   <div className="chatbot-empty-icon">🌾</div>
-                  <p>Hi! I'm <strong>Jeroma</strong>, your Jeroma Farmers AI assistant.</p>
-                  <p style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '4px' }}>Ask me anything about our crops, services, or registration.</p>
-                  <p style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '8px' }}>📷 Send a photo · 🎙️ Record voice · 📎 Attach a file</p>
+                  <p style={{ color: '#c4f0db' }}>Hi! I'm <strong style={{ color: '#52b788' }}>Jeroma</strong>, your Jeroma Farmers AI assistant.</p>
+                  <p style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '4px', color: '#a8e6c8' }}>Ask me anything about our crops, services, or registration.</p>
+                  <p style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '8px', color: '#a8e6c8' }}>📷 Send a photo · 🎙️ Record voice · 📎 Attach a file</p>
                 </div>
               )}
               {messages.map((msg, i) => <ChatMessage key={i} msg={msg} />)}
@@ -865,7 +865,7 @@ export default function ChatBot({ lang }) {
             )}
 
             {/* ── Input Area with Media Toolbar ── */}
-            <div className="chatbot-input-area" style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+            <div className="chatbot-input-area" style={{ display: 'flex', flexDirection: 'column', gap: '0', backgroundColor: '#081c15', borderTop: '1px solid rgba(82,183,136,0.2)' }}>
               {/* Media action buttons row */}
               <div style={{
                 display: 'flex', gap: '2px', padding: '4px 4px 0',
@@ -881,7 +881,7 @@ export default function ChatBot({ lang }) {
                     background: isRecording ? 'rgba(217,4,41,0.1)' : 'transparent',
                     border: 'none', borderRadius: '8px', padding: '6px 8px',
                     cursor: isLoading ? 'not-allowed' : 'pointer',
-                    color: isRecording ? '#d90429' : 'var(--color-text-light)',
+                    color: isRecording ? '#d90429' : '#a8e6c8',
                     opacity: isLoading ? 0.4 : 1, transition: 'all 0.15s',
                     display: 'flex', alignItems: 'center', gap: '2px'
                   }}
@@ -898,7 +898,7 @@ export default function ChatBot({ lang }) {
                   style={{
                     background: 'transparent', border: 'none', borderRadius: '8px',
                     padding: '6px 8px', cursor: (isLoading || isRecording) ? 'not-allowed' : 'pointer',
-                    color: 'var(--color-text-light)',
+                    color: '#a8e6c8',
                     opacity: (isLoading || isRecording) ? 0.4 : 1, transition: 'all 0.15s',
                     display: 'flex', alignItems: 'center', gap: '2px'
                   }}
@@ -915,7 +915,7 @@ export default function ChatBot({ lang }) {
                   style={{
                     background: 'transparent', border: 'none', borderRadius: '8px',
                     padding: '6px 8px', cursor: (isLoading || isRecording) ? 'not-allowed' : 'pointer',
-                    color: 'var(--color-text-light)',
+                    color: '#a8e6c8',
                     opacity: (isLoading || isRecording) ? 0.4 : 1, transition: 'all 0.15s',
                     display: 'flex', alignItems: 'center', gap: '2px'
                   }}
@@ -966,7 +966,7 @@ export default function ChatBot({ lang }) {
                 </button>
               </div>
             </div>
-            <p className="chatbot-footer-note">
+            <p className="chatbot-footer-note" style={{ color: 'rgba(168,230,200,0.5)', backgroundColor: '#081c15' }}>
               powered by Jeroma
             </p>
           </>

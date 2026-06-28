@@ -507,8 +507,8 @@ function App() {
         )}
 
         {currentView === 'chatbot' && (
-          <div className="container" style={{ padding: '40px 16px', minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--color-primary-dark)', marginBottom: '20px', fontFamily: 'var(--font-heading)' }}>
+          <div className="container" style={{ padding: '40px 16px', minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a2617', borderRadius: '0' }}>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: '#52b788', marginBottom: '20px', fontFamily: 'var(--font-heading)' }}>
               💬 {lang === 'en' ? 'Ask Jeroma Farmers AI' : 'Penye Jeroma Farmers AI'}
             </h2>
             <div style={{ width: '100%', maxWidth: '700px', flex: 1 }}>
@@ -517,7 +517,7 @@ function App() {
             <button 
               className="btn btn-outline" 
               onClick={() => setCurrentView('home')} 
-              style={{ marginTop: '24px', borderColor: 'var(--color-primary)', color: 'var(--color-primary-dark)', padding: '10px 20px' }}
+              style={{ marginTop: '24px', borderColor: '#52b788', color: '#52b788', padding: '10px 20px' }}
             >
               ← {lang === 'en' ? 'Back to home' : 'Dok cen i home'}
             </button>

@@ -443,44 +443,39 @@ export default function Navbar({
           {/* Mobile Hamburger toggle and Portal/Login button */}
           {isMobile ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button 
-                onClick={toggleContrastMode}
-                aria-label="Toggle High Contrast"
+              {/* Ask Jeroma AI button — always visible on top in mobile */}
+              <button
+                onClick={() => {
+                  const loggedUser = localStorage.getItem('jeroma_logged_user');
+                  if (!loggedUser) {
+                    alert(lang === 'en' ? 'Please login to access Ask Jeroma AI' : 'Keto login me open tic man');
+                    if (onPortalClick) onPortalClick();
+                    return;
+                  }
+                  if (onChatbotClick) onChatbotClick();
+                }}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '8px',
-                  width: '38px',
-                  height: '38px',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: '#ffffff'
-                }}
-                title={lang === 'en' ? 'Toggle High Contrast' : 'Contrast Mode'}
-              >
-                <Icons.Eye size={18} />
-              </button>
-              <button 
-                onClick={toggleFontScale}
-                aria-label="Toggle Large Text"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  gap: '4px',
+                  background: 'linear-gradient(135deg, #1b4332, #2d6a4f)',
+                  border: '1px solid rgba(82,183,136,0.5)',
                   borderRadius: '8px',
-                  width: '38px',
+                  padding: '6px 10px',
                   height: '38px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   cursor: 'pointer',
-                  color: '#ffffff'
+                  color: '#a8e6c8',
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  fontFamily: 'var(--font-heading)',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 8px rgba(82,183,136,0.25)'
                 }}
-                title={lang === 'en' ? 'Toggle Large Text' : 'Text size scale'}
+                title="Ask Jeroma AI"
               >
-                <Icons.Type size={18} />
+                💬 <span>Ask Jeroma</span>
               </button>
+
               {currentUser ? (
                 <button 
                   className="btn btn-primary" 
