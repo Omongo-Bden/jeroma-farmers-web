@@ -729,64 +729,43 @@ export default function ChatBot({ lang }) {
       {/* Only render if admin has enabled the chatbot */}
       {config.enabled && (
         <>
-          {/* ── Floating Launcher Button ─────────────────────────── */}
-          <button
-            className="chatbot-launcher"
-            onClick={toggleOpen}
-            aria-label="Open chat assistant"
-            title="Chat with Jeroma"
-          >
-        {isOpen ? (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        ) : (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            <circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/>
-          </svg>
-        )}
-          {!isOpen && unread > 0 && (
-            <span className="chatbot-badge">{unread}</span>
-          )}
-          {!isOpen && (
-            <span className="chatbot-label">Ask Jeroma</span>
-          )}
-        </button>
+          <div className="chatbot-panel-inline" style={{
+          position: 'relative',
+          bottom: 'auto',
+          right: 'auto',
+          width: '100%',
+          height: '600px',
+          maxHeight: '85vh',
+          borderRadius: '20px',
+          boxShadow: 'var(--shadow-xl)',
+          border: '1px solid rgba(82, 183, 136, 0.25)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          backgroundColor: '#ffffff',
+          margin: '0 auto',
+          animation: 'fadeIn 0.3s ease'
+        }} role="dialog" aria-label="Jeroma Assistant" aria-modal="true">
 
-          {/* ── Chat Panel ───────────────────────────────────────── */}
-          <div className={`chatbot-panel ${isOpen ? 'open' : ''} ${isMinimized ? 'minimized' : ''}`}
-            role="dialog" aria-label="Jeroma Assistant" aria-modal="true">
-
-        {/* Header */}
-        <div className="chatbot-header">
-          <div className="chatbot-header-info">
-            <div className="chatbot-header-avatar">🌾</div>
-            <div>
-              <p className="chatbot-header-name">Ask Jeroma</p>
-              <p className="chatbot-header-status">
-                <span className="status-dot" /> Jeroma Farmers Assistant
-              </p>
+          {/* Header */}
+          <div className="chatbot-header">
+            <div className="chatbot-header-info">
+              <div className="chatbot-header-avatar">🌾</div>
+              <div>
+                <p className="chatbot-header-name">Ask Jeroma</p>
+                <p className="chatbot-header-status">
+                  <span className="status-dot" /> Jeroma Farmers Assistant
+                </p>
+              </div>
+            </div>
+            <div className="chatbot-header-actions">
+              <button onClick={clearChat} title="Clear chat" className="chat-icon-btn" aria-label="Clear chat">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+                </svg>
+              </button>
             </div>
           </div>
-          <div className="chatbot-header-actions">
-            <button onClick={clearChat} title="Clear chat" className="chat-icon-btn" aria-label="Clear chat">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
-              </svg>
-            </button>
-            <button onClick={() => setIsMinimized(p => !p)} title={isMinimized ? 'Expand' : 'Minimize'} className="chat-icon-btn" aria-label="Minimize">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                {isMinimized ? <polyline points="18 15 12 9 6 15"/> : <polyline points="18 9 12 15 6 9"/>}
-              </svg>
-            </button>
-            <button onClick={toggleOpen} title="Close" className="chat-icon-btn" aria-label="Close chat">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-        </div>
 
         {/* Body (hidden when minimized) */}
         {!isMinimized && (

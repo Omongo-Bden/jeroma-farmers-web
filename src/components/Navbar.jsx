@@ -21,6 +21,7 @@ export default function Navbar({
   translations: dynamicTranslations,
   onAboutTabSelect,
   onManualClick,
+  onChatbotClick,
   onHomeClick,
   showInstallBtn = false,
   onInstallApp,
@@ -399,27 +400,6 @@ export default function Navbar({
               )}
             </div>
 
-            <button 
-              onClick={() => setShowSearchModal(true)}
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1.5px solid rgba(255,255,255,0.15)',
-                borderRadius: '8px',
-                width: '38px',
-                height: '38px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#ffffff',
-                transition: 'all 0.2s',
-                marginRight: '8px'
-              }}
-              title="Search website"
-            >
-              <Icons.Search size={18} />
-            </button>
-
             {currentUser ? (
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
@@ -463,25 +443,6 @@ export default function Navbar({
           {/* Mobile Hamburger toggle and Portal/Login button */}
           {isMobile ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button 
-                onClick={() => setShowSearchModal(true)}
-                aria-label="Search"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '8px',
-                  width: '38px',
-                  height: '38px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: '#ffffff'
-                }}
-                title={lang === 'en' ? 'Search' : 'Yenp'}
-              >
-                <Icons.Search size={18} />
-              </button>
               <button 
                 onClick={toggleContrastMode}
                 aria-label="Toggle High Contrast"
@@ -773,12 +734,11 @@ export default function Navbar({
                   setIsMenuOpen(false);
                   const loggedUser = localStorage.getItem('jeroma_logged_user');
                   if (!loggedUser) {
-                    alert(lang === 'en' ? 'Login to access this feature' : 'Keto login me open tic man');
-                    window.open('#portal', '_blank');
+                    alert(lang === 'en' ? 'Please login to access Ask Jeroma AI' : 'Keto login me open tic man');
+                    if (onPortalClick) onPortalClick();
                     return;
                   }
-                  const launcher = document.querySelector('.chatbot-launcher');
-                  if (launcher) launcher.click();
+                  if (onChatbotClick) onChatbotClick();
                 }}
                 style={{ 
                   background: 'none', 
@@ -973,12 +933,11 @@ export default function Navbar({
                     e.preventDefault(); 
                     const loggedUser = localStorage.getItem('jeroma_logged_user');
                     if (!loggedUser) {
-                      alert(lang === 'en' ? 'Login to access this feature' : 'Keto login me open tic man');
-                      window.open('#portal', '_blank');
+                      alert(lang === 'en' ? 'Please login to access Ask Jeroma AI' : 'Keto login me open tic man');
+                      if (onPortalClick) onPortalClick();
                       return;
                     }
-                    const launcher = document.querySelector('.chatbot-launcher');
-                    if (launcher) launcher.click();
+                    if (onChatbotClick) onChatbotClick();
                   }}
                   style={{ 
                     background: 'none', 
@@ -1000,123 +959,6 @@ export default function Navbar({
         )}
 
       </div>
-
-      {/* Search Overlay Modal */}
-      {showSearchModal && (
-        <div 
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 100000,
-            background: 'rgba(10, 45, 29, 0.92)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'flex-start',
-            padding: '80px 20px 20px'
-          }}
-          onClick={() => setShowSearchModal(false)}
-        >
-          <div 
-            style={{
-              background: '#0f3020',
-              border: '2px solid rgba(82, 183, 136, 0.4)',
-              borderRadius: '20px',
-              width: '100%',
-              maxWidth: '600px',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-              display: 'flex',
-              flexDirection: 'column',
-              maxHeight: '80vh',
-              overflow: 'hidden'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid rgba(82,183,136,0.15)' }}>
-              <Icons.Search size={20} style={{ color: 'var(--color-secondary)', marginRight: '10px' }} />
-              <input 
-                type="text"
-                placeholder={lang === 'en' ? "Search crops, manual, staff, FAQs..." : "Yenp maro, leb pwonj, kede okene..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                style={{
-                  flex: 1,
-                  background: 'none',
-                  border: 'none',
-                  outline: 'none',
-                  color: '#ffffff',
-                  fontSize: '1.1rem',
-                  fontFamily: 'var(--font-body)',
-                  width: '100%'
-                }}
-              />
-              <button 
-                onClick={() => setShowSearchModal(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#ffffff',
-                  fontSize: '1.2rem',
-                  opacity: 0.7,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '4px'
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Results Body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-              {searchQuery.trim() === '' ? (
-                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', padding: '24px 0', fontSize: '0.9rem' }}>
-                  🔍 {lang === 'en' ? "Type to search Jeroma Farmers portal..." : "Coo yenp me cako search..."}
-                </div>
-              ) : searchResults.length === 0 ? (
-                <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.6)', padding: '24px 0', fontSize: '0.9rem' }}>
-                  No results found for "{searchQuery}"
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {searchResults.map((item, idx) => (
-                    <div 
-                      key={idx}
-                      onClick={() => handleSearchResultClick(item)}
-                      style={{
-                        padding: '12px 16px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(82, 183, 136, 0.15)',
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '4px'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--color-secondary)' }}>{item.title}</span>
-                        <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', padding: '2px 6px', background: 'rgba(82, 183, 136, 0.2)', borderRadius: '4px', color: '#a7f3d0' }}>
-                          {item.type}
-                        </span>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.4, textAlign: 'left' }}>
-                        {item.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

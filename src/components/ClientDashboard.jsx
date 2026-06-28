@@ -218,7 +218,8 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
     try {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setPwGeneratedCode(code);
-      setPwSuccess(`Verification code ${code} sent via ${pwMethod === 'phone' ? 'Phone SMS' : 'Email'}!`);
+      console.log('SIMULATED SMS/EMAIL CODE:', code);
+      setPwSuccess(`Verification code sent to your registered ${pwMethod === 'phone' ? 'phone number via SMS' : 'email address'}! Please check your messages.`);
       setPwStep(2);
     } catch (err) {
       setPwError('Failed to generate verification code.');

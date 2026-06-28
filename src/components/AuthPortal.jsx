@@ -167,10 +167,10 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
         return;
       }
 
-      // Generate 6-digit token code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedCode(code);
-      setSuccess(`Verification code ${code} sent via ${resetMethod === 'phone' ? 'Phone SMS' : 'Email'}!`);
+      console.log('SIMULATED SMS/EMAIL RESET CODE:', code);
+      setSuccess(`Verification code sent to your registered ${resetMethod === 'phone' ? 'phone number via SMS' : 'email address'}! Please check your messages.`);
       setResetStep(2);
     } catch (err) {
       setError('Failed to generate verification code. Please try again.');

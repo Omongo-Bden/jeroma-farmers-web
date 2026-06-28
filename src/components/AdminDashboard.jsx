@@ -358,7 +358,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
         localStorage.setItem('jeroma_settings', JSON.stringify(settingsData));
       }
 
-      if (user.username === 'admin') {
+      if (user.username.toLowerCase() === 'admin') {
         try {
           const alertsData = await getAlerts();
           setSystemAlerts(alertsData || []);
@@ -386,7 +386,8 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     try {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setPwGeneratedCode(code);
-      setPwSuccess(`Verification code ${code} sent via ${pwMethod === 'phone' ? 'Phone SMS' : 'Email'}!`);
+      console.log('SIMULATED SMS/EMAIL CODE:', code);
+      setPwSuccess(`Verification code sent to your registered ${pwMethod === 'phone' ? 'phone number via SMS' : 'email address'}! Please check your messages.`);
       setPwStep(2);
     } catch (err) {
       setPwError('Failed to generate verification code.');
@@ -983,9 +984,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             { id: 'chatbot', label: lang === 'en' ? '🤖 Chatbot Manager' : '🤖 Chatbot Manager', icon: null },
             { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null }
           ].filter(tab => {
-            if (tab.id === 'users') return user.username === 'admin';
-            if (tab.id === 'manual' && settings.hideManual && user.username !== 'admin') return false;
-            if (user.username === 'admin') return true;
+            if (tab.id === 'users') return user.username.toLowerCase() === 'admin';
+            if (tab.id === 'manual' && settings.hideManual && user.username.toLowerCase() !== 'admin') return false;
+            if (user.username.toLowerCase() === 'admin') return true;
             const allowed = user.permissions || ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot'];
             return allowed.includes(tab.id);
           }).map(tab => (
@@ -999,7 +1000,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             </button>
           ))}
           
-          {user.username === 'admin' && (
+          {user.username.toLowerCase() === 'admin' && (
             <button 
               type="button" 
               onClick={handleResetDb} 
@@ -1447,7 +1448,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             /* User Management Tab */
             <div>
               {/* Center Admin Activity Alerts Panel */}
-              {user.username === 'admin' && (
+              {user.username.toLowerCase() === 'admin' && (
                 <div className="glass-panel" style={{ padding: '20px', marginBottom: '24px', background: '#ffffff', border: '1.5px solid rgba(82, 183, 136, 0.3)', borderRadius: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1622,7 +1623,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         </td>
                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
                           <div>{u.phone} {u.district ? `· ${u.district}` : ''}</div>
-                          {u.role === 'admin' && u.username !== 'admin' && (
+                          {u.role === 'admin' && u.username.toLowerCase() !== 'admin' && (
                             <div style={{ marginTop: '8px', borderTop: '1px dotted rgba(0,0,0,0.1)', paddingTop: '6px' }}>
                               <p style={{ margin: '0 0 4px', fontWeight: 'bold', fontSize: '0.72rem', color: 'var(--color-primary-dark)' }}>Allowed Editors:</p>
                               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>

@@ -211,6 +211,14 @@ function App() {
         } else {
           setCurrentView('manual');
         }
+      } else if (hash === '#chatbot') {
+        const savedUser = localStorage.getItem('jeroma_logged_user');
+        if (savedUser) {
+          setCurrentView('chatbot');
+        } else {
+          setCurrentView('portal');
+          window.location.hash = '#portal';
+        }
       } else if (hash === '#dashboard') {
         const savedUser = localStorage.getItem('jeroma_logged_user');
         if (savedUser) {
@@ -405,12 +413,13 @@ function App() {
             isMobile={isMobile}
             currentView={currentView}
             currentUser={currentUser}
-            onPortalClick={() => window.open('#portal', '_blank')}
+            onPortalClick={() => setCurrentView('portal')}
             onDashboardClick={() => setCurrentView('dashboard')}
             onLogout={handleLogout}
             translations={translations}
             onAboutTabSelect={handleAboutTabClick}
             onManualClick={() => setCurrentView('manual')}
+            onChatbotClick={() => { setCurrentView('chatbot'); window.location.hash = '#chatbot'; }}
             onHomeClick={() => setCurrentView('home')}
             showInstallBtn={showInstallBtn}
             onInstallApp={handleInstallApp}
@@ -497,6 +506,24 @@ function App() {
           />
         )}
 
+        {currentView === 'chatbot' && (
+          <div className="container" style={{ padding: '40px 16px', minHeight: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--color-primary-dark)', marginBottom: '20px', fontFamily: 'var(--font-heading)' }}>
+              💬 {lang === 'en' ? 'Ask Jeroma Farmers AI' : 'Penye Jeroma Farmers AI'}
+            </h2>
+            <div style={{ width: '100%', maxWidth: '700px', flex: 1 }}>
+              <ChatBot lang={lang} />
+            </div>
+            <button 
+              className="btn btn-outline" 
+              onClick={() => setCurrentView('home')} 
+              style={{ marginTop: '24px', borderColor: 'var(--color-primary)', color: 'var(--color-primary-dark)', padding: '10px 20px' }}
+            >
+              ← {lang === 'en' ? 'Back to home' : 'Dok cen i home'}
+            </button>
+          </div>
+        )}
+
         {currentView === 'dashboard' && currentUser && (
           <Suspense fallback={<DashboardFallback />}>
             {currentUser.role === 'admin' ? (
@@ -521,8 +548,6 @@ function App() {
         )}
       </main>
       
-      <ChatBot lang={lang} />
-
       {currentView !== 'dashboard' && currentView !== 'manual' && currentView !== 'portal' && (
         <>
           <Footer lang={lang} translations={translations} showInstallBtn={showInstallBtn} onInstallApp={handleInstallApp} />
