@@ -2539,6 +2539,7 @@ img {
     margin-bottom: 16px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     scrollbar-width: none; /* Firefox */
+    gap: 5px !important;
   }
 
   .dashboard-tabs-container::-webkit-scrollbar {
@@ -2547,8 +2548,19 @@ img {
 
   .dashboard-tabs-container .btn-tab {
     flex-shrink: 0;
-    padding: 10px 14px;
-    font-size: 0.8rem;
+    padding: 6px 10px !important;
+    font-size: 0.76rem !important;
+    gap: 4px !important;
+  }
+
+  .reset-db-tab-btn {
+    display: none !important;
+  }
+
+  .reset-db-mobile-btn {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
   }
 
   .form-grid-responsive-2col {
@@ -2960,14 +2972,15 @@ body {
   }
 
   .dashboard-tabs-container {
-    gap: 6px !important;
+    gap: 4px !important;
     margin-bottom: 14px !important;
   }
 
   .dashboard-tabs-container .btn-tab {
-    padding: 8px 12px !important;
-    font-size: 0.75rem !important;
-    border-radius: 8px !important;
+    padding: 6px 8px !important;
+    font-size: 0.7rem !important;
+    border-radius: 6px !important;
+    gap: 3px !important;
   }
 
   /* Crop price cards: single column on very small screens */

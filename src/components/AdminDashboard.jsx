@@ -957,6 +957,23 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             </div>
           </div>
           <div className="dashboard-header-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {user.username.toLowerCase() === 'admin' && (
+              <button 
+                type="button"
+                className="btn btn-outline reset-db-mobile-btn" 
+                onClick={handleResetDb} 
+                style={{ 
+                  borderColor: 'rgba(217,4,41,0.4)', 
+                  color: '#ff4d4d', 
+                  padding: '10px 18px',
+                  display: 'none',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                ⚠️ {t.resetDb}
+              </button>
+            )}
             <button className="btn btn-outline" onClick={() => setShowChangePwModal(true)} style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               🔑 Change Password
             </button>
@@ -1004,7 +1021,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             <button 
               type="button" 
               onClick={handleResetDb} 
-              className="btn-tab"
+              className="btn-tab reset-db-tab-btn"
               style={{
                 marginLeft: 'auto',
                 border: '1px solid rgba(217, 4, 41, 0.2)',
