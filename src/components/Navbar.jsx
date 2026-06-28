@@ -457,68 +457,68 @@ export default function Navbar({
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '4px',
                   background: 'linear-gradient(135deg, #1b4332, #2d6a4f)',
-                  border: '1px solid rgba(82,183,136,0.5)',
-                  borderRadius: '8px',
-                  padding: '6px 10px',
-                  height: '38px',
+                  border: '1.5px solid rgba(82,183,136,0.55)',
+                  borderRadius: '20px',
+                  padding: '4px 9px',
+                  height: '30px',
                   cursor: 'pointer',
                   color: '#a8e6c8',
-                  fontWeight: 800,
-                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  fontSize: '0.65rem',
                   fontFamily: 'var(--font-heading)',
                   whiteSpace: 'nowrap',
-                  boxShadow: '0 2px 8px rgba(82,183,136,0.25)'
+                  letterSpacing: '0.02em',
+                  boxShadow: '0 2px 6px rgba(82,183,136,0.2)'
                 }}
                 title="Ask Jeroma AI"
               >
-                💬 <span>Ask Jeroma</span>
+                Ask Jeroma
               </button>
 
               {currentUser ? (
-                <button 
-                  className="btn btn-primary" 
+                <button
+                  className="btn btn-primary"
                   onClick={onDashboardClick}
-                  style={{ 
-                    padding: '8px 12px', 
-                    fontSize: '0.8rem', 
-                    height: '38px',
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    gap: '4px',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 10px rgba(82, 183, 136, 0.15)',
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
                     border: 'none',
-                    fontWeight: 700,
-                    cursor: 'pointer'
+                    padding: 0,
+                    cursor: 'pointer',
+                    flexShrink: 0
                   }}
+                  title="My Dashboard"
+                  aria-label="Dashboard"
                 >
-                  <Icons.Users size={14} />
-                  <span>Portal</span>
+                  <Icons.Users size={13} />
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={onPortalClick}
-                  style={{ 
-                    padding: '8px 12px', 
-                    fontSize: '0.8rem', 
-                    height: '38px',
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    gap: '4px',
-                    borderRadius: '8px',
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
                     background: 'var(--color-secondary)',
                     color: 'var(--color-primary-dark)',
                     border: 'none',
-                    fontWeight: 800,
+                    padding: 0,
                     cursor: 'pointer',
-                    fontFamily: 'var(--font-heading)',
-                    boxShadow: '0 4px 10px rgba(233,196,106,0.25)'
+                    flexShrink: 0,
+                    boxShadow: '0 2px 6px rgba(233,196,106,0.3)'
                   }}
+                  title="Login"
+                  aria-label="Login"
                 >
-                  <Icons.Users size={14} />
-                  <span>Login</span>
+                  <Icons.Users size={13} />
                 </button>
               )}
               

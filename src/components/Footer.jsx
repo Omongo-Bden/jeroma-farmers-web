@@ -196,6 +196,118 @@ export default function Footer({ lang, translations: _translations, showInstallB
           </div>
         </div>
 
+        {/* Privacy & Legal Section */}
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          padding: '28px 0 0',
+          marginTop: '8px'
+        }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '20px',
+            marginBottom: '20px'
+          }}>
+            {/* Privacy Policy */}
+            <div>
+              <h5 style={{ color: 'var(--color-secondary)', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                🔒 {lang === 'en' ? 'Privacy Policy' : 'Cik me Privacy'}
+              </h5>
+              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
+                {lang === 'en'
+                  ? 'We collect only the information necessary to manage your account, process crop deliveries, and improve our services. Your personal data (name, phone, district) is stored securely and is never sold to third parties.'
+                  : 'Wakano data keken me tic — nying, simu, kede district. Data ni coyo maber kede pe wamiyo bot dano mukene mo ceng.'}
+              </p>
+              <button
+                onClick={() => alert(lang === 'en'
+                  ? 'PRIVACY POLICY — Jeroma Farmers Collection Centre Ltd\n\nData We Collect: Name, phone number, district, crop delivery records, and app usage data.\n\nHow We Use It: To process deliveries, manage payouts, send collection schedule alerts, and improve our services.\n\nData Sharing: We do NOT sell or share your personal information with any third party. Data may be shared only with licensed government agricultural bodies as required by Uganda law.\n\nData Storage: All data is encrypted and stored on secure servers. You may request deletion of your account data at any time by contacting us at jeromafarmers.c@gmail.com.\n\nContact: Jeroma Farmers Collection Centre Ltd, Rwot Awich Rd, Pader · +256 773 623 196'
+                  : 'CIKE ME PRIVACY — Jeroma Farmers Collection Centre Ltd\n\nData ma wakano: Nying, simu, district, rekodi me cam, kede tic me app.\n\nTwero data: Pe wamiyo data ni bot dano mo pe. Wamiyo keken bot government me Uganda ka mite.\n\nLworo data: Data ducu coy maber i server me secure. Ka imito kwanyo data ni, bidh bot jeromafarmers.c@gmail.com.\n\nKama wabet: Jeroma Farmers Collection Centre Ltd, Rwot Awich Rd, Pader · +256 773 623 196'
+                )}
+                style={{ background: 'none', border: 'none', color: 'var(--color-secondary)', fontSize: '0.72rem', cursor: 'pointer', padding: 0, textDecoration: 'underline', marginTop: '6px' }}
+              >
+                {lang === 'en' ? 'Read Full Policy →' : 'Kwan Cik ducu →'}
+              </button>
+            </div>
+
+            {/* Terms & Conditions */}
+            <div>
+              <h5 style={{ color: 'var(--color-secondary)', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                📋 {lang === 'en' ? 'Terms & Conditions' : 'Cik me Tic'}
+              </h5>
+              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
+                {lang === 'en'
+                  ? 'By using this platform, you agree to provide accurate registration information, handle crop deliveries responsibly, and comply with Jeroma grading standards. Misrepresentation of crop quality may result in account suspension.'
+                  : 'Ka iketo tic app man, igam me miyo ngec me adwi, kede lubo cik me grading pa Jeroma. Ka imiyo ngec lagen, akaunti ni twero gikwero.'}
+              </p>
+              <button
+                onClick={() => alert(lang === 'en'
+                  ? 'TERMS & CONDITIONS — Jeroma Farmers Collection Centre Ltd\n\n1. Eligibility: The platform is open to registered smallholder farmers and authorized Jeroma staff in Uganda.\n\n2. Accurate Information: Users must provide accurate personal and crop data. Fraudulent records will result in immediate account suspension.\n\n3. Crop Grading: All crops are subject to standard moisture and quality testing. Payout rates are based on certified Grade-A or Grade-B classification.\n\n4. Payout Terms: Mobile money payouts are processed within 2–3 business days of grading approval. Jeroma is not liable for delays caused by mobile network providers.\n\n5. Account Security: Users are responsible for keeping their login credentials secure. Report any unauthorized access immediately.\n\n6. Limitation of Liability: Jeroma is not liable for losses arising from force majeure events, market price fluctuations, or third-party service failures.\n\n7. Amendments: These terms may be updated periodically. Continued use of the platform constitutes acceptance of revised terms.\n\nContact: jeromafarmers.c@gmail.com · +256 773 623 196'
+                  : 'CIK ME TIC — Jeroma Farmers Collection Centre Ltd\n\n1. Ŋat mitic: App man yelo apur ma coyote i Uganda kede lutic ma Jeroma omako.\n\n2. Ngec me adwi: Ŋat ducu myero omiyo ngec me adwi. Ka ngec lim, akaunti ni twero gikwero liwa.\n\n3. Grading: Cam ducu myero kato testing me moisture kede quality. Payout obedo ki Grade-A onyo Grade-B.\n\n4. Payout: Mobile money twero bino i kin nino 2–3 me tic. Jeroma pe tye ki tam pi nino ma network okelogi.\n\n5. Kicony me login: In aye tye ki tam pi kicony me akaunti ni. Miyo ŋec ka dano mukene ocomo i.\n\n6. Jeroma pe tye ki tam pi tika ma oa ki tika ma oa ki piny, market onyo dano mukene.\n\nKama wabet: jeromafarmers.c@gmail.com · +256 773 623 196'
+                )}
+                style={{ background: 'none', border: 'none', color: 'var(--color-secondary)', fontSize: '0.72rem', cursor: 'pointer', padding: 0, textDecoration: 'underline', marginTop: '6px' }}
+              >
+                {lang === 'en' ? 'Read Full Terms →' : 'Kwan Cik ducu →'}
+              </button>
+            </div>
+
+            {/* Disclaimer */}
+            <div>
+              <h5 style={{ color: 'var(--color-secondary)', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                ⚖️ {lang === 'en' ? 'Legal Disclaimer' : 'Cik me Loya'}
+              </h5>
+              <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
+                {lang === 'en'
+                  ? 'Crop prices displayed are indicative and subject to change based on market conditions. Jeroma Farmers Collection Centre Ltd is a licensed commodity trader registered under Uganda Registration Services Bureau (URSB).'
+                  : 'Wel me cam ma i app man twero loko ki yo me market. Jeroma Farmers Collection Centre Ltd coyote maber i URSB me Uganda.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Legal links row */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '16px',
+            paddingTop: '12px',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            marginBottom: '4px'
+          }}>
+            {[
+              { label: lang === 'en' ? '🔒 Privacy Policy' : '🔒 Privacy', action: 'privacy' },
+              { label: lang === 'en' ? '📋 Terms of Use' : '📋 Cik me Tic', action: 'terms' },
+              { label: lang === 'en' ? '🍪 Cookie Policy' : '🍪 Cookie', action: 'cookie' },
+              { label: lang === 'en' ? '📞 Contact Support' : '📞 Kony', action: 'contact' },
+            ].map(link => (
+              <button
+                key={link.action}
+                onClick={() => {
+                  if (link.action === 'contact') {
+                    window.location.href = 'mailto:jeromafarmers.c@gmail.com';
+                  } else if (link.action === 'cookie') {
+                    alert(lang === 'en'
+                      ? 'COOKIE POLICY\n\nJeroma Farmers web platform uses only essential cookies required for user authentication and session management. We do not use advertising or tracking cookies. Your browser\'s local storage is used to save language preferences and app settings only.'
+                      : 'CIKE ME COOKIE\n\nApp pa Jeroma keto cookie keken me login kede session. Pe waketo cookie me ads onyo tracking. Local storage i browser ni kano keken leb kede settings me app.'
+                    );
+                  }
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.4)',
+                  fontSize: '0.7rem',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'color 0.2s'
+                }}
+                onMouseOver={e => e.target.style.color = 'var(--color-secondary)'}
+                onMouseOut={e => e.target.style.color = 'rgba(255,255,255,0.4)'}
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Bottom bar */}
         <div className="footer-bottom">
           <p>© {new Date().getFullYear()} Jeroma Farmers Collection Centre Ltd · Rwot Awich Rd, Pader, Uganda · TIN: 1020040260 · All rights reserved.</p>
