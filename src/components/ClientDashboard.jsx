@@ -1,9 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from './Icons';
-import { getDeliveries, getDispatches, saveDispatch, getCrops, updateUser } from '../utils/db';
+import { getDeliveries, getDispatches, saveDispatch, getCrops, updateUser, uploadImage } from '../utils/db';
 
 export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) {
   const [activeTab, setActiveTab] = useState('deliveries'); // 'deliveries' | 'dispatch' | 'inputs'
+  const [currentUserState, setCurrentUserState] = useState(user);
+  
+  useEffect(() => {
+    setCurrentUserState(user);
+  }, [user]);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 5 * 1024 * 1024) {
+      alert(lang === 'en' ? 'Image file size must be less than 5MB.' : 'Cwiny layim pe myero okato 5MB.');
+      return;
+    }
+    
+    try {
+      const uploadRes = await uploadImage(file);
+      if (uploadRes && uploadRes.success && uploadRes.url) {
+        const photoUrl = uploadRes.url;
+        const updateRes = await updateUser(currentUserState.username, { profilePhoto: photoUrl });
+        if (updateRes) {
+          const updatedUser = { ...currentUserState, profilePhoto: photoUrl };
+          setCurrentUserState(updatedUser);
+          alert(lang === 'en' ? 'Profile photo updated successfully!' : 'Odoco cal me profile maber!');
+        } else {
+          alert(lang === 'en' ? 'Failed to update user profile.' : 'Gweny okene me woko cal.');
+        }
+      } else {
+        alert(lang === 'en' ? 'Failed to upload image.' : 'Upload okene me woko cal.');
+      }
+    } catch (err) {
+      console.error('Error uploading profile photo:', err);
+      alert(lang === 'en' ? 'An error occurred during upload.' : 'Peco olingo i tic me woko cal.');
+    }
+  };
   
   // Data States
   const [deliveries, setDeliveries] = useState([]);
@@ -291,19 +326,48 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
         {/* Top Profile Header */}
         <div className="dashboard-header-panel">
           <div className="dashboard-header-profile">
-            <div style={{
-              width: '60px', height: '60px', borderRadius: '50%',
-              backgroundColor: 'rgba(255,255,255,0.08)', border: '2px solid var(--color-secondary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-            }}>
-              <Icons.Users size={32} style={{ color: 'var(--color-secondary)' }} />
+            <div style={{ position: 'relative', width: '60px', height: '60px', flexShrink: 0 }}>
+              {currentUserState.profilePhoto ? (
+                <img
+                  src={currentUserState.profilePhoto}
+                  alt={currentUserState.name}
+                  style={{
+                    width: '60px', height: '60px', borderRadius: '50%',
+                    objectFit: 'cover', border: '2px solid var(--color-secondary)'
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: '60px', height: '60px', borderRadius: '50%',
+                  backgroundColor: 'rgba(255,255,255,0.08)', border: '2px solid var(--color-secondary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'
+                }}>
+                  <Icons.Users size={32} style={{ color: 'var(--color-secondary)' }} />
+                </div>
+              )}
+              {/* Upload Overlay Icon */}
+              <label style={{
+                position: 'absolute', bottom: '-4px', right: '-4px',
+                width: '24px', height: '24px', borderRadius: '50%',
+                backgroundColor: 'var(--color-secondary)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                border: '2px solid #0f3020', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              }} title="Upload profile photo">
+                <Icons.Camera size={12} style={{ color: 'var(--color-primary-dark)' }} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  style={{ display: 'none' }}
+                />
+              </label>
             </div>
             <div>
               <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {t.roleClient}
               </p>
               <h2 style={{ margin: 0, fontSize: '1.4rem', fontFamily: 'var(--font-heading)', fontWeight: 700, color: '#fff' }}>
-                {t.welcome} {user.name}
+                {t.welcome} {currentUserState.name}
               </h2>
               <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>
                 📍 {user.district} District · 🚜 {user.farmSize}
