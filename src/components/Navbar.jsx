@@ -452,7 +452,7 @@ export default function Navbar({
                     if (onPortalClick) onPortalClick();
                     return;
                   }
-                  if (onChatbotClick) onChatbotClick();
+                  window.open('#chatbot', '_blank');
                 }}
                 style={{
                   display: 'inline-flex',
@@ -597,34 +597,36 @@ export default function Navbar({
         {/* Mobile Slide-Out Drawer Menu */}
         {isMobile && isMenuOpen && (
           <ul className="nav-menu active" style={{ display: 'flex', flexDirection: 'column' }}>
-            <li className="mobile-only-lang" style={{ marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase' }}>
+            <li className="mobile-only-lang" style={{ marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#ffffff', marginBottom: '6px', textAlign: 'center', textTransform: 'uppercase' }}>
                 ⚙️ {lang === 'en' ? 'Visual Settings' : 'Nen me Settings'}
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 16px' }}>
-                <button 
-                  className="btn btn-outline" 
-                  onClick={toggleFontScale}
-                  style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
-                >
-                  <Icons.Type size={16} />
-                  <span>{fontScale === 'large' ? (lang === 'en' ? 'Use Standard Text' : 'Keto Text me Standard') : (lang === 'en' ? 'Use Large Text (1.25x)' : 'Keto Text me Dongo')}</span>
-                </button>
-                <button 
-                  className="btn btn-outline" 
-                  onClick={toggleContrastMode}
-                  style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem' }}
-                >
-                  <Icons.Eye size={16} />
-                  <span>{contrastMode === 'high' ? (lang === 'en' ? 'Use Standard Theme' : 'Keto Theme me Standard') : (lang === 'en' ? 'High Contrast Mode' : 'Contrast Mode Mamit')}</span>
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '0 8px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button 
+                    className="btn btn-outline" 
+                    onClick={toggleFontScale}
+                    style={{ flex: 1, justifyContent: 'center', padding: '6px 8px', fontSize: '0.75rem', minHeight: '34px' }}
+                  >
+                    <Icons.Type size={14} />
+                    <span>{fontScale === 'large' ? (lang === 'en' ? 'Std Text' : 'Std') : (lang === 'en' ? 'Large' : 'Dongo')}</span>
+                  </button>
+                  <button 
+                    className="btn btn-outline" 
+                    onClick={toggleContrastMode}
+                    style={{ flex: 1, justifyContent: 'center', padding: '6px 8px', fontSize: '0.75rem', minHeight: '34px' }}
+                  >
+                    <Icons.Eye size={14} />
+                    <span>{contrastMode === 'high' ? (lang === 'en' ? 'Std Theme' : 'Std') : (lang === 'en' ? 'High Contrast' : 'Contrast')}</span>
+                  </button>
+                </div>
                 {showInstallBtn && (
                   <button 
                     className="btn btn-primary" 
                     onClick={() => { setIsMenuOpen(false); onInstallApp(); }}
-                    style={{ justifyContent: 'center', padding: '8px 12px', fontSize: '0.85rem', background: 'var(--color-secondary)', color: 'var(--color-primary-dark)', fontWeight: 800, marginTop: '4px' }}
+                    style={{ justifyContent: 'center', padding: '6px 8px', fontSize: '0.75rem', background: 'var(--color-secondary)', color: 'var(--color-primary-dark)', fontWeight: 800, marginTop: '4px', width: '100%' }}
                   >
-                    <span>📲 {lang === 'en' ? 'Install Jeroma App' : 'Keto Jeroma App'}</span>
+                    <span>📲 {lang === 'en' ? 'Install App' : 'Keto App'}</span>
                   </button>
                 )}
               </div>
@@ -733,7 +735,7 @@ export default function Navbar({
                     if (onPortalClick) onPortalClick();
                     return;
                   }
-                  if (onChatbotClick) onChatbotClick();
+                  window.open('#chatbot', '_blank');
                 }}
                 style={{ 
                   background: 'none', 
@@ -744,7 +746,7 @@ export default function Navbar({
                   gap: '6px',
                   color: 'var(--color-secondary)',
                   fontWeight: 700,
-                  padding: '12px 24px',
+                  padding: '6px 12px',
                   width: '100%',
                   textAlign: 'left'
                 }}
@@ -753,11 +755,11 @@ export default function Navbar({
               </button>
             </li>
             
-            <li className="mobile-only-lang" style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px' }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase' }}>
+            <li className="mobile-only-lang" style={{ marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px' }}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#ffffff', marginBottom: '6px', textAlign: 'center', textTransform: 'uppercase' }}>
                 🌐 {lang === 'en' ? 'Select Language' : 'Yer Lok'}
               </p>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '8px' }}>
                 <button 
                   className={`btn-lang-tab ${lang === 'en' ? 'active' : ''}`} 
                   onClick={() => setLang('en')}
@@ -932,7 +934,7 @@ export default function Navbar({
                       if (onPortalClick) onPortalClick();
                       return;
                     }
-                    if (onChatbotClick) onChatbotClick();
+                    window.open('#chatbot', '_blank');
                   }}
                   style={{ 
                     background: 'none', 

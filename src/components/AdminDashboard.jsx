@@ -25,6 +25,7 @@ import {
   getManual,
   saveManual,
   getAlerts,
+  getLogins,
   getSettings,
   saveSettings
 } from '../utils/db';
@@ -43,8 +44,31 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const [slides, setSlides] = useState([]);
   const [manualStages, setManualStages] = useState([]);
   const [settings, setSettings] = useState({ hideManual: false });
+  const [enableResetDb, setEnableResetDb] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [payingId, setPayingId] = useState(null);
+
+  // Login History States
+  const [loginHistory, setLoginHistory] = useState([]);
+  const [loginSearchQuery, setLoginSearchQuery] = useState('');
+  const [loginRoleFilter, setLoginRoleFilter] = useState('all');
+
+  // Tab switch handler
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setEnableResetDb(false);
+  };
+
+  // Auto-hide Database Reset after 12 seconds
+  useEffect(() => {
+    let timer;
+    if (enableResetDb) {
+      timer = setTimeout(() => {
+        setEnableResetDb(false);
+      }, 12000);
+    }
+    return () => clearTimeout(timer);
+  }, [enableResetDb]);
 
   // Change Password States
   const [showChangePwModal, setShowChangePwModal] = useState(false);
@@ -362,8 +386,10 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
         try {
           const alertsData = await getAlerts();
           setSystemAlerts(alertsData || []);
+          const loginsData = await getLogins();
+          setLoginHistory(loginsData || []);
         } catch (err) {
-          console.error('Failed to load system alerts:', err);
+          console.error('Failed to load system alerts or logins:', err);
         }
       }
     } finally {
@@ -841,11 +867,22 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   };
 
   const handleResetDb = async () => {
-    if (window.confirm(t.resetWarning)) {
+    const confirmText = 'RESET';
+    const userInput = window.prompt(lang === 'en' 
+      ? `WARNING: This will delete all user data, deliveries, and restore defaults. To confirm, type "${confirmText}" in ALL CAPS:`
+      : `WARN: Man bikwonyo jami ducu. To confirm, type "${confirmText}" in ALL CAPS:`
+    );
+    
+    // Automatically hide reset DB button on prompt dismiss or submission
+    setEnableResetDb(false);
+
+    if (userInput === confirmText) {
       await resetToDefaults();
       await loadData();
       onStateChange();
       alert(lang === 'en' ? 'Database successfully restored to default states.' : 'Jami ducu ocogo cen piny.');
+    } else if (userInput !== null) {
+      alert(lang === 'en' ? 'Reset cancelled. Incorrect confirmation text.' : 'Keto cen ogik. Iketo lok ma pe rwatte.');
     }
   };
 
@@ -956,19 +993,44 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
               </h2>
             </div>
           </div>
-          <div className="dashboard-header-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="dashboard-header-buttons" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
             {user.username.toLowerCase() === 'admin' && (
+              <label style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                fontSize: '0.8rem', 
+                color: 'rgba(255,255,255,0.85)',
+                cursor: 'pointer',
+                background: 'rgba(255,255,255,0.06)',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                border: '1.5px dashed rgba(255,255,255,0.15)',
+                marginRight: '4px'
+              }}>
+                <input 
+                  type="checkbox" 
+                  checked={enableResetDb} 
+                  onChange={(e) => setEnableResetDb(e.target.checked)} 
+                  style={{ cursor: 'pointer' }}
+                />
+                ⚙️ {lang === 'en' ? 'Show Database Reset' : 'Nen reset piny'}
+              </label>
+            )}
+            {user.username.toLowerCase() === 'admin' && enableResetDb && (
               <button 
                 type="button"
                 className="btn btn-outline reset-db-mobile-btn" 
                 onClick={handleResetDb} 
                 style={{ 
-                  borderColor: 'rgba(217,4,41,0.4)', 
+                  borderColor: 'rgba(217,4,41,0.6)', 
                   color: '#ff4d4d', 
                   padding: '10px 18px',
                   display: 'none',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  fontWeight: 700,
+                  background: 'rgba(217,4,41,0.1)'
                 }}
               >
                 ⚠️ {t.resetDb}
@@ -996,12 +1058,14 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             { id: 'dispatches', label: t.dispatchesTab, icon: <Icons.Truck size={18} /> },
             { id: 'inquiries', label: t.inquiriesTab, icon: <Icons.Mail size={18} /> },
             { id: 'users', label: t.usersTab || 'User Management', icon: <Icons.Users size={18} /> },
+            { id: 'logins', label: lang === 'en' ? '🔑 Login History' : '🔑 Wel me Login', icon: <Icons.Clock size={18} /> },
             { id: 'language', label: lang === 'en' ? 'Language Manager' : 'Yore me Leb', icon: <Icons.Globe size={18} /> },
             { id: 'manual', label: lang === 'en' ? '📖 Training Manual Manager' : '📖 Training Manual Manager', icon: null },
             { id: 'chatbot', label: lang === 'en' ? '🤖 Chatbot Manager' : '🤖 Chatbot Manager', icon: null },
             { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null }
           ].filter(tab => {
             if (tab.id === 'users') return user.username.toLowerCase() === 'admin';
+            if (tab.id === 'logins') return user.username.toLowerCase() === 'admin';
             if (tab.id === 'manual' && settings.hideManual && user.username.toLowerCase() !== 'admin') return false;
             if (user.username.toLowerCase() === 'admin') return true;
             const allowed = user.permissions || ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot'];
@@ -1009,7 +1073,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
           }).map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`btn-tab ${activeTab === tab.id ? 'active' : ''}`}
             >
               {tab.icon}
@@ -1017,16 +1081,17 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             </button>
           ))}
           
-          {user.username.toLowerCase() === 'admin' && (
+          {user.username.toLowerCase() === 'admin' && enableResetDb && (
             <button 
               type="button" 
               onClick={handleResetDb} 
               className="btn-tab reset-db-tab-btn"
               style={{
                 marginLeft: 'auto',
-                border: '1px solid rgba(217, 4, 41, 0.2)',
-                background: 'transparent',
-                color: '#d90429'
+                border: '1.5px solid #d90429',
+                background: 'rgba(217, 4, 41, 0.1)',
+                color: '#d90429',
+                fontWeight: 800
               }}
             >
               <Icons.Calendar size={14} />
@@ -1706,6 +1771,117 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {/* User Management Tab Content End */}
+          {activeTab === 'logins' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: 0 }}>
+                  🔑 {lang === 'en' ? 'User Login History' : 'Wel me Login'}
+                </h3>
+                <button
+                  onClick={async () => {
+                    const loginsData = await getLogins();
+                    setLoginHistory(loginsData || []);
+                  }}
+                  className="btn btn-outline"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                >
+                  🔄 {lang === 'en' ? 'Refresh History' : 'Keto me anyim'}
+                </button>
+              </div>
+
+              {/* Filters Panel */}
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder={lang === 'en' ? 'Search by name or username...' : 'Search by name or username...'}
+                    value={loginSearchQuery}
+                    onChange={(e) => setLoginSearchQuery(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div style={{ minWidth: '150px' }}>
+                  <select
+                    className="form-input"
+                    value={loginRoleFilter}
+                    onChange={(e) => setLoginRoleFilter(e.target.value)}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="all">{lang === 'en' ? 'All Roles' : 'Roles Ducu'}</option>
+                    <option value="admin">{lang === 'en' ? 'Administrators' : 'Admins'}</option>
+                    <option value="client">{lang === 'en' ? 'Farmers / Clients' : 'Farmers'}</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Login Table */}
+              <div className="table-responsive">
+                <table className="dashboard-table">
+                  <thead>
+                    <tr>
+                      <th>{lang === 'en' ? 'Name' : 'Nying'}</th>
+                      <th>{lang === 'en' ? 'Username' : 'Username'}</th>
+                      <th>{lang === 'en' ? 'Role' : 'Role'}</th>
+                      <th>{lang === 'en' ? 'Login Time' : 'Dwe me Login'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const filteredLogins = loginHistory.filter(login => {
+                        const matchesQuery = 
+                          (login.name || '').toLowerCase().includes(loginSearchQuery.toLowerCase()) ||
+                          (login.username || '').toLowerCase().includes(loginSearchQuery.toLowerCase());
+                        
+                        const matchesRole = 
+                          loginRoleFilter === 'all' || 
+                          login.role === loginRoleFilter;
+
+                        return matchesQuery && matchesRole;
+                      });
+
+                      if (filteredLogins.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-light)', fontStyle: 'italic' }}>
+                              {lang === 'en' ? 'No login history matching the filters.' : 'No login history found.'}
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return filteredLogins.map(login => (
+                        <tr key={login.id}>
+                          <td style={{ fontWeight: 600, color: 'var(--color-primary-dark)' }}>
+                            {login.name}
+                          </td>
+                          <td style={{ color: 'var(--color-text-dark)' }}>
+                            @{login.username}
+                          </td>
+                          <td>
+                            <span className={`badge ${login.role === 'admin' ? 'badge-primary' : 'badge-secondary'}`} style={{
+                              backgroundColor: login.role === 'admin' ? 'var(--color-accent)' : '#6c757d',
+                              color: '#fff',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '0.75rem',
+                              fontWeight: 700
+                            }}>
+                              {login.role.toUpperCase()}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.85rem', color: 'var(--color-text-light)' }}>
+                            {new Date(login.timestamp).toLocaleString()}
+                          </td>
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>

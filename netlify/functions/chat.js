@@ -20,6 +20,10 @@ const db = require('./utils/serverDb');
 const chatCache = {};
 const CACHE_EXPIRY_MS = 30 * 60 * 1000;
 
+// Global in-memory cache for URL content (24-hour expiration)
+const urlCache = {};
+const URL_CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
 // ── Pre-configured authoritative Uganda agriculture knowledge sources ──────────
 // These are fetched on every request alongside any admin-configured links.
 const DEFAULT_KNOWLEDGE_LINKS = [
@@ -465,6 +469,12 @@ function extractTextFromHtml(html) {
 }
 
 async function fetchUrlContent(url) {
+  const now = Date.now();
+  if (urlCache[url] && (now - urlCache[url].timestamp < URL_CACHE_EXPIRY_MS)) {
+    console.log(`[URL Cache] Serving cached content for: ${url}`);
+    return urlCache[url].content;
+  }
+
   try {
     const res = await fetch(url, {
       signal: AbortSignal.timeout(8000),
@@ -486,7 +496,12 @@ async function fetchUrlContent(url) {
 
     const html = await res.text();
     const cleanText = extractTextFromHtml(html);
-    return cleanText.length > 6000 ? cleanText.substring(0, 6000) + '... (truncated)' : cleanText;
+    const resultText = cleanText.length > 6000 ? cleanText.substring(0, 6000) + '... (truncated)' : cleanText;
+    
+    // Cache the result
+    urlCache[url] = { content: resultText, timestamp: now };
+    
+    return resultText;
   } catch (err) {
     const reason = err.name === 'TimeoutError' ? 'request timed out' : (err.message || String(err));
     return `[Could not access ${url} — ${reason}]`;

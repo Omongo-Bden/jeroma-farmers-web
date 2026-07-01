@@ -263,44 +263,100 @@ function TypingIndicator() {
 
 function ChatMessage({ msg }) {
   const isBot = msg.role === 'assistant';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const element = document.createElement("a");
+    const file = new Blob([
+      `Jeroma Farmers AI Response\n`,
+      `Date: ${new Date(msg.ts).toLocaleString()}\n`,
+      `==============================\n\n`,
+      msg.content
+    ], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `jeroma_ai_response_${new Date(msg.ts).toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
     <div className={`chat-message ${isBot ? 'bot' : 'user'}`}
-      style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '12px',
+      style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '16px',
         flexDirection: isBot ? 'row' : 'row-reverse' }}>
       <div className={`chat-avatar ${isBot ? 'bot-avatar' : 'user-avatar'}`}>
         {isBot ? BOT_AVATAR : USER_AVATAR}
       </div>
-      <div className={`chat-bubble ${isBot ? 'bot-bubble' : 'user-bubble'}`}
-        style={{ whiteSpace: 'pre-wrap' }}>
-        {/* Show attached media thumbnail if present */}
-        {msg.attachment && (
-          <div style={{ marginBottom: '8px' }}>
-            {msg.attachment.type === 'image' && (
-              <img
-                src={msg.attachment.preview}
-                alt="Attached"
-                style={{
-                  maxWidth: '100%', maxHeight: '160px', borderRadius: '8px',
-                  objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)'
-                }}
-              />
-            )}
-            {msg.attachment.type === 'audio' && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                background: 'rgba(82,183,136,0.12)', borderRadius: '8px',
-                padding: '8px 12px', fontSize: '0.78rem'
-              }}>
-                <span style={{ fontSize: '1.1rem' }}>🎙️</span>
-                <span>Voice message ({msg.attachment.duration || 'audio'})</span>
-              </div>
-            )}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: isBot ? 'flex-start' : 'flex-end', maxWidth: '80%' }}>
+        <div className={`chat-bubble ${isBot ? 'bot-bubble' : 'user-bubble'}`}
+          style={{ whiteSpace: 'pre-wrap', position: 'relative', width: '100%' }}>
+          {/* Show attached media thumbnail if present */}
+          {msg.attachment && (
+            <div style={{ marginBottom: '8px' }}>
+              {msg.attachment.type === 'image' && (
+                <img
+                  src={msg.attachment.preview}
+                  alt="Attached"
+                  style={{
+                    maxWidth: '100%', maxHeight: '160px', borderRadius: '8px',
+                    objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)'
+                  }}
+                />
+              )}
+              {msg.attachment.type === 'audio' && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  background: 'rgba(82,183,136,0.12)', borderRadius: '8px',
+                  padding: '8px 12px', fontSize: '0.78rem'
+                }}>
+                  <span style={{ fontSize: '1.1rem' }}>🎙️</span>
+                  <span>Voice message ({msg.attachment.duration || 'audio'})</span>
+                </div>
+              )}
+            </div>
+          )}
+          {msg.content}
+          <span className="chat-timestamp" style={{ display: 'block', textAlign: 'right', marginTop: '4px', fontSize: '0.68rem', opacity: 0.6 }}>
+            {new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        {/* Copy/Download Action Buttons for AI Bot response */}
+        {isBot && (
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px', marginLeft: '6px' }}>
+            <button 
+              onClick={handleCopy} 
+              style={{
+                background: 'none', border: 'none', color: '#a8e6c8', fontSize: '0.7rem',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                opacity: 0.7, padding: '2px 4px', borderRadius: '4px', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+              title="Copy response to clipboard"
+            >
+              📄 {copied ? 'Copied!' : 'Copy'}
+            </button>
+            <button 
+              onClick={handleDownload} 
+              style={{
+                background: 'none', border: 'none', color: '#a8e6c8', fontSize: '0.7rem',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                opacity: 0.7, padding: '2px 4px', borderRadius: '4px', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+              title="Download response as text file"
+            >
+              📥 Download
+            </button>
           </div>
         )}
-        {msg.content}
-        <span className="chat-timestamp">
-          {new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
       </div>
     </div>
   );
@@ -350,15 +406,59 @@ const MediaIcons = {
 
 // ── Main ChatBot Component ──────────────────────────────────────────────────────
 
-export default function ChatBot({ lang }) {
+export default function ChatBot({ lang, onClose }) {
   const [config, setConfig] = useState(loadConfig);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasGreeted, setHasGreeted] = useState(false);
   const [unread, setUnread] = useState(0);
   const [isMinimized, setIsMinimized] = useState(false);
+
+  // Load username
+  const getUsername = () => {
+    try {
+      const loggedUser = localStorage.getItem('jeroma_logged_user');
+      if (loggedUser) {
+        return JSON.parse(loggedUser).username || 'guest';
+      }
+    } catch {}
+    return 'guest';
+  };
+  const username = getUsername();
+
+  // Load 1-week chat history on mount
+  useEffect(() => {
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const historyKey = `jeroma_chat_history_${username}`;
+    try {
+      const saved = localStorage.getItem(historyKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const recent = parsed.filter(msg => msg.ts && msg.ts >= oneWeekAgo);
+        if (recent.length > 0) {
+          setMessages(recent);
+          setHasGreeted(true);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading chat history:', e);
+    }
+  }, [username]);
+
+  // Persist history changes to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      const historyKey = `jeroma_chat_history_${username}`;
+      try {
+        localStorage.setItem(historyKey, JSON.stringify(messages));
+      } catch (e) {
+        console.error('Error saving chat history:', e);
+      }
+    }
+  }, [messages, username]);
 
   // ── Multimodal State ──
   const [attachment, setAttachment] = useState(null); // { type: 'image'|'audio', file, preview, name, size }
@@ -715,6 +815,8 @@ export default function ChatBot({ lang }) {
     setMessages([]);
     setHasGreeted(false);
     clearAttachment();
+    const historyKey = `jeroma_chat_history_${username}`;
+    localStorage.removeItem(historyKey);
     setTimeout(() => {
       setMessages([{
         role: 'assistant',
@@ -764,6 +866,31 @@ export default function ChatBot({ lang }) {
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
                 </svg>
               </button>
+              {onClose && (
+                <button 
+                  onClick={onClose} 
+                  title="Close chat" 
+                  className="chat-icon-btn" 
+                  aria-label="Close chat"
+                  style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    border: 'none',
+                    color: '#ff4d4d',
+                    borderRadius: '50%',
+                    width: '24px',
+                    height: '24px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    marginLeft: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
 

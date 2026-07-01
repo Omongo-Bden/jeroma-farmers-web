@@ -415,7 +415,8 @@ let dbState = loadDb() || {
   inquiries: [...DEFAULT_INQUIRIES],
   translations: null,
   slides: [...DEFAULT_SLIDES],
-  manual: [...DEFAULT_MANUAL]
+  manual: [...DEFAULT_MANUAL],
+  logins: []
 };
 
 if (!dbState.slides) {
@@ -423,6 +424,9 @@ if (!dbState.slides) {
 }
 if (!dbState.manual) {
   dbState.manual = [...DEFAULT_MANUAL];
+}
+if (!dbState.logins) {
+  dbState.logins = [];
 }
 
 // Database migration to repair manual image paths
@@ -461,6 +465,20 @@ module.exports = {
   hashPassword,
   comparePassword,
   
+  getLogins: async () => dbState.logins || [],
+  addLogin: async (login) => {
+    if (!dbState.logins) dbState.logins = [];
+    const newLogin = {
+      id: 'login-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      timestamp: new Date().toISOString(),
+      ...login
+    };
+    dbState.logins.unshift(newLogin);
+    if (dbState.logins.length > 1000) dbState.logins = dbState.logins.slice(0, 1000);
+    saveDb();
+    return newLogin;
+  },
+
   getCrops: async () => dbState.crops,
   saveCrops: async (crops) => {
     dbState.crops = crops;
@@ -630,6 +648,7 @@ module.exports = {
       slides: [...DEFAULT_SLIDES],
       manual: [...DEFAULT_MANUAL],
       alerts: [],
+      logins: [],
       settings: { hideManual: false }
     };
     saveDb();

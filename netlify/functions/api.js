@@ -166,6 +166,13 @@ exports.handler = async (event, _context) => {
         message: `User ${user.name} (${user.username}) logged in. Role: ${user.role}.`
       });
 
+      // Track login history
+      await db.addLogin({
+        username: user.username,
+        name: user.name,
+        role: user.role
+      });
+
       const isProduction = process.env.NODE_ENV === 'production';
       const cookieVal = `token=${token}; HttpOnly; ${isProduction ? 'Secure;' : ''} SameSite=Strict; Path=/; Max-Age=86400`;
 
@@ -463,6 +470,15 @@ exports.handler = async (event, _context) => {
       }
       const alerts = await db.getAlerts();
       return jsonResponse(200, alerts, event);
+    }
+
+    if (path === '/logins' && method === 'GET') {
+      const userPayload = authenticateUser(event);
+      if (userPayload.username !== 'admin') {
+        throw new Error('Forbidden: Only Center Admin can access login history.');
+      }
+      const logins = await db.getLogins();
+      return jsonResponse(200, logins, event);
     }
 
     if (path === '/reset-db' && method === 'POST') {

@@ -51,6 +51,7 @@ function App() {
   // App View Routing: 'home' | 'portal' | 'dashboard' | 'manual'
   const [currentView, setCurrentView] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
+  const [pcChatbotOpen, setPcChatbotOpen] = useState(false);
 
   // Global Dynamic Pricing State (persisted to/from local storage)
   const [crops, setCrops] = useState({});
@@ -419,7 +420,14 @@ function App() {
             translations={translations}
             onAboutTabSelect={handleAboutTabClick}
             onManualClick={() => setCurrentView('manual')}
-            onChatbotClick={() => { setCurrentView('chatbot'); window.location.hash = '#chatbot'; }}
+            onChatbotClick={() => {
+              if (isMobile) {
+                setCurrentView('chatbot');
+                window.location.hash = '#chatbot';
+              } else {
+                setPcChatbotOpen(prev => !prev);
+              }
+            }}
             onHomeClick={() => setCurrentView('home')}
             showInstallBtn={showInstallBtn}
             onInstallApp={handleInstallApp}
@@ -553,6 +561,27 @@ function App() {
           <Footer lang={lang} translations={translations} showInstallBtn={showInstallBtn} onInstallApp={handleInstallApp} />
           <WhatsAppFloat lang={lang} />
         </>
+      )}
+
+      {/* PC Only Floating ChatBot Overlay */}
+      {!isMobile && pcChatbotOpen && (
+        <div style={{
+          position: 'fixed',
+          bottom: '80px',
+          right: '30px',
+          width: '380px',
+          height: '560px',
+          zIndex: 10000,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: '#0a2617',
+          border: '2px solid rgba(82, 183, 136, 0.4)'
+        }}>
+          <ChatBot lang={lang} onClose={() => setPcChatbotOpen(false)} />
+        </div>
       )}
 
       {/* Floating Synchronization Toast Notification */}

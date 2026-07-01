@@ -942,6 +942,18 @@ export const getAlerts = async () => {
   return [];
 };
 
+export const getLogins = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/logins`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (e) {
+    console.error('Error fetching login history:', e);
+  }
+  return [];
+};
+
 export const getSettings = async () => {
   try {
     const res = await fetchWithAuth(`${API_BASE}/settings`);
