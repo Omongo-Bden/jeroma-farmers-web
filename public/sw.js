@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jeroma-farmers-v3';
+const CACHE_NAME = 'jeroma-farmers-v4';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
