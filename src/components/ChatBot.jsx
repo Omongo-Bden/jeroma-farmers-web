@@ -828,10 +828,7 @@ export default function ChatBot({ lang, onClose }) {
 
   return (
     <>
-      {/* Only render if admin has enabled the chatbot */}
-      {config.enabled && (
-        <>
-          <div className="chatbot-panel-inline" style={{
+      <div className="chatbot-panel-inline" style={{
           position: 'relative',
           bottom: 'auto',
           right: 'auto',
@@ -1173,7 +1170,5 @@ export default function ChatBot({ lang, onClose }) {
             </div>
           )}
         </>
-      )}
-    </>
-  );
-}
+      );
+    }
