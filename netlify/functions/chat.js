@@ -1015,6 +1015,11 @@ exports.handler = async (event, _context) => {
         error: 'AI quota exceeded. Please try again shortly or call +256 773 623 196.'
       });
     }
+    if (lastStatus === 404) {
+      return jsonResponse(404, {
+        error: 'AI service is temporarily unavailable (Status: 404). This error occurs when the Generative Language API is disabled in your Google Cloud project, or when using an invalid key format. Please ensure your GEMINI_API_KEY starts with AIzaSy by creating it directly in Google AI Studio, or enable the Generative Language API in your Google Cloud Console.'
+      });
+    }
     return jsonResponse(502, {
       error: `AI service is temporarily unavailable (Status: ${lastStatus}). Please ensure your GEMINI_API_KEY is configured correctly or call +256 773 623 196.`
     });
