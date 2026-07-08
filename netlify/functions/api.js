@@ -25,6 +25,39 @@ const jsonResponse = (statusCode, data, event = null, setCookieHeader = null) =>
   };
 };
 
+const sendRealEmail = async (toEmail, subject, htmlContent) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log("No RESEND_API_KEY environment variable set. Cannot send email.");
+    return false;
+  }
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        from: 'Jeroma Farmers <onboarding@resend.dev>', // Resend sandbox default sender
+        to: toEmail,
+        subject: subject,
+        html: htmlContent
+      })
+    });
+    if (response.ok) {
+      console.log(`Email successfully dispatched via Resend to ${toEmail}`);
+      return true;
+    } else {
+      const errText = await response.text();
+      console.error('Resend API response error:', errText);
+    }
+  } catch (err) {
+    console.error('Error in sendRealEmail:', err);
+  }
+  return false;
+};
+
 // Rate limiting in-memory storage (window: 1 minute)
 const RATE_LIMIT_WINDOW = 60 * 1000;
 const MAX_REQUESTS_PER_MIN = 100;
@@ -373,6 +406,31 @@ exports.handler = async (event, _context) => {
         throw new Error('Forbidden: Only admin can restore backup');
       }
       const success = await db.restoreBackup(body);
+      return jsonResponse(200, { success }, event);
+    }
+
+    // ─── Send Password Verification Email Route ───────────────────────────────
+    if (path === '/send-verification-email' && method === 'POST') {
+      const { email, code, username } = body;
+      if (!email || !code) {
+        throw new Error('Email and code are required');
+      }
+      const subject = 'Jeroma Farmers - Password Reset Verification Code';
+      const htmlContent = `
+        <div style="font-family: sans-serif; padding: 20px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #faf9f6;">
+          <h2 style="color: #1b4332; margin-top: 0;">Password Reset Request</h2>
+          <p>Hello <strong>${username || 'User'}</strong>,</p>
+          <p>We received a request to reset your password for your Jeroma Farmers Collection Centre account.</p>
+          <div style="margin: 24px 0; padding: 16px; background-color: #e8f5e9; border-left: 4px solid #2d6a4f; border-radius: 4px; text-align: center;">
+            <p style="margin: 0; font-size: 14px; color: #1b4332; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em;">Your Verification Code</p>
+            <p style="margin: 8px 0 0; font-size: 32px; font-weight: 800; color: #1b4332; letter-spacing: 0.1em;">${code}</p>
+          </div>
+          <p style="font-size: 13px; color: #666;">If you did not request this change, please ignore this email or contact support.</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 11px; color: #999; margin: 0;">Jeroma Farmers Collection Centre Ltd · Northern & Eastern Uganda</p>
+        </div>
+      `;
+      const success = await sendRealEmail(email, subject, htmlContent);
       return jsonResponse(200, { success }, event);
     }
 

@@ -518,7 +518,28 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setPwGeneratedCode(code);
       console.log('SIMULATED SMS/EMAIL CODE:', code);
-      setPwSuccess(`Verification code generated! [DEMO MODE] Your code is: ${code}. Please enter it below to verify.`);
+
+      if (pwMethod === 'email') {
+        try {
+          const res = await fetch('/api/send-verification-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: pwEmail.trim(), code, username: user.username })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+              setPwSuccess(`Verification code sent to your email address! Please check your inbox.`);
+              setPwStep(2);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Error sending verification email:', e);
+        }
+      }
+
+      setPwSuccess(`Verification code generated! [DEMO MODE] Your code is: ${code}. Please enter it below to verify (configure RESEND_API_KEY on server for real email).`);
       setPwStep(2);
     } catch (err) {
       setPwError('Failed to generate verification code.');
