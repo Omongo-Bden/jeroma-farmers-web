@@ -1005,9 +1005,9 @@ exports.handler = async (event, _context) => {
       }
     }
 
-    if (lastStatus === 401) {
-      return jsonResponse(401, {
-        error: 'The AI assistant is currently unauthorized. This is usually due to a missing, expired, or invalid Gemini API key. Please configure a valid GEMINI_API_KEY (starting with AIzaSy) in your Render environment variables or contact support at +256 773 623 196.'
+    if (lastStatus === 401 || (lastStatus === 400 && lastErrText.includes('API_KEY_INVALID'))) {
+      return jsonResponse(400, {
+        error: 'The configured Gemini API key is unauthorized or invalid. Please check the GEMINI_API_KEY environment variable in your Render dashboard and ensure it is active and copied correctly (starting with AIzaSy), or contact support at +256 773 623 196.'
       });
     }
     if (lastStatus === 429) {

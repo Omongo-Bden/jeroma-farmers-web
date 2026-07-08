@@ -452,7 +452,7 @@ export default function Navbar({
                     if (onPortalClick) onPortalClick();
                     return;
                   }
-                  window.open('#chatbot', '_blank');
+                  window.location.hash = '#chatbot';
                 }}
                 style={{
                   display: 'inline-flex',
@@ -735,7 +735,7 @@ export default function Navbar({
                     if (onPortalClick) onPortalClick();
                     return;
                   }
-                  window.open('#chatbot', '_blank');
+                  window.location.hash = '#chatbot';
                 }}
                 style={{ 
                   background: 'none', 
@@ -934,7 +934,7 @@ export default function Navbar({
                       if (onPortalClick) onPortalClick();
                       return;
                     }
-                    window.open('#chatbot', '_blank');
+                    window.location.hash = '#chatbot';
                   }}
                   style={{ 
                     background: 'none', 
