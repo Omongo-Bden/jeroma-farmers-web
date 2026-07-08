@@ -976,10 +976,9 @@ exports.handler = async (event, _context) => {
     } else {
       // Default: Google Direct API
       const MODEL_WATERFALL = [
-        'gemini-2.5-flash-lite',
         'gemini-2.0-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-flash-latest',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-8b'
       ];
       for (let i = 0; i < MODEL_WATERFALL.length; i++) {
         const model = MODEL_WATERFALL[i];
@@ -1003,13 +1002,18 @@ exports.handler = async (event, _context) => {
       }
     }
 
+    if (lastStatus === 401) {
+      return jsonResponse(401, {
+        error: 'The AI assistant is currently unauthorized. This is usually due to a missing, expired, or invalid Gemini API key. Please configure a valid GEMINI_API_KEY (starting with AIzaSy) in your Render environment variables or contact support at +256 773 623 196.'
+      });
+    }
     if (lastStatus === 429) {
       return jsonResponse(429, {
         error: 'AI quota exceeded. Please try again shortly or call +256 773 623 196.'
       });
     }
     return jsonResponse(502, {
-      error: 'AI service is temporarily busy. Please try again in a few seconds or call +256 773 623 196.'
+      error: `AI service is temporarily unavailable (Status: ${lastStatus}). Please ensure your GEMINI_API_KEY is configured correctly or call +256 773 623 196.`
     });
 
   } catch (err) {

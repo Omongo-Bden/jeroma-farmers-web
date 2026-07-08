@@ -324,6 +324,15 @@ exports.handler = async (event, _context) => {
       const success = await db.updateDispatchStatus(id, status);
       return jsonResponse(200, { success }, event);
     }
+    if (path === '/dispatches/reply' && method === 'POST') {
+      const userPayload = authenticateUser(event);
+      if (userPayload.role !== 'admin') {
+        throw new Error('Forbidden: Admin access required');
+      }
+      const { id, reply } = body;
+      const success = await db.replyToDispatch(id, reply);
+      return jsonResponse(200, { success }, event);
+    }
 
     // ─── Inquiries Endpoints ──────────────────────────────────────────────────
     if (path === '/inquiries' && method === 'GET') {
@@ -345,6 +354,25 @@ exports.handler = async (event, _context) => {
       }
       const { id, status } = body;
       const success = await db.updateInquiryStatus(id, status);
+      return jsonResponse(200, { success }, event);
+    }
+    if (path === '/inquiries/reply' && method === 'POST') {
+      const userPayload = authenticateUser(event);
+      if (userPayload.role !== 'admin') {
+        throw new Error('Forbidden: Admin access required');
+      }
+      const { id, reply } = body;
+      const success = await db.replyToInquiry(id, reply);
+      return jsonResponse(200, { success }, event);
+    }
+
+    // ─── Self-Healing Backup Endpoint ─────────────────────────────────────────
+    if (path === '/restore-backup' && method === 'POST') {
+      const userPayload = authenticateUser(event);
+      if (userPayload.role !== 'admin') {
+        throw new Error('Forbidden: Only admin can restore backup');
+      }
+      const success = await db.restoreBackup(body);
       return jsonResponse(200, { success }, event);
     }
 

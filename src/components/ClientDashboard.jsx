@@ -254,7 +254,7 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setPwGeneratedCode(code);
       console.log('SIMULATED SMS/EMAIL CODE:', code);
-      setPwSuccess(`Verification code sent to your registered ${pwMethod === 'phone' ? 'phone number via SMS' : 'email address'}! Please check your messages.`);
+      setPwSuccess(`Verification code generated! [DEMO MODE] Your code is: ${code}. Please enter it below to verify.`);
       setPwStep(2);
     } catch (err) {
       setPwError('Failed to generate verification code.');
@@ -626,9 +626,19 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
                           <strong>Date:</strong> {disp.date} | <strong>Location:</strong> {disp.location}
                         </p>
                         {disp.notes && (
-                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-light)', fontStyle: 'italic' }}>
+                          <p style={{ margin: '0 0 6px', fontSize: '0.8rem', color: 'var(--color-text-light)', fontStyle: 'italic' }}>
                             Notes: {disp.notes}
                           </p>
+                        )}
+                        {disp.reply && (
+                          <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(82, 183, 136, 0.08)', borderLeft: '3px solid var(--color-primary)' }}>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-primary-dark)', fontWeight: 'bold' }}>
+                              💬 Admin Reply:
+                            </p>
+                            <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--color-text-dark)' }}>
+                              {disp.reply}
+                            </p>
+                          </div>
                         )}
                       </div>
                     ))}

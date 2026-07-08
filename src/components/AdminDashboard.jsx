@@ -27,8 +27,12 @@ import {
   getAlerts,
   getLogins,
   getSettings,
-  saveSettings
+  saveSettings,
+  replyToInquiry,
+  replyToDispatch,
+  restoreServerFromLocalBackup
 } from '../utils/db';
+import { idbGet } from '../utils/indexedDbHelper';
 import { translations as defaultTranslations } from './translations';
 
 export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onStateChange }) {
@@ -47,6 +51,16 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const [enableResetDb, setEnableResetDb] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [payingId, setPayingId] = useState(null);
+
+  // Reply Modal States
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [replyTarget, setReplyTarget] = useState(null); // { type: 'inquiry'|'dispatch', id, recipientName }
+  const [replyText, setReplyText] = useState('');
+  const [isReplying, setIsReplying] = useState(false);
+
+  // Backup & Self-Healing states
+  const [showBackupRestoreBanner, setShowBackupRestoreBanner] = useState(false);
+  const [isRestoringBackup, setIsRestoringBackup] = useState(false);
 
   // Sync user state
   const [currentUserState, setCurrentUserState] = useState(user);
@@ -425,12 +439,66 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
           setSystemAlerts(alertsData || []);
           const loginsData = await getLogins();
           setLoginHistory(loginsData || []);
+          
+          // Check if server database has restarted and lost data (self-healing backup detection)
+          const localUsers = (await idbGet('users', 'all'))?.data || [];
+          if (allUsers.length <= 2 && localUsers.length > allUsers.length) {
+            setShowBackupRestoreBanner(true);
+          }
         } catch (err) {
           console.error('Failed to load system alerts or logins:', err);
         }
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRestoreBackup = async () => {
+    setIsRestoringBackup(true);
+    try {
+      const res = await restoreServerFromLocalBackup();
+      if (res && (res.success || res)) {
+        alert(lang === 'en' ? 'Database backup restored successfully!' : 'Backup restored!');
+        setShowBackupRestoreBanner(false);
+        await loadData();
+      } else {
+        alert(lang === 'en' ? 'Failed to restore backup.' : 'Restore failed.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error restoring backup');
+    } finally {
+      setIsRestoringBackup(false);
+    }
+  };
+
+  const handleSendReply = async (e) => {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+    setIsReplying(true);
+    try {
+      let res;
+      if (replyTarget.type === 'inquiry') {
+        res = await replyToInquiry(replyTarget.id, replyText);
+        if (res) {
+          alert(lang === 'en' ? 'Reply submitted successfully!' : 'Lok me anyim omoko!');
+          setInquiries(await getInquiries());
+        }
+      } else if (replyTarget.type === 'dispatch') {
+        res = await replyToDispatch(replyTarget.id, replyText);
+        if (res) {
+          alert(lang === 'en' ? 'Reply submitted successfully!' : 'Lok me anyim omoko!');
+          setDispatches(await getDispatches());
+        }
+      }
+      setShowReplyModal(false);
+      setReplyText('');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit reply.');
+    } finally {
+      setIsReplying(false);
     }
   };
 
@@ -450,7 +518,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setPwGeneratedCode(code);
       console.log('SIMULATED SMS/EMAIL CODE:', code);
-      setPwSuccess(`Verification code sent to your registered ${pwMethod === 'phone' ? 'phone number via SMS' : 'email address'}! Please check your messages.`);
+      setPwSuccess(`Verification code generated! [DEMO MODE] Your code is: ${code}. Please enter it below to verify.`);
       setPwStep(2);
     } catch (err) {
       setPwError('Failed to generate verification code.');
@@ -1011,6 +1079,38 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     <div style={{ backgroundColor: '#faf9f6', minHeight: '100vh', padding: 'clamp(16px, 4vw, 40px) 0' }}>
       <div className="container">
         
+        {/* Backup Restore Banner */}
+        {showBackupRestoreBanner && (
+          <div className="alert alert-warning" style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba',
+            padding: '12px 20px', borderRadius: '8px', marginBottom: '20px', flexWrap: 'wrap', gap: '10px'
+          }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+              ⚠️ {lang === 'en' 
+                ? 'Notice: It looks like the cloud server restarted or redeployed and its temporary database was reset. We detected a local database backup on your device. Would you like to restore all custom users, dispatches, deliveries, and inquiries?' 
+                : 'Notice: Server database has reset. Restore local backup?'}
+            </span>
+            <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+              <button
+                onClick={handleRestoreBackup}
+                disabled={isRestoringBackup}
+                className="btn btn-primary"
+                style={{ padding: '6px 12px', fontSize: '0.75rem', backgroundColor: '#856404', borderColor: '#856404', color: '#fff', cursor: 'pointer' }}
+              >
+                {isRestoringBackup ? 'Restoring...' : (lang === 'en' ? 'Restore Backup' : 'Restore')}
+              </button>
+              <button
+                onClick={() => setShowBackupRestoreBanner(false)}
+                className="btn btn-outline"
+                style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: '#856404', color: '#856404', cursor: 'pointer' }}
+              >
+                {lang === 'en' ? 'Dismiss' : 'Dismiss'}
+              </button>
+            </div>
+          </div>
+        )}
+        
         {/* Top Profile Header */}
         <div className="dashboard-header-panel">
           <div className="dashboard-header-profile">
@@ -1483,7 +1583,14 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', textAlign: 'right', fontWeight: 700 }}>{disp.weight.toLocaleString()} kg</td>
                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', maxWidth: '180px', lineHeight: 1.4 }}>{disp.location}</td>
                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{disp.date}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--color-text-light)', maxWidth: '200px', lineHeight: 1.4 }}>{disp.notes || '-'}</td>
+                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--color-text-light)', maxWidth: '200px', lineHeight: 1.4 }}>
+                          <div>{disp.notes || '-'}</div>
+                          {disp.reply && (
+                            <div style={{ marginTop: '6px', color: 'var(--color-primary-dark)', fontWeight: 'bold', fontSize: '0.78rem' }}>
+                              Reply: <span style={{ fontWeight: 'normal', color: 'var(--color-text-dark)' }}>{disp.reply}</span>
+                            </div>
+                          )}
+                        </td>
                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', textAlign: 'center' }}>
                           <span style={{
                             padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
@@ -1494,32 +1601,47 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           </span>
                         </td>
                         <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                          {disp.status === 'Pending' && (
-                            <div style={{ display: 'flex', gap: '6px' }}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                            {disp.status === 'Pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveDispatch(disp.id)}
+                                  className="btn btn-outline"
+                                  style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-accent)', color: '#1b4332' }}
+                                >
+                                  {t.approve}
+                                </button>
+                                <button
+                                  onClick={() => handleCancelDispatch(disp.id)}
+                                  style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', border: '1px solid #d90429', color: '#d90429', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                  {t.cancelBtn}
+                                </button>
+                              </>
+                            )}
+                            {disp.status === 'Scheduled' && (
                               <button
-                                onClick={() => handleApproveDispatch(disp.id)}
+                                onClick={() => handleCompleteDispatch(disp.id)}
+                                className="btn btn-primary"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                              >
+                                {t.complete}
+                              </button>
+                            )}
+                            {disp.status !== 'Cancelled' && (
+                              <button
+                                onClick={() => {
+                                  setReplyTarget({ type: 'dispatch', id: disp.id, recipientName: disp.farmerName });
+                                  setReplyText(disp.reply || '');
+                                  setShowReplyModal(true);
+                                }}
                                 className="btn btn-outline"
-                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-accent)', color: '#1b4332' }}
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
                               >
-                                {t.approve}
+                                💬 Reply
                               </button>
-                              <button
-                                onClick={() => handleCancelDispatch(disp.id)}
-                                style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', border: '1px solid #d90429', color: '#d90429', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
-                              >
-                                {t.cancelBtn}
-                              </button>
-                            </div>
-                          )}
-                          {disp.status === 'Scheduled' && (
-                            <button
-                              onClick={() => handleCompleteDispatch(disp.id)}
-                              className="btn btn-primary"
-                              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                            >
-                              {t.complete}
-                            </button>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1576,16 +1698,41 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                       <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-dark)', lineHeight: 1.4 }}>
                         {inq.message}
                       </p>
+                      
+                      {inq.reply && (
+                        <div style={{ marginTop: '12px', padding: '10px 14px', borderRadius: '6px', backgroundColor: 'rgba(82, 183, 136, 0.06)', borderLeft: '3px solid var(--color-primary)' }}>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-primary-dark)', fontWeight: 'bold' }}>
+                            💬 Admin Reply:
+                          </p>
+                          <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--color-text-dark)', lineHeight: 1.4 }}>
+                            {inq.reply}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     
-                    <button
-                      className="btn btn-outline"
-                      onClick={() => handleToggleInquiryStatus(inq.id, inq.status)}
-                      style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px' }}
-                    >
-                      {inq.status === 'Unread' ? <Icons.CheckCircle size={14} /> : <Icons.Mail size={14} />}
-                      {inq.status === 'Unread' ? t.markRead : t.markUnread}
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        className="btn btn-outline"
+                        onClick={() => handleToggleInquiryStatus(inq.id, inq.status)}
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px' }}
+                      >
+                        {inq.status === 'Unread' ? <Icons.CheckCircle size={14} /> : <Icons.Mail size={14} />}
+                        {inq.status === 'Unread' ? t.markRead : t.markUnread}
+                      </button>
+                      
+                      <button
+                        className="btn btn-outline"
+                        onClick={() => {
+                          setReplyTarget({ type: 'inquiry', id: inq.id, recipientName: inq.name });
+                          setReplyText(inq.reply || '');
+                          setShowReplyModal(true);
+                        }}
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                      >
+                        💬 Reply
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -3052,6 +3199,76 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Admin Reply Modal */}
+      {showReplyModal && replyTarget && (
+        <div className="modal-backdrop" style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.2s ease'
+        }}>
+          <div className="modal-card" style={{
+            background: '#faf9f6', padding: '24px', borderRadius: '16px',
+            width: '100%', maxWidth: '480px', boxShadow: 'var(--shadow-xl)',
+            border: '2px solid rgba(82, 183, 136, 0.4)', position: 'relative'
+          }}>
+            <button 
+              onClick={() => setShowReplyModal(false)}
+              style={{
+                position: 'absolute', top: '16px', right: '16px',
+                background: 'none', border: 'none', fontSize: '1.25rem',
+                cursor: 'pointer', color: '#888'
+              }}
+            >
+              ✕
+            </button>
+            <h3 style={{
+              color: 'var(--color-primary-dark)', fontSize: '1.2rem',
+              fontFamily: 'var(--font-heading)', fontWeight: 700,
+              margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px'
+            }}>
+              💬 {lang === 'en' ? 'Send Reply' : 'Lok me anyim'}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-dark)', marginBottom: '12px' }}>
+              <strong>To:</strong> {replyTarget.recipientName} ({replyTarget.type === 'inquiry' ? 'Inquiry ID' : 'Request ID'}: {replyTarget.id})
+            </p>
+            <form onSubmit={handleSendReply}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', color: '#555' }}>
+                  {lang === 'en' ? 'Your Reply' : 'Lok me anyim ma meri'}
+                </label>
+                <textarea
+                  className="form-input"
+                  style={{ width: '100%', minHeight: '120px', padding: '10px', fontSize: '0.85rem', fontFamily: 'inherit', resize: 'vertical' }}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder={lang === 'en' ? 'Write your reply message here...' : 'Ko lok me anyim ma meri kany...'}
+                  required
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowReplyModal(false)}
+                  className="btn btn-outline"
+                  style={{ flex: 1, padding: '10px' }}
+                >
+                  {lang === 'en' ? 'Cancel' : 'Gik'}
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isReplying}
+                  className="btn btn-primary"
+                  style={{ flex: 1, padding: '10px', backgroundColor: 'var(--color-primary)' }}
+                >
+                  {isReplying ? 'Sending...' : (lang === 'en' ? 'Submit Reply' : 'Mii Lok')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

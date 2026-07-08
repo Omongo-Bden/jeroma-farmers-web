@@ -217,7 +217,28 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
     }
   };
 
-  const ugandanDistricts = ['Lira', 'Kole', 'Dokolo', 'Oyam', 'Apac', 'Otuke', 'Alebtong', 'Amolatar', 'Gulu', 'Kampala'];
+  const ugandanDistricts = [
+    // Lango
+    'Lira', 'Kole', 'Dokolo', 'Oyam', 'Apac', 'Otuke', 'Alebtong', 'Amolatar', 'Kwania',
+    // Acholi
+    'Gulu', 'Kitgum', 'Pader', 'Agago', 'Lamwo', 'Amuru', 'Nwoya', 'Omoro',
+    // Karamoja
+    'Abim', 'Kotido', 'Kaabong', 'Karenga', 'Moroto', 'Napak', 'Nakapiripirit', 'Amudat', 'Nabilatuk',
+    // West Nile
+    'Arua', 'Nebbi', 'Zombo', 'Yumbe', 'Moyo', 'Adjumani', 'Koboko', 'Maracha', 'Terego', 'Obongi',
+    // Teso
+    'Soroti', 'Amuria', 'Kaberamaido', 'Katakwi', 'Kumi', 'Bukedea', 'Ngora', 'Kalaki', 'Kapelebyong',
+    // Elgon/Bugisu
+    'Mbale', 'Sironko', 'Manafwa', 'Bududa', 'Bulambuli', 'Namisindwa',
+    // Bukedi
+    'Tororo', 'Busia', 'Butaleja', 'Pallisa', 'Kibuku', 'Butebo', 'Budaka',
+    // Busoga
+    'Jinja', 'Kamuli', 'Iganga', 'Kaliro', 'Mayuge', 'Bugiri', 'Namutumba', 'Luuka', 'Buyende', 'Namayingo',
+    // Sebei
+    'Kapchorwa', 'Bukwo', 'Kween',
+    // Central/Others
+    'Kampala'
+  ].sort();
 
   const clearState = () => { setError(''); setSuccess(''); };
 

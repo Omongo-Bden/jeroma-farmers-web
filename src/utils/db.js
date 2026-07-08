@@ -991,3 +991,79 @@ export const saveSettings = async (settings) => {
   await queueOfflineAction('saveSettings', settings);
   return updated;
 };
+
+export const replyToInquiry = async (id, reply) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/inquiries/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ id, reply })
+    });
+    if (res.ok) {
+      const cached = await idbGet('inquiries', 'all');
+      if (cached && cached.data) {
+        const idx = cached.data.findIndex(i => i.id === id);
+        if (idx !== -1) {
+          cached.data[idx].reply = reply;
+          cached.data[idx].status = 'Replied';
+          await idbPut('inquiries', cached);
+        }
+      }
+      return await res.json();
+    }
+  } catch (e) {
+    console.error('Error replying to inquiry:', e);
+  }
+  return { success: false };
+};
+
+export const replyToDispatch = async (id, reply) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/dispatches/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ id, reply })
+    });
+    if (res.ok) {
+      const cached = await idbGet('dispatches', 'all');
+      if (cached && cached.data) {
+        const idx = cached.data.findIndex(d => d.id === id);
+        if (idx !== -1) {
+          cached.data[idx].reply = reply;
+          await idbPut('dispatches', cached);
+        }
+      }
+      return await res.json();
+    }
+  } catch (e) {
+    console.error('Error replying to dispatch:', e);
+  }
+  return { success: false };
+};
+
+export const restoreServerFromLocalBackup = async () => {
+  try {
+    const crops = (await idbGet('crops', 'all'))?.data;
+    const users = (await idbGet('users', 'all'))?.data;
+    const deliveries = (await idbGet('deliveries', 'all'))?.data;
+    const dispatches = (await idbGet('dispatches', 'all'))?.data;
+    const inquiries = (await idbGet('inquiries', 'all'))?.data;
+    const translations = (await idbGet('translations', 'all'))?.data;
+    const manual = (await idbGet('manual', 'all'))?.data;
+    const slides = (await idbGet('slides', 'all'))?.data;
+    const settings = (await idbGet('settings', 'all'))?.data;
+
+    const res = await fetchWithAuth(`${API_BASE}/restore-backup`, {
+      method: 'POST',
+      body: JSON.stringify({
+        crops, users, deliveries, dispatches, inquiries,
+        translations, manual, slides, settings
+      })
+    });
+    
+    if (res.ok) {
+      return { success: true };
+    }
+  } catch (e) {
+    console.error('Error restoring backup to server:', e);
+  }
+  return { success: false };
+};

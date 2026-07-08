@@ -637,6 +637,67 @@ module.exports = {
     saveDb();
     return dbState.settings;
   },
+  replyToInquiry: async (id, reply) => {
+    const idx = dbState.inquiries.findIndex(i => i.id === id);
+    if (idx !== -1) {
+      dbState.inquiries[idx].reply = reply;
+      dbState.inquiries[idx].status = 'Replied';
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+  replyToDispatch: async (id, reply) => {
+    const idx = dbState.dispatches.findIndex(d => d.id === id);
+    if (idx !== -1) {
+      dbState.dispatches[idx].reply = reply;
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+  restoreBackup: async (backup) => {
+    if (backup.crops) dbState.crops = backup.crops;
+    if (backup.users && Array.isArray(backup.users)) {
+      const existingUsernames = new Set(dbState.users.map(u => u.username.toLowerCase()));
+      backup.users.forEach(u => {
+        if (!existingUsernames.has(u.username.toLowerCase())) {
+          dbState.users.push(u);
+        }
+      });
+    }
+    if (backup.deliveries && Array.isArray(backup.deliveries)) {
+      const existingIds = new Set(dbState.deliveries.map(d => d.id));
+      backup.deliveries.forEach(d => {
+        if (!existingIds.has(d.id)) {
+          dbState.deliveries.push(d);
+        }
+      });
+    }
+    if (backup.dispatches && Array.isArray(backup.dispatches)) {
+      const existingIds = new Set(dbState.dispatches.map(d => d.id));
+      backup.dispatches.forEach(d => {
+        if (!existingIds.has(d.id)) {
+          dbState.dispatches.push(d);
+        }
+      });
+    }
+    if (backup.inquiries && Array.isArray(backup.inquiries)) {
+      const existingIds = new Set(dbState.inquiries.map(i => i.id));
+      backup.inquiries.forEach(i => {
+        if (!existingIds.has(i.id)) {
+          dbState.inquiries.push(i);
+        }
+      });
+    }
+    if (backup.translations) dbState.translations = backup.translations;
+    if (backup.manual && Array.isArray(backup.manual)) dbState.manual = backup.manual;
+    if (backup.slides && Array.isArray(backup.slides)) dbState.slides = backup.slides;
+    if (backup.settings) dbState.settings = backup.settings;
+    
+    saveDb();
+    return true;
+  },
   resetDatabase: async () => {
     dbState = {
       crops: { ...DEFAULT_CROPS },
