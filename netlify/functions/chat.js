@@ -921,12 +921,15 @@ exports.handler = async (event, _context) => {
     let lastStatus = 503;
     let lastErrText = '';
 
+    console.log(`AI chat request initiated. Using API key starting with: ${apiKey ? apiKey.substring(0, 8) : 'NONE'}... (Length: ${apiKey ? apiKey.length : 0})`);
+    console.log(`Key categorization: Google: ${isGoogleKey}, OpenRouter: ${isOpenRouterKey}, Groq: ${isGroqKey}`);
+
     if (isOpenRouterKey) {
       const OPENROUTER_MODELS = [
-        'google/gemini-2.5-flash:free',
-        'google/gemini-2.5-flash',
+        'google/gemini-2.0-flash',
+        'google/gemini-1.5-flash',
         'meta-llama/llama-3.3-70b-instruct:free',
-        'meta-llama/llama-3-8b-instruct:free'
+        'google/gemini-2.0-flash:free'
       ];
       for (let i = 0; i < OPENROUTER_MODELS.length; i++) {
         const model = OPENROUTER_MODELS[i];
