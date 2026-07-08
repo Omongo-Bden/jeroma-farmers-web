@@ -979,6 +979,7 @@ exports.handler = async (event, _context) => {
     } else {
       // Default: Google Direct API
       const MODEL_WATERFALL = [
+        'gemini-2.5-flash',
         'gemini-2.0-flash',
         'gemini-1.5-flash',
         'gemini-1.5-flash-8b'
