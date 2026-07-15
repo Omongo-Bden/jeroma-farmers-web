@@ -19,11 +19,11 @@ export default function Gallery({ lang, translations: dynamicTranslations }) {
     {
       id: 101,
       src: '/a2i_project_1.jpg',
-      title: lang === 'en' ? 'Field Visitation & Handwashing Station' : 'Koo me Lwok me Cingo ki Poto me A2I',
+      title: lang === 'en' ? 'Della Will Outlet in Anaka Town Council' : 'Della Will Outlet i Anaka Town Council',
       category: 'projects',
       desc: lang === 'en'
-        ? 'Field program inspection at community center handwashing and sanitization installations in Lango.'
-        : 'Team me Jeroma kede A2I tye ka neno yore me lwok cingo ki paco pur.'
+        ? 'Jeroma and A2I delegation visited the Della Will agricultural sales outlet in Anaka Town Council to assess local input availability and distribution infrastructure.'
+        : 'Team me Jeroma kede A2I olimo Della Will outlet i Anaka Town Council pi neno cogo kabilo kede inputs.'
     },
     {
       id: 102,

@@ -10,15 +10,15 @@ export default function Projects({ lang, translations: dynamicTranslations }) {
   const projectList = [
     {
       id: 'a2i_cohort1',
-      badge: lang === 'en' ? 'Active Project' : 'Prujek me Tice',
-      title: lang === 'en' ? 'Access to Innovation (A2I) — Cohort 1' : 'Access to Innovation (A2I) — Cohort 1',
-      subtitle: lang === 'en' ? 'In partnership with A2I and supported by the Danish Government' : 'Oribbe ki A2I kede cwak me Gavumenti me Denmark',
+      badge: lang === 'en' ? 'Agro-Modernization' : 'Dongopur me Nyen',
+      title: lang === 'en' ? 'Agricultural Modernization & Capacity Building Initiative — Cohort 1' : 'Agricultural Modernization & Capacity Building Initiative — Cohort 1',
+      subtitle: lang === 'en' ? 'In conjunction with Access to Innovation (A2I) & supported by the Danish Government' : 'Oribbe ki A2I kede cwak me Gavumenti me Denmark',
       timeline: lang === 'en' ? 'July 10, 2026 — July 14, 2026' : 'July 10, 2026 — July 14, 2026',
       description: lang === 'en'
-        ? 'Jeroma, in conjunction with Access to Innovation and with support from the Danish Government, successfully completed its First Cohort field program. From Saturday July 10 to Tuesday July 14, 2026, the joint delegation visited SACCOs, cooperatives, and farming institutions in the Lango and Acholi subregions. The program aimed to assess local capacities, identify technical and business needs, and identify appropriate machinery that can optimize farming workflows without placing financial burdens on farmers.'
-        : 'Jeroma, i ribbe tic ki Access to Innovation kede cwak ma oa ki bot Gavumenti me Denmark, ocoyo Program me Cohort Mukwongo me abiri 10-14 July 2026. Team mwa olimo SACCOs kede cooperatives i Lango ki Acholi subregions pi neno machinery ma twero konyo lupur maber me pe kelo burden bot lupur.',
+        ? 'Under the First Cohort of this collaborative program, Jeroma Farmers Collection Centre Ltd, in conjunction with Access to Innovation (A2I) and with support from the Danish Government, conducted extensive diagnostic field visits from July 10 to July 14, 2026. The joint team visited various SACCOs, agricultural cooperatives, and farming institutions across the Lango and Acholi subregions to evaluate post-harvest handling practices, assess local value-addition capacities, and identify structural technical needs. The main objective was to map out cost-effective agricultural machinery and processing technologies that optimize workflows and reduce post-harvest losses, while ensuring the solutions remain economically sustainable without imposing capital-intensive financial burdens on local smallholder farmers.'
+        : 'I dwol me Cohort Mukwongo me oribbe me dongopur, Jeroma Farmers Collection Centre Ltd, i ribbe tic ki Access to Innovation (A2I) kede cwak ma oa ki bot Gavumenti me Denmark, otimo lim me poto mapol cakke 10-14 July 2026. Team mwa olimo SACCOs kede cooperatives dongo i Lango ki Acholi subregions pi neno tic me processing, cogo keyo, kede machinery ma mitto me konyo opur me pe kelo burden me cente woko bot lupur mwa.',
       images: [
-        { src: '/a2i_project_1.jpg', label: lang === 'en' ? 'Field Visitation' : 'Limo Poto' },
+        { src: '/a2i_project_1.jpg', label: lang === 'en' ? 'Della Will Outlet (Anaka)' : 'Della Will Outlet (Anaka)' },
         { src: '/a2i_project_2.jpg', label: lang === 'en' ? 'Store & Honey Grading' : 'Ot me Kic' },
         { src: '/a2i_project_3.jpg', label: lang === 'en' ? 'Millet Packaging' : 'Pako Mogo' },
         { src: '/a2i_project_4.jpg', label: lang === 'en' ? 'Cooperative Discussion' : 'Lok me Lwak' },
