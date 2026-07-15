@@ -10,11 +10,57 @@ export default function Gallery({ lang, translations: dynamicTranslations }) {
   const t = activeTranslations[lang] || activeTranslations.en;
 
   const filterLabels = {
-    en: { all: 'All Photos', harvests: 'Harvests & Seeds', farms: 'Farms & Fields', community: 'Community', team: 'Our Team', inputs: 'Agro Inputs & Products' },
-    luo: { all: 'Cal Ducu', harvests: 'Cam & Kabilo', farms: 'Pur & Potowa', community: 'Lwak Paco', team: 'Dwol me Tic', inputs: 'Agro Inputs & Cam' }
+    en: { all: 'All Photos', harvests: 'Harvests & Seeds', farms: 'Farms & Fields', community: 'Community', team: 'Our Team', inputs: 'Agro Inputs & Products', projects: 'Projects' },
+    luo: { all: 'Cal Ducu', harvests: 'Cam & Kabilo', farms: 'Pur & Potowa', community: 'Lwak Paco', team: 'Dwol me Tic', inputs: 'Agro Inputs & Cam', projects: 'Prujek' }
   };
 
   const galleryItems = [
+    // ── ACCESS TO INNOVATION PROJECT PHOTOS ───────────────────────────────────
+    {
+      id: 101,
+      src: '/a2i_project_1.jpg',
+      title: lang === 'en' ? 'Field Visitation & Handwashing Station' : 'Koo me Lwok me Cingo ki Poto me A2I',
+      category: 'projects',
+      desc: lang === 'en'
+        ? 'Field program inspection at community center handwashing and sanitization installations in Lango.'
+        : 'Team me Jeroma kede A2I tye ka neno yore me lwok cingo ki paco pur.'
+    },
+    {
+      id: 102,
+      src: '/a2i_project_2.jpg',
+      title: lang === 'en' ? 'Value Addition & Honey Grading Shop' : 'Cogo Lye me Kic me A2I i Paco',
+      category: 'projects',
+      desc: lang === 'en'
+        ? 'Reviewing honey processing shelves and storage capacities during the Lango and Acholi subregion visits.'
+        : 'Limo kabedo me cogo kic kede neno wel me processing kede A2I.'
+    },
+    {
+      id: 103,
+      src: '/a2i_project_3.jpg',
+      title: lang === 'en' ? 'Grade-A Millet Packaging & Processing' : 'Dwol me processing mogo kacumir kede A2I',
+      category: 'projects',
+      desc: lang === 'en'
+        ? 'Jeroma team and cooperative workers packaging local millet flour using modern hygienic practices.'
+        : 'Team me cooperative tye ka pako mogo kacumir me grade A i Acholi.'
+    },
+    {
+      id: 104,
+      src: '/a2i_project_4.jpg',
+      title: lang === 'en' ? 'SACCO & Cooperative Roundtable Discussion' : 'Odola Capacity Building me SAACOs kede A2I',
+      category: 'projects',
+      desc: lang === 'en'
+        ? 'Roundtable discussions with SACCO representatives in Lango subregion to identify technical machinery needs.'
+        : 'Meeting pi lwak me SACCO kede cooperative me ngollo machinery ma pite maber.'
+    },
+    {
+      id: 105,
+      src: '/a2i_project_5.jpg',
+      title: lang === 'en' ? 'Payira Dit Ltd Cooperative Site Visit' : 'Limo Payira Dit Ltd Cooperative kede A2I',
+      category: 'projects',
+      desc: lang === 'en'
+        ? 'Jeroma and A2I delegation at Payira Dit Ltd office in Gulu, establishing machinery needs and capacities.'
+        : 'Team me Jeroma kede A2I i ofis me Payira Dit Ltd i Gulu pi lok me machinery.'
+    },
     // ── 5 NEW PHOTOS FROM USER ────────────────────────────────────────────────
     {
       id: 20,

@@ -8,6 +8,7 @@ import Gallery from './components/Gallery';
 import Socials from './components/Socials';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import Projects from './components/Projects';
 import WhatsAppFloat from './components/WhatsAppFloat';
 import ChatBot from './components/ChatBot';
 import ActivityBanner from './components/ActivityBanner';
@@ -492,6 +493,7 @@ function App() {
             <About lang={lang} activeTab={activeAboutTab} setActiveTab={setActiveAboutTab} translations={translations} />
             <Services lang={lang} translations={translations} />
             <Gallery lang={lang} translations={translations} />
+            <Projects lang={lang} translations={translations} />
             <Socials lang={lang} translations={translations} />
             <Partners lang={lang} translations={translations} />
             <Contact lang={lang} translations={translations} />

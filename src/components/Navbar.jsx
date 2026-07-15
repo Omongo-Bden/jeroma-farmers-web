@@ -123,7 +123,7 @@ export default function Navbar({
   useEffect(() => {
     const handleScroll = () => {
       // Track active section on scroll
-      const sections = ['home', 'about', 'services', 'gallery', 'socials', 'contact'];
+      const sections = ['home', 'about', 'services', 'gallery', 'projects', 'socials', 'contact'];
       const scrollPosition = window.scrollY + 150; // offset for the taller header
 
       for (const section of sections) {
@@ -695,6 +695,15 @@ export default function Navbar({
             </li>
             <li>
               <a 
+                href="#projects" 
+                className={`nav-link ${activeSection === 'projects' ? 'active' : ''}`}
+                onClick={(e) => { e.preventDefault(); handleNavClick('projects'); }}
+              >
+                {t.navProjects}
+              </a>
+            </li>
+            <li>
+              <a 
                 href="#socials" 
                 className={`nav-link ${activeSection === 'socials' ? 'active' : ''}`}
                 onClick={(e) => { e.preventDefault(); handleNavClick('socials'); }}
@@ -891,6 +900,15 @@ export default function Navbar({
                   onClick={(e) => { e.preventDefault(); handleNavClick('gallery'); }}
                 >
                   {t.navGallery}
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#projects" 
+                  className={`nav-link ${activeSection === 'projects' ? 'active' : ''}`}
+                  onClick={(e) => { e.preventDefault(); handleNavClick('projects'); }}
+                >
+                  {t.navProjects}
                 </a>
               </li>
               <li>
