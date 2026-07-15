@@ -57,6 +57,20 @@ const getSlidesFallback = (lang) => [
     color: '#081c15',
     accent: '#52b788',
     fit: 'cover',
+  },
+  {
+    id: 'partnership_a2i',
+    icon: '🤝',
+    tag_en: 'Partnership',
+    tag_ach: 'Ribbe Tic',
+    title_en: 'Jeroma in Conjunction with Access to Innovation (A2I)',
+    title_ach: 'Jeroma i Conjunction ki Access to Innovation (A2I)',
+    body_en: 'Jeroma Farmers Collection Centre Ltd is proud to partner with Access to Innovation to drive agro-industrial development, support local food value chains, and scale sustainable clean energy and agricultural innovations across Northern and Eastern Uganda.',
+    body_ach: 'Jeroma Farmers Collection Centre Ltd tye ki yomcwiny me ribbe i tic ki Access to Innovation (A2I) pi dongo pur me kado cente, cwako dongo gwok cam maber, ki scaling innovations me dwol me mac ki tic pur i Northern ki Eastern Uganda.',
+    image: '/a2i_2.jpg',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
   }
 ];
 
