@@ -44,6 +44,49 @@ const DashboardFallback = () => (
   </div>
 );
 
+class DashboardErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('Dashboard Error Caught:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '40px 20px', textAlign: 'center', maxWidth: '600px', margin: '60px auto', background: '#0f3020', border: '2px solid #e9c46a', borderRadius: '16px', color: '#ffffff', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⚠️</div>
+          <h3 style={{ color: '#ffd166', fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>Dashboard Recovery Notice</h3>
+          <p style={{ color: '#d8f3dc', fontSize: '0.9rem', marginBottom: '20px' }}>
+            A temporary component error occurred ({this.state.error?.message || 'Error loading dashboard view'}). You can refresh to reload cleanly.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => { this.setState({ hasError: false }); window.location.reload(); }}
+              className="btn btn-primary"
+              style={{ padding: '10px 22px', background: '#e9c46a', color: '#081c15', fontWeight: 800 }}
+            >
+              🔄 Refresh Dashboard
+            </button>
+            <button
+              onClick={() => { this.setState({ hasError: false }); this.props.onBackHome?.(); }}
+              className="btn btn-outline"
+              style={{ padding: '10px 20px', borderColor: '#ffd166', color: '#ffd166' }}
+            >
+              ← Back to Site
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   const [lang, setLang] = useState('en');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -540,26 +583,28 @@ function App() {
         )}
 
         {currentView === 'dashboard' && currentUser && (
-          <Suspense fallback={<DashboardFallback />}>
-            {currentUser.role !== 'client' ? (
-              <AdminDashboard 
-                lang={lang} 
-                translations={translations}
-                user={currentUser} 
-                onLogout={handleLogout} 
-                onBackToSite={() => setCurrentView('home')} 
-                onStateChange={handleStateChange}
-              />
-            ) : (
-              <ClientDashboard 
-                lang={lang} 
-                translations={translations}
-                user={currentUser} 
-                onLogout={handleLogout} 
-                onBackToSite={() => setCurrentView('home')} 
-              />
-            )}
-          </Suspense>
+          <DashboardErrorBoundary onBackHome={() => setCurrentView('home')}>
+            <Suspense fallback={<DashboardFallback />}>
+              {currentUser.role !== 'client' ? (
+                <AdminDashboard 
+                  lang={lang} 
+                  translations={translations}
+                  user={currentUser} 
+                  onLogout={handleLogout} 
+                  onBackToSite={() => setCurrentView('home')} 
+                  onStateChange={handleStateChange}
+                />
+              ) : (
+                <ClientDashboard 
+                  lang={lang} 
+                  translations={translations}
+                  user={currentUser} 
+                  onLogout={handleLogout} 
+                  onBackToSite={() => setCurrentView('home')} 
+                />
+              )}
+            </Suspense>
+          </DashboardErrorBoundary>
         )}
       </main>
       

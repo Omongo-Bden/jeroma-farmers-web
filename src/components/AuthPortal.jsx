@@ -278,22 +278,22 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
         </div>
 
         {/* Portal card */}
-        <div className="glass-panel" style={{ padding: '32px 28px', border: '1px solid rgba(27,67,50,0.12)', boxShadow: '0 20px 60px rgba(15,48,32,0.06)', borderRadius: '20px', transition: 'all 0.4s ease' }}>
+        <div className="glass-panel auth-card" style={{ padding: '32px 28px', border: '1.5px solid rgba(233, 196, 106, 0.35)', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.45)', borderRadius: '20px', transition: 'all 0.4s ease', background: 'rgba(8, 48, 28, 0.95)' }}>
 
           {/* Tab Selector */}
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '28px', borderBottom: '1px solid rgba(27,67,50,0.08)', paddingBottom: '16px' }}>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '28px', borderBottom: '1px solid rgba(233, 196, 106, 0.2)', paddingBottom: '16px' }}>
             <button
               type="button"
               id="auth-tab-login"
               onClick={() => { setIsRegistering(false); setIsForgotPassword(false); clearState(); }}
               style={{
                 flex: 1, padding: '13px 16px', borderRadius: '10px',
-                border: !isRegistering && !isForgotPassword ? '2px solid var(--color-secondary)' : '2px solid rgba(27,67,50,0.08)',
-                background: !isRegistering && !isForgotPassword ? 'var(--color-secondary)' : 'rgba(27,67,50,0.04)',
-                color: !isRegistering && !isForgotPassword ? 'var(--color-primary-dark)' : 'var(--color-text-light)',
+                border: !isRegistering && !isForgotPassword ? '2px solid var(--color-secondary)' : '2px solid rgba(255,255,255,0.15)',
+                background: !isRegistering && !isForgotPassword ? 'var(--color-secondary)' : 'rgba(255,255,255,0.06)',
+                color: !isRegistering && !isForgotPassword ? '#0f3020' : '#ffffff',
                 fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.25s ease',
                 letterSpacing: '0.01em',
-                boxShadow: !isRegistering && !isForgotPassword ? '0 4px 14px rgba(233,196,106,0.25)' : 'none'
+                boxShadow: !isRegistering && !isForgotPassword ? '0 4px 14px rgba(233,196,106,0.3)' : 'none'
               }}
             >
               {t.authTabLogin || '🔑 Log In'}
@@ -304,12 +304,12 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
               onClick={() => { setIsRegistering(true); setIsForgotPassword(false); clearState(); }}
               style={{
                 flex: 1, padding: '13px 16px', borderRadius: '10px',
-                border: isRegistering && !isForgotPassword ? '2px solid var(--color-secondary)' : '2px solid rgba(27,67,50,0.08)',
-                background: isRegistering && !isForgotPassword ? 'var(--color-secondary)' : 'rgba(27,67,50,0.04)',
-                color: isRegistering && !isForgotPassword ? 'var(--color-primary-dark)' : 'var(--color-text-light)',
+                border: isRegistering && !isForgotPassword ? '2px solid var(--color-secondary)' : '2px solid rgba(255,255,255,0.15)',
+                background: isRegistering && !isForgotPassword ? 'var(--color-secondary)' : 'rgba(255,255,255,0.06)',
+                color: isRegistering && !isForgotPassword ? '#0f3020' : '#ffffff',
                 fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.25s ease',
                 letterSpacing: '0.01em',
-                boxShadow: isRegistering && !isForgotPassword ? '0 4px 14px rgba(233,196,106,0.25)' : 'none'
+                boxShadow: isRegistering && !isForgotPassword ? '0 4px 14px rgba(233,196,106,0.3)' : 'none'
               }}
             >
               {t.authTabRegister || '✍️ Register'}
@@ -318,20 +318,20 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
 
           {/* Success & Error alerts */}
           {error && (
-            <div style={{ padding: '12px 16px', backgroundColor: 'rgba(217, 4, 41, 0.15)', borderLeft: '4px solid #d90429', borderRadius: '6px', color: '#ffb3c1', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Icons.CheckCircle size={18} style={{ color: '#d90429', transform: 'rotate(180deg)' }} />
+            <div style={{ padding: '12px 16px', backgroundColor: 'rgba(217, 4, 41, 0.25)', borderLeft: '4px solid #d90429', borderRadius: '6px', color: '#ffc2d1', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
+              <Icons.CheckCircle size={18} style={{ color: '#ff4d6d', transform: 'rotate(180deg)' }} />
               <span>{error}</span>
             </div>
           )}
           {success && (
-            <div style={{ padding: '12px 16px', backgroundColor: 'rgba(82, 183, 136, 0.15)', borderLeft: '4px solid var(--color-accent)', borderRadius: '6px', color: '#c4f0db', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ padding: '12px 16px', backgroundColor: 'rgba(82, 183, 136, 0.25)', borderLeft: '4px solid var(--color-accent)', borderRadius: '6px', color: '#d8f3dc', fontSize: '0.85rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
               <Icons.CheckCircle size={18} style={{ color: 'var(--color-accent)' }} />
               <span>{success}</span>
             </div>
           )}
 
           {/* Form Header */}
-          <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 700, marginBottom: '24px', borderBottom: '1px solid rgba(27,67,50,0.08)', paddingBottom: '12px' }}>
+          <h3 style={{ color: '#ffd166', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 800, marginBottom: '24px', borderBottom: '1px solid rgba(233,196,106,0.2)', paddingBottom: '12px' }}>
             {isForgotPassword ? (t.authResetPasswordHeader || 'Reset Your Password') : (isRegistering ? t.authRegisterHeader : t.authLoginHeader)}
           </h3>
 
@@ -341,22 +341,23 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
               {resetStep === 1 ? (
                 <>
                   <div className="form-group">
-                    <label htmlFor="reset-username" style={{ color: 'var(--color-primary-dark)' }}>{t.authUsername}</label>
+                    <label htmlFor="reset-username" style={{ color: '#ffd166', fontWeight: 700, display: 'block', marginBottom: '6px' }}>{t.authUsername}</label>
                     <input
                       type="text" id="reset-username" name="username" autoComplete="username"
                       className="form-input" value={resetUsername}
                       onChange={(e) => setResetUsername(e.target.value)} required
+                      style={{ width: '100%', boxSizing: 'border-box' }}
                     />
                   </div>
                   
                   <div className="form-group">
-                    <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Verify Via</label>
+                    <label style={{ color: '#ffd166', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Verify Via</label>
                     <div style={{ display: 'flex', gap: '16px' }}>
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#000' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#ffffff', fontWeight: 600 }}>
                         <input type="radio" name="resetMethod" value="phone" checked={resetMethod === 'phone'} onChange={() => setResetMethod('phone')} />
                         Phone Number
                       </label>
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#000' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: '#ffffff', fontWeight: 600 }}>
                         <input type="radio" name="resetMethod" value="email" checked={resetMethod === 'email'} onChange={() => setResetMethod('email')} />
                         Email Address
                       </label>
@@ -365,50 +366,52 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
 
                   {resetMethod === 'phone' ? (
                     <div className="form-group">
-                      <label htmlFor="reset-phone" style={{ color: 'var(--color-primary-dark)' }}>Registered Phone Number</label>
+                      <label htmlFor="reset-phone" style={{ color: '#ffd166', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Registered Phone Number</label>
                       <input
                         type="tel" id="reset-phone" name="phone" autoComplete="tel"
                         className="form-input" value={resetPhone}
                         onChange={(e) => setResetPhone(e.target.value)} required
                         placeholder="+256 773 623 196"
+                        style={{ width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
                   ) : (
                     <div className="form-group">
-                      <label htmlFor="reset-email" style={{ color: 'var(--color-primary-dark)' }}>Registered Email Address</label>
+                      <label htmlFor="reset-email" style={{ color: '#ffd166', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Registered Email Address</label>
                       <input
                         type="email" id="reset-email" name="email" autoComplete="email"
                         className="form-input" value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)} required
                         placeholder="farmer@example.com"
+                        style={{ width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
                   )}
 
-                  <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }} disabled={isLoading}>
+                  <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px', fontWeight: 700 }} disabled={isLoading}>
                     <Icons.MessageSquare size={18} />
                     <span style={{ marginLeft: '8px' }}>{isLoading ? '...' : 'Generate Reset Code'}</span>
                   </button>
                 </>
               ) : (
                 <>
-                  <div style={{ backgroundColor: 'rgba(82, 183, 136, 0.08)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(82,183,136,0.2)', fontSize: '0.8rem', color: 'var(--color-primary-dark)' }}>
+                  <div style={{ backgroundColor: 'rgba(82, 183, 136, 0.15)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(82,183,136,0.3)', fontSize: '0.8rem', color: '#d8f3dc' }}>
                     ℹ️ A 6-digit verification code has been simulated for your account. Please enter it below to confirm your identity.
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="reset-code" style={{ color: 'var(--color-primary-dark)' }}>6-Digit Verification Code</label>
+                    <label htmlFor="reset-code" style={{ color: '#ffd166', fontWeight: 700, display: 'block', marginBottom: '6px' }}>6-Digit Verification Code</label>
                     <input
                       type="text" id="reset-code" name="code" maxLength="6"
                       className="form-input" value={enteredCode}
                       onChange={(e) => setEnteredCode(e.target.value)} required
                       placeholder="Enter 6-digit code"
-                      style={{ fontSize: '1.1rem', letterSpacing: '0.2em', textAlign: 'center' }}
+                      style={{ fontSize: '1.1rem', letterSpacing: '0.2em', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}
                     />
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="reset-new-password" style={{ color: 'var(--color-primary-dark)' }}>{t.authNewPassword || 'New Password'}</label>
+                    <label htmlFor="reset-new-password" style={{ color: '#ffd166', fontWeight: 700, display: 'block', marginBottom: '6px' }}>{t.authNewPassword || 'New Password'}</label>
                     <div style={{ position: 'relative' }}>
                       <input
                         type={showResetPassword ? "text" : "password"} id="reset-new-password" name="new-password" autoComplete="new-password"
@@ -421,7 +424,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                         onClick={() => setShowResetPassword(!showResetPassword)}
                         style={{
                           position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                          background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)',
+                          background: 'none', border: 'none', cursor: 'pointer', color: '#64748b',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px'
                         }}
                       >
@@ -434,7 +437,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                     <button type="button" className="btn btn-outline" onClick={() => setResetStep(1)} style={{ flex: 1, justifyContent: 'center', padding: '12px' }}>
                       Back
                     </button>
-                    <button type="submit" className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', padding: '12px' }} disabled={isLoading}>
+                    <button type="submit" className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', padding: '12px', fontWeight: 700 }} disabled={isLoading}>
                       <Icons.CheckCircle size={18} />
                       <span style={{ marginLeft: '8px' }}>{isLoading ? '...' : (t.authResetBtn || 'Reset Password')}</span>
                     </button>
@@ -443,7 +446,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
               )}
 
               <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                <button type="button" onClick={() => { setIsForgotPassword(false); setResetStep(1); clearState(); }} style={{ background: 'none', border: 'none', color: 'var(--color-primary-light)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>
+                <button type="button" onClick={() => { setIsForgotPassword(false); setResetStep(1); clearState(); }} style={{ background: 'none', border: 'none', color: '#ffd166', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>
                   {t.authBackToLogin || 'Back to Login'}
                 </button>
               </div>
@@ -452,7 +455,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
             /* Login Form */
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
-                <label htmlFor="username" style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}>
+                <label htmlFor="username" style={{ color: '#ffd166', fontWeight: 700, display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>
                   {t.authUsername || 'Username, Phone Number, or Email'}
                 </label>
                 <input
@@ -464,7 +467,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
               </div>
 
               <div className="form-group">
-                <label htmlFor="password" style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}>{t.authPassword}</label>
+                <label htmlFor="password" style={{ color: '#ffd166', fontWeight: 700, display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>{t.authPassword}</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showLoginPassword ? "text" : "password"} id="password" name="password" autoComplete="current-password"
@@ -477,7 +480,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                     onClick={() => setShowLoginPassword(!showLoginPassword)}
                     style={{
                       position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)',
+                      background: 'none', border: 'none', cursor: 'pointer', color: '#64748b',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px'
                     }}
                   >
@@ -490,7 +493,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                 <button
                   type="button"
                   onClick={() => { setIsForgotPassword(true); clearState(); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-primary-light)', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: '#ffd166', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontWeight: 700 }}
                 >
                   {t.authForgotPasswordLink || 'Forgot Password?'}
                 </button>
@@ -498,19 +501,19 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
 
               <button
                 type="submit" className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }}
+                style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px', fontWeight: 700 }}
                 disabled={isLoading}
               >
                 <span>{isLoading ? '...' : t.authLoginBtn}</span>
                 {!isLoading && <Icons.ArrowRight size={18} />}
               </button>
 
-              <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-light)', marginTop: '16px' }}>
+              <div style={{ textAlign: 'center', fontSize: '0.88rem', color: '#ffffff', marginTop: '16px' }}>
                 {t.authNoAccount}{' '}
                 <button
                   type="button"
                   onClick={() => { setIsRegistering(true); clearState(); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-primary-light)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: '#ffd166', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                 >
                   {t.authRegisterLink}
                 </button>
@@ -647,12 +650,12 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                 {!isLoading && <Icons.ArrowRight size={18} />}
               </button>
 
-              <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-light)', marginTop: '16px' }}>
+              <div style={{ textAlign: 'center', fontSize: '0.88rem', color: '#ffffff', marginTop: '16px' }}>
                 {t.authHasAccount}{' '}
                 <button
                   type="button"
                   onClick={() => { setIsRegistering(false); clearState(); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-primary-light)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: '#ffd166', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                 >
                   {t.authLoginLink}
                 </button>
@@ -666,7 +669,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           <button
             type="button" onClick={onCancel}
-            style={{ background: 'none', border: 'none', color: 'var(--color-text-light)', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'underline' }}
+            style={{ background: 'none', border: 'none', color: '#ffd166', fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', textDecoration: 'underline' }}
           >
             <Icons.ChevronDown size={16} style={{ transform: 'rotate(90deg)' }} />
             {t.authBackHome}

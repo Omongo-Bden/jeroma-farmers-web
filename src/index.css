@@ -841,9 +841,8 @@ img {
   letter-spacing: 0.01em;
 }
 
-/* Ensure labels inside dark panels / auth card / dark theme stay crisp high-contrast white */
+/* Ensure labels inside dark panels / dark theme stay crisp high-contrast white */
 .glass-panel-dark .form-group label,
-.auth-card .form-group label,
 .dark-theme .form-group label,
 .dark-mode .form-group label,
 [data-theme="dark"] .form-group label,
@@ -852,11 +851,58 @@ img {
 }
 
 /* Ensure form labels inside standard light panels and admin dashboard are dark and sharp */
-.glass-panel .form-group label,
+.glass-panel:not(.auth-card) .form-group label,
 .dashboard-card .form-group label,
 .project-hub-form .form-group label,
 .admin-hub .form-group label {
   color: #0f3020 !important;
+}
+
+/* Auth Portal Form Headings & Labels: Bright Yellow (#ffd166) and fully visible */
+.auth-section .form-group label,
+.auth-card .form-group label,
+.auth-section label,
+.auth-card label,
+.auth-card h3,
+.auth-section h3 {
+  color: #ffd166 !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.02em !important;
+}
+
+.auth-section .form-input,
+.auth-card .form-input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  border: 1.5px solid rgba(82, 183, 136, 0.4) !important;
+}
+
+.auth-section .form-input::placeholder,
+.auth-card .form-input::placeholder {
+  color: #64748b !important;
+  opacity: 1 !important;
+}
+
+.auth-section select.form-input,
+.auth-card select.form-input,
+.auth-section select.form-input option,
+.auth-card select.form-input option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.auth-section input[type="date"].form-input,
+.auth-card input[type="date"].form-input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.auth-section .auth-card {
+  background: rgba(8, 48, 28, 0.95) !important;
+  border: 1.5px solid rgba(233, 196, 106, 0.35) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45) !important;
 }
 
 .form-input {

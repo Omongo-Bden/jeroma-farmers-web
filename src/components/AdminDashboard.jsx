@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import * as Icons from './Icons';
 import { 
   getCrops, 
@@ -141,10 +141,12 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                       (currentUserState?.role || '') === 'managing_director' ||
                       (currentUserState?.role || '').toLowerCase() === 'admin';
 
-  const userAllowedPermissions = currentUserState?.permissions || 
-                                 getDepartmentPermissions(currentUserState?.department) || 
-                                 getDepartmentPermissions(currentUserState?.role) || 
-                                 (isFullAdmin ? ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot', 'projects', 'staff', 'cooperatives', 'departments', 'forms', 'users', 'logins', 'language', 'socials', 'slides'] : []);
+  const userAllowedPermissions = useMemo(() => {
+    return currentUserState?.permissions || 
+           getDepartmentPermissions(currentUserState?.department) || 
+           getDepartmentPermissions(currentUserState?.role) || 
+           (isFullAdmin ? ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot', 'projects', 'staff', 'cooperatives', 'departments', 'forms', 'users', 'logins', 'language', 'socials', 'slides'] : []);
+  }, [currentUserState, isFullAdmin]);
 
   const canAccessTab = (tabId) => {
     if (isFullAdmin) return true;
@@ -158,12 +160,12 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
 
   // Auto-switch to first permitted tab if activeTab is not allowed for user
   useEffect(() => {
-    if (!isFullAdmin && userAllowedPermissions && userAllowedPermissions.length > 0) {
+    if (!isFullAdmin && Array.isArray(userAllowedPermissions) && userAllowedPermissions.length > 0) {
       if (!userAllowedPermissions.includes(activeTab)) {
         setActiveTab(userAllowedPermissions[0]);
       }
     }
-  }, [currentUserState, userAllowedPermissions, isFullAdmin, activeTab]);
+  }, [userAllowedPermissions, isFullAdmin, activeTab]);
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -2551,19 +2553,19 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 14px', textAlign: 'center' }}>
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Staff</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#e9c46a' }}>{staffList.length}</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#e9c46a' }}>{(staffList || []).length}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 14px', textAlign: 'center' }}>
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Deliveries</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#52b788' }}>{deliveries.length}</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#52b788' }}>{(deliveries || []).length}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 14px', textAlign: 'center' }}>
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Transit</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#93c5fd' }}>{dispatches.length}</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#93c5fd' }}>{(dispatches || []).length}</div>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 14px', textAlign: 'center' }}>
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Projects</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f4a261' }}>{projectsList.length}</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f4a261' }}>{(projectsList || []).length}</div>
             </div>
           </div>
         </div>
@@ -2630,30 +2632,30 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
           <div className="dashboard-tabs-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {[
               { id: 'prices', label: t.pricesTab, icon: <Icons.Wheat size={18} />, category: 'operations', badge: crops ? Object.keys(crops).length : 0 },
-              { id: 'deliveries', label: t.deliveriesTab, icon: <Icons.Warehouse size={18} />, category: 'operations', badge: deliveries.length },
-              { id: 'dispatches', label: t.dispatchesTab, icon: <Icons.Truck size={18} />, category: 'operations', badge: dispatches.length },
-              { id: 'projects', label: lang === 'en' ? '🚀 Projects Hub' : '🚀 Projects', icon: null, category: 'operations', badge: projectsList.length },
-              { id: 'staff', label: lang === 'en' ? '👥 Staff & Positions' : '👥 Lutic mwa', icon: null, category: 'organization', badge: staffList.length },
-              { id: 'cooperatives', label: lang === 'en' ? '🤝 Cooperatives & SACCOs' : '🤝 Cooperatives', icon: null, category: 'organization', badge: coopsList.length },
+              { id: 'deliveries', label: t.deliveriesTab, icon: <Icons.Warehouse size={18} />, category: 'operations', badge: (deliveries || []).length },
+              { id: 'dispatches', label: t.dispatchesTab, icon: <Icons.Truck size={18} />, category: 'operations', badge: (dispatches || []).length },
+              { id: 'projects', label: lang === 'en' ? '🚀 Projects Hub' : '🚀 Projects', icon: null, category: 'operations', badge: (projectsList || []).length },
+              { id: 'staff', label: lang === 'en' ? '👥 Staff & Positions' : '👥 Lutic mwa', icon: null, category: 'organization', badge: (staffList || []).length },
+              { id: 'cooperatives', label: lang === 'en' ? '🤝 Cooperatives & SACCOs' : '🤝 Cooperatives', icon: null, category: 'organization', badge: (cooperativesList || []).length },
               { id: 'departments', label: lang === 'en' ? '🏢 Departments Hub' : '🏢 Departments', icon: null, category: 'organization', badge: 6 },
               { id: 'forms', label: lang === 'en' ? '📋 Google Forms Sync' : '📋 Google Forms', icon: null, category: 'organization' },
-              { id: 'inquiries', label: t.inquiriesTab, icon: <Icons.Mail size={18} />, category: 'outreach', badge: inquiries.length },
-              { id: 'users', label: t.usersTab || 'User Management', icon: <Icons.Users size={18} />, category: 'governance', badge: allUsersList.length },
+              { id: 'inquiries', label: t.inquiriesTab, icon: <Icons.Mail size={18} />, category: 'outreach', badge: (inquiries || []).length },
+              { id: 'users', label: t.usersTab || 'User Management', icon: <Icons.Users size={18} />, category: 'governance', badge: (allUsersList || []).length },
               { id: 'logins', label: lang === 'en' ? '🔑 Login History' : '🔑 Wel me Login', icon: <Icons.Clock size={18} />, category: 'governance' },
               { id: 'language', label: lang === 'en' ? 'Language Manager' : 'Yore me Leb', icon: <Icons.Globe size={18} />, category: 'governance' },
               { id: 'socials', label: lang === 'en' ? '📱 Social Media Hub' : '📱 Social Media', icon: null, category: 'outreach' },
-              { id: 'manual', label: lang === 'en' ? '📖 Training Manual Manager' : '📖 Training Manual Manager', icon: null, category: 'outreach', badge: manualStages.length },
+              { id: 'manual', label: lang === 'en' ? '📖 Training Manual Manager' : '📖 Training Manual Manager', icon: null, category: 'outreach', badge: (manualStages || []).length },
               { id: 'chatbot', label: lang === 'en' ? '🤖 Chatbot Manager' : '🤖 Chatbot Manager', icon: null, category: 'outreach' },
-              { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null, category: 'outreach', badge: slides.length }
+              { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null, category: 'outreach', badge: (slides || []).length }
             ].filter(tab => {
               if (tab.id === 'users') return isFullAdmin;
               if (tab.id === 'logins') return isFullAdmin;
-              if (tab.id === 'manual' && settings.hideManual && !isFullAdmin) return false;
-              if (!isFullAdmin && !userAllowedPermissions.includes(tab.id)) return false;
+              if (tab.id === 'manual' && settings?.hideManual && !isFullAdmin) return false;
+              if (!isFullAdmin && !(userAllowedPermissions || []).includes(tab.id)) return false;
               if (navCategory !== 'all' && tab.category !== navCategory) return false;
-              if (tabSearchQuery.trim()) {
+              if (tabSearchQuery && tabSearchQuery.trim()) {
                 const q = tabSearchQuery.toLowerCase();
-                return tab.label.toLowerCase().includes(q) || tab.id.toLowerCase().includes(q);
+                return (tab.label || '').toLowerCase().includes(q) || (tab.id || '').toLowerCase().includes(q);
               }
               return true;
             }).map(tab => (
