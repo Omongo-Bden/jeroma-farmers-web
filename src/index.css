@@ -835,24 +835,105 @@ img {
 }
 
 .form-group label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-primary-dark, #0f3020);
+  letter-spacing: 0.01em;
+}
+
+/* Ensure labels inside dark panels / auth card / dark theme stay crisp high-contrast white */
+.glass-panel-dark .form-group label,
+.auth-card .form-group label,
+.dark-theme .form-group label,
+.dark-mode .form-group label,
+[data-theme="dark"] .form-group label,
+.modal-dark .form-group label {
+  color: #ffffff !important;
+}
+
+/* Ensure form labels inside standard light panels and admin dashboard are dark and sharp */
+.glass-panel .form-group label,
+.dashboard-card .form-group label,
+.project-hub-form .form-group label,
+.admin-hub .form-group label {
+  color: #0f3020 !important;
 }
 
 .form-input {
-  padding: 12px 16px;
+  padding: 11px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(27, 67, 50, 0.2);
-  background-color: var(--color-bg-white);
-  transition: all 0.3s ease;
-  color: var(--color-text-dark);
+  border: 1.5px solid rgba(15, 48, 32, 0.25);
+  background-color: #ffffff;
+  transition: all 0.25s ease;
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.dark-theme .form-input,
+.dark-mode .form-input,
+[data-theme="dark"] .form-input,
+.glass-panel-dark .form-input {
+  background-color: #1e293b;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f8fafc;
 }
 
 .form-input:focus {
   border-color: var(--color-primary-light);
   box-shadow: 0 0 0 4px rgba(82, 183, 136, 0.2);
   transform: translateY(-1px);
+}
+
+/* --- Waterfall Project Management Stepper & Badges --- */
+.waterfall-stepper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+.waterfall-step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+  color: #64748b;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+.waterfall-step.active {
+  font-weight: 800;
+  border-width: 1.5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.waterfall-step.active-initiation { background: #eff6ff; color: #1d4ed8; border-color: #3b82f6; }
+.waterfall-step.active-planning { background: #fffbeb; color: #b45309; border-color: #f59e0b; }
+.waterfall-step.active-process { background: #faf5ff; color: #6d28d9; border-color: #8b5cf6; }
+.waterfall-step.active-implementation { background: #ecfdf5; color: #047857; border-color: #10b981; }
+.waterfall-step.active-monitoring { background: #ecfeff; color: #0e7490; border-color: #06b6d4; }
+.waterfall-step.active-completed { background: #f0fdf4; color: #15803d; border-color: #22c55e; }
+.waterfall-step.passed { background: #f1f5f9; color: #0f766e; border-color: #99f6e4; }
+.waterfall-arrow { color: #94a3b8; font-size: 0.72rem; }
+
+.dark-theme .waterfall-stepper,
+.dark-mode .waterfall-stepper,
+[data-theme="dark"] .waterfall-stepper {
+  background: #0f172a;
+  border-color: #334155;
+}
+.dark-theme .waterfall-step,
+.dark-mode .waterfall-step,
+[data-theme="dark"] .waterfall-step {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-color: #475569;
 }
 
 /* Selector buttons for crop */
@@ -4342,4 +4423,32 @@ body {
 .App.view-portal .nav-menu .nav-link.active {
   color: #e9c46a !important; /* Gold/yellow active tab marker */
 }
+
+/* --- Social Media Hub & Footer Social Icons --- */
+.footer-social-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.footer-social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.footer-social-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.22);
+  border-color: var(--color-secondary, #e9c46a);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
 

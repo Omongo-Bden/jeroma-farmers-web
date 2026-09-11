@@ -82,18 +82,19 @@ function isQueryOffTopic(msg) {
 
   const ALLOWED_STEMS = [
     // Greetings/Conversation starters/politeness/conversational replies
-    'hello', 'hi', 'hey', 'greetings', 'morning', 'afternoon', 'evening', 'how are you', 'who are you', 'what is your name', 'what can you do', 'help', 'info', 'support', 'clear', 'reset', 'thank', 'thanks', 'bye', 'goodbye', 'welcome', 'cop ango', 'ibeere', 'yo', 'yes', 'no', 'okay', 'ok', 'yeah', 'yup', 'sure', 'fine', 'correct', 'agree', 'please', 'good', 'nice',
+    'hello', 'hi', 'hey', 'greetings', 'morning', 'afternoon', 'evening', 'how are you', 'who are you', 'what is your name', 'what can you do', 'help', 'info', 'support', 'clear', 'reset', 'thank', 'thanks', 'bye', 'goodbye', 'welcome', 'cop ango', 'kopango', 'ibeere', 'apwoyo', 'apwoyo bino', 'in a nga', 'in anga', 'kony', 'kony an', 'yo', 'yes', 'no', 'okay', 'ok', 'yeah', 'yup', 'sure', 'fine', 'correct', 'agree', 'please', 'good', 'nice', 'tell', 'show', 'explain', 'give', 'find', 'know', 'about', 'what', 'where', 'how', 'when', 'who', 'why', 'can you',
 
-    // Jeroma Company specific info
-    'jeroma', 'farmer', 'company', 'business', 'centre', 'center', 'lira', 'uganda', 'office', 'hour', 'contact', 'phone', 'whatsapp', 'email', 'address', 'location', 'p.o.box', 'website', 'mission', 'vision', 'service', 'collection', 'logistics', 'weigh', 'grade', 'grading', 'store', 'storage', 'warehouse', 'silo', 'input', 'supply', 'supplies', 'seed', 'fertilizer', 'spray', 'credit', 'pay', 'payout', 'price', 'rate', 'cost', 'fee', 'shilling', 'ugx', 'money', 'register', 'join', 'account', 'portal', 'login', 'signin', 'signup', 'transit', 'dispatch', 'pickup', 'truck', 'transport', 'deliver', 'delivery', 'receipt',
-    // General Agriculture, Farming, Soil, Pests, Weeds
+    // Jeroma Company specific info & Districts
+    'jeroma', 'farmer', 'company', 'business', 'centre', 'center', 'lira', 'pader', 'agago', 'kitgum', 'abim', 'karenga', 'kole', 'uganda', 'office', 'hour', 'contact', 'phone', 'whatsapp', 'email', 'address', 'location', 'p.o.box', 'website', 'mission', 'vision', 'service', 'collection', 'logistics', 'weigh', 'grade', 'grading', 'store', 'storage', 'warehouse', 'silo', 'input', 'supply', 'supplies', 'seed', 'fertilizer', 'spray', 'credit', 'pay', 'payout', 'price', 'rate', 'cost', 'fee', 'shilling', 'ugx', 'money', 'register', 'join', 'account', 'portal', 'login', 'signin', 'signup', 'transit', 'dispatch', 'pickup', 'truck', 'transport', 'deliver', 'delivery', 'receipt', 'tic', 'centren', 'wel', 'cul',
+    // General Agriculture, Farming, Soil, Pests, Weeds (English & Luo)
     'agric', 'farm', 'crop', 'plant', 'grow', 'grain', 'harvest', 'post-harvest', 'dry', 'drying', 'moisture', 'aflatoxin', 'pics', 'bag', 'weevil', 'mold', 'pest', 'disease', 'insect', 'fungus', 'weed', 'spray', 'chemical', 'pesticide', 'herbicide', 'fungicide', 'fertilize', 'manure', 'compost', 'soil', 'earth', 'land', 'field', 'season', 'rain', 'weather', 'water', 'irrigate', 'irrigation', 'plough', 'plow', 'till', 'tillage', 'prune', 'pruning', 'mulch', 'mulching', 'sprout', 'seedling', 'nursery', 'sow', 'sowing', 'drought', 'yield', 'cultivate', 'cultivation', 'naro', 'maaif', 'fao', 'ucda', 'iita', 'owc', 'pdm', 'naads', 'ngetta', 'nasarri',
+    'pur', 'lupur', 'pot', 'ngom', 'kot', 'kwoyo', 'cam', 'ginnipiny', 'ginnipura', 'pwonj', 'rwom', 'kayo', 'keyo', 'nyig', 'yat', 'bel',
     // Disease symptoms/narrations/actions
     'fight', 'treat', 'prevent', 'cure', 'cause', 'symptom', 'attack', 'diagnose', 'explain', 'describe', 'narrate', 'rot', 'wilt', 'browning', 'spot', 'rust', 'mildew', 'blight', 'infection', 'virus', 'bacteria', 'fungal', 'parasite', 'insecticide', 'vaccin', 'how to', 'how can', 'what is', 'what are', 'why does', 'why is', 'treatment', 'remedy',
-    // Crops
-    'coffee', 'sunflower', 'maize', 'corn', 'bean', 'cassava', 'potato', 'banana', 'matooke', 'millet', 'sorghum', 'groundnut', 'peanut', 'rice', 'tomato', 'onion', 'cabbage',
-    // Animals / Livestock / Fish / Bees
-    'cattle', 'cow', 'bull', 'milk', 'beef', 'dairy', 'calf', 'heifer', 'goat', 'kid', 'sheep', 'lamb', 'pig', 'swine', 'pork', 'poultry', 'chicken', 'hen', 'rooster', 'egg', 'fish', 'tilapia', 'catfish', 'pond', 'bee', 'hive', 'honey', 'beekeep', 'apiculture', 'veterinary', 'vet', 'parasite', 'tick', 'worm', 'vaccine', 'vaccination', 'fodder', 'pasture', 'hay', 'silage'
+    // Crops (English & Luo)
+    'coffee', 'sunflower', 'maize', 'corn', 'bean', 'cassava', 'potato', 'banana', 'matooke', 'millet', 'sorghum', 'groundnut', 'peanut', 'rice', 'tomato', 'onion', 'cabbage', 'anyim', 'kalo', 'muca', 'layata', 'kwon', 'kado',
+    // Animals / Livestock / Fish / Bees (English & Luo)
+    'cattle', 'cow', 'bull', 'milk', 'beef', 'dairy', 'calf', 'heifer', 'goat', 'kid', 'sheep', 'lamb', 'pig', 'swine', 'pork', 'poultry', 'chicken', 'hen', 'rooster', 'egg', 'fish', 'tilapia', 'catfish', 'pond', 'bee', 'hive', 'honey', 'beekeep', 'apiculture', 'veterinary', 'vet', 'parasite', 'tick', 'worm', 'vaccine', 'vaccination', 'fodder', 'pasture', 'hay', 'silage', 'dyang', 'romi', 'gwok', 'twon', 'gwen'
   ];
 
   return !ALLOWED_STEMS.some(stem => m.includes(stem));
@@ -104,15 +105,18 @@ function getLocalFallback(msg) {
     return LOCAL_FALLBACK_RESPONSES.rejection;
   }
   const m = msg.toLowerCase();
-  if (m.includes('crop') || m.includes('collect') || m.includes('coffee') || m.includes('maize') || m.includes('bean') || m.includes('sunflower')) return LOCAL_FALLBACK_RESPONSES.crops;
-  if (m.includes('payout') || m.includes('price') || m.includes('rate') || m.includes('pay') || m.includes('ugx') || m.includes('money')) return LOCAL_FALLBACK_RESPONSES.payout;
-  if (m.includes('register') || m.includes('join') || m.includes('sign up') || m.includes('account')) return LOCAL_FALLBACK_RESPONSES.register;
-  if (m.includes('pickup') || m.includes('transport') || m.includes('dispatch') || m.includes('transit') || m.includes('truck')) return LOCAL_FALLBACK_RESPONSES.pickup;
-  if (m.includes('input') || m.includes('seed') || m.includes('fertilizer') || m.includes('supply')) return LOCAL_FALLBACK_RESPONSES.inputs;
-  if (m.includes('location') || m.includes('where') || m.includes('address') || m.includes('office') || m.includes('lira')) return LOCAL_FALLBACK_RESPONSES.location;
-  if (m.includes('harvest') || m.includes('storage') || m.includes('dry') || m.includes('drying') || m.includes('aflatoxin') || m.includes('pics') || m.includes('grainpro') || m.includes('pest')) return LOCAL_FALLBACK_RESPONSES.harvest;
-  if (m.includes('soil') || m.includes('planting') || m.includes('spacing') || m.includes('sampling') || m.includes('fertilize') || m.includes('compost') || m.includes('manure')) return LOCAL_FALLBACK_RESPONSES.soil;
-  return LOCAL_FALLBACK_RESPONSES.default;
+  if (m.includes('crop') || m.includes('collect') || m.includes('coffee') || m.includes('maize') || m.includes('bean') || m.includes('sunflower') || m.includes('anyim') || m.includes('bel') || m.includes('cogo')) return LOCAL_FALLBACK_RESPONSES.crops;
+  if (m.includes('payout') || m.includes('price') || m.includes('rate') || m.includes('pay') || m.includes('ugx') || m.includes('money') || m.includes('wel') || m.includes('cul')) return LOCAL_FALLBACK_RESPONSES.payout;
+  if (m.includes('register') || m.includes('join') || m.includes('sign up') || m.includes('account') || m.includes('donye') || m.includes('kwoye')) return LOCAL_FALLBACK_RESPONSES.register;
+  if (m.includes('pickup') || m.includes('transport') || m.includes('dispatch') || m.includes('transit') || m.includes('truck') || m.includes('motoka')) return LOCAL_FALLBACK_RESPONSES.pickup;
+  if (m.includes('input') || m.includes('seed') || m.includes('fertilizer') || m.includes('supply') || m.includes('kodi') || m.includes('nyig')) return LOCAL_FALLBACK_RESPONSES.inputs;
+  if (m.includes('location') || m.includes('where') || m.includes('address') || m.includes('office') || m.includes('lira') || m.includes('pader') || m.includes('kabedo')) return LOCAL_FALLBACK_RESPONSES.location;
+  if (m.includes('harvest') || m.includes('storage') || m.includes('dry') || m.includes('drying') || m.includes('aflatoxin') || m.includes('pics') || m.includes('grainpro') || m.includes('pest') || m.includes('kayo') || m.includes('kwoyo')) return LOCAL_FALLBACK_RESPONSES.harvest;
+  if (m.includes('soil') || m.includes('planting') || m.includes('spacing') || m.includes('sampling') || m.includes('fertilize') || m.includes('compost') || m.includes('manure') || m.includes('ngom') || m.includes('pur')) return LOCAL_FALLBACK_RESPONSES.soil;
+  if (m.includes('hello') || m.includes('hi') || m.includes('hey') || m.includes('apwoyo') || m.includes('ibeere') || m.includes('morning') || m.includes('afternoon') || m.includes('evening')) {
+    return "Hello! I am Jeroma, your Jeroma Farmers Assistant. How can I help you today with crop prices, collection services, farm pickups, or agronomy advice? 🌾";
+  }
+  return LOCAL_FALLBACK_RESPONSES.crops;
 }
 
 function getWebsiteContext(lang) {
@@ -774,11 +778,13 @@ export default function ChatBot({ lang, onClose }) {
 
       let reply;
       try {
-        const data = await res.json();
-        if (data && data.reply) {
-          reply = data.reply;
-        } else if (data && data.error) {
-          reply = data.error;
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.reply) {
+            reply = data.reply;
+          } else {
+            reply = getLocalFallback(userMsg);
+          }
         } else {
           reply = getLocalFallback(userMsg);
         }

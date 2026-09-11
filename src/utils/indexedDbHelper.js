@@ -1,6 +1,5 @@
-// Native, zero-dependency IndexedDB helper wrapper for Jeroma Farmers PWA
 const DB_NAME = 'JeromaFarmersDB';
-const DB_VERSION = 1;
+const DB_VERSION = 3;
 const STORES = [
   'crops',
   'manual',
@@ -10,6 +9,14 @@ const STORES = [
   'inquiries',
   'translations',
   'slides',
+  'projects',
+  'staff',
+  'cooperatives',
+  'machinery',
+  'finance',
+  'nurseries',
+  'formSubmissions',
+  'socials',
   'offlineActions'
 ];
 

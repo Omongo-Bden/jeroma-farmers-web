@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Icons from './Icons';
+import { getSocials, DEFAULT_SOCIALS } from '../utils/db';
 
 export default function Footer({ lang, translations: _translations, showInstallBtn = false, onInstallApp }) {
+  const [socialsData, setSocialsData] = useState(DEFAULT_SOCIALS);
+
+  useEffect(() => {
+    let isMounted = true;
+    getSocials().then(data => {
+      if (isMounted && data) setSocialsData(data);
+    }).catch(err => console.error('Error fetching socials in footer:', err));
+    return () => { isMounted = false; };
+  }, []);
   const handleScrollTo = (sectionId) => {
     const el = document.getElementById(sectionId);
     if (el) {
@@ -99,16 +109,47 @@ export default function Footer({ lang, translations: _translations, showInstallB
               <a href="mailto:jeromafarmers.c@gmail.com" style={{ color: 'rgba(255,255,255,0.7)' }}>✉ jeromafarmers.c@gmail.com</a>
               <a href="http://www.jeromafarmers.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-secondary)' }}>🌐 www.jeromafarmers.com</a>
             </div>
-            <div className="footer-social-links" style={{ marginTop: '4px' }}>
-              <a href="https://www.facebook.com/jeromafarmers" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="Facebook">
-                <Icons.FacebookOriginal size={18} />
-              </a>
-              <a href="https://wa.me/256773623196" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="WhatsApp">
-                <Icons.MessageCircle size={18} />
-              </a>
-              <a href="https://www.tiktok.com/@jeromafarmers" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="TikTok">
-                <Icons.TikTokOriginal size={18} />
-              </a>
+            <div className="footer-social-links" style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {socialsData.facebook?.enabled !== false && (
+                <a href={socialsData.facebook?.url || "https://www.facebook.com/jeromafarmers"} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="Facebook" title="Facebook">
+                  <Icons.FacebookOriginal size={18} />
+                </a>
+              )}
+              {socialsData.whatsapp?.enabled !== false && (
+                <a href={socialsData.whatsapp?.url || "https://wa.me/256773623196"} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="WhatsApp" title="WhatsApp">
+                  <Icons.WhatsAppOriginal size={18} />
+                </a>
+              )}
+              {socialsData.tiktok?.enabled !== false && (
+                <a href={socialsData.tiktok?.url || "https://www.tiktok.com/@jeromafarmers"} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="TikTok" title="TikTok">
+                  <Icons.TikTokOriginal size={18} />
+                </a>
+              )}
+              {socialsData.youtube?.enabled && (
+                <a href={socialsData.youtube?.url || "https://www.youtube.com/@jeromafarmers"} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="YouTube" title="YouTube">
+                  <Icons.YouTubeOriginal size={18} />
+                </a>
+              )}
+              {socialsData.x?.enabled && (
+                <a href={socialsData.x?.url || "https://x.com/JeromaFarmers"} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="X (Twitter)" title="X (Twitter)">
+                  <Icons.XTwitterOriginal size={18} />
+                </a>
+              )}
+              {socialsData.linkedin?.enabled && (
+                <a href={socialsData.linkedin?.url || "https://www.linkedin.com/company/jeromafarmers"} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="LinkedIn" title="LinkedIn">
+                  <Icons.LinkedInOriginal size={18} />
+                </a>
+              )}
+              {socialsData.instagram?.enabled && (
+                <a href={socialsData.instagram?.url || "https://www.instagram.com/jeromafarmers"} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="Instagram" title="Instagram">
+                  <Icons.InstagramOriginal size={18} />
+                </a>
+              )}
+              {socialsData.telegram?.enabled && (
+                <a href={socialsData.telegram?.url || "https://t.me/jeromafarmers"} target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="Telegram" title="Telegram">
+                  <Icons.TelegramOriginal size={18} />
+                </a>
+              )}
             </div>
             {showInstallBtn && (
               <button 

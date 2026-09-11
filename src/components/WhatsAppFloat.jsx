@@ -1,22 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getSocials, DEFAULT_SOCIALS } from '../utils/db';
 
 export default function WhatsAppFloat({ lang }) {
+  const [waData, setWaData] = useState(DEFAULT_SOCIALS.whatsapp);
+
+  useEffect(() => {
+    let isMounted = true;
+    getSocials().then(data => {
+      if (isMounted && data && data.whatsapp) {
+        setWaData(data.whatsapp);
+      }
+    }).catch(err => console.error('Error fetching socials for WhatsApp float:', err));
+    return () => { isMounted = false; };
+  }, []);
+
+  if (waData && waData.enabled === false) {
+    return null;
+  }
+
   const ctaText = {
     en: "Chat with Us",
     luo: "Peny Kedwa"
   };
 
-  const messageText = {
-    en: "Hello Jeroma Farmers, I would like to enquire about your services.",
-    luo: "Mirembe Jeroma Farmers, amit me nongo kony kom tije mwa."
-  };
+  const defaultMsg = waData?.greeting || (lang === 'en'
+    ? "Hello Jeroma Farmers, I would like to enquire about your services."
+    : "Mirembe Jeroma Farmers, amit me nongo kony kom tije mwa.");
 
   const selectedCta = ctaText[lang] || ctaText.en;
-  const selectedMsg = encodeURIComponent(messageText[lang] || messageText.en);
+  const selectedMsg = encodeURIComponent(defaultMsg);
+  const targetUrl = waData?.url
+    ? `${waData.url}?text=${selectedMsg}`
+    : `https://wa.me/256773623196?text=${selectedMsg}`;
 
   return (
     <a
-      href={`https://wa.me/256773623196?text=${selectedMsg}`}
+      href={targetUrl}
       target="_blank"
       rel="noopener noreferrer"
       id="whatsapp-float-btn"
@@ -31,3 +50,4 @@ export default function WhatsAppFloat({ lang }) {
     </a>
   );
 }
+

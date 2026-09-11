@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from './Icons';
+import { getSocials, DEFAULT_SOCIALS } from '../utils/db';
 
 export default function Socials({ lang, translations: _translations }) {
   const [activeAlert, setActiveAlert] = useState(0);
+  const [socialsData, setSocialsData] = useState(DEFAULT_SOCIALS);
+
+  useEffect(() => {
+    let isMounted = true;
+    getSocials().then(data => {
+      if (isMounted && data) {
+        setSocialsData(data);
+      }
+    }).catch(err => console.error('Error fetching socials for section:', err));
+    return () => { isMounted = false; };
+  }, []);
 
   const labels = {
     en: {
@@ -188,144 +200,286 @@ export default function Socials({ lang, translations: _translations }) {
         </div>
 
         {/* Social Mockup Panels Grid */}
-        <div className="socials-grid">
+        <div className="socials-grid" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '24px'
+        }}>
           {/* Facebook Panel */}
-          <div className="social-panel glass-panel">
-            <div className="social-header-block">
-              <div className="social-profile-info">
-                <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
-                  <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+          {socialsData.facebook?.enabled !== false && (
+            <div className="social-panel glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="social-header-block">
+                <div className="social-profile-info">
+                  <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                    <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+                  </div>
+                  <div className="social-handle">
+                    <h4>{socialsData.facebook?.title || selectedSocial.fbHead}</h4>
+                    <p>{socialsData.facebook?.handle || selectedSocial.fbSub}</p>
+                  </div>
                 </div>
-                <div className="social-handle">
-                  <h4>{selectedSocial.fbHead}</h4>
-                  <p>{selectedSocial.fbSub}</p>
+                <div className="social-badge-icon bg-fb">
+                  <Icons.FacebookOriginal size={20} />
                 </div>
               </div>
-              <div className="social-badge-icon bg-fb">
-                <Icons.FacebookOriginal size={20} />
-              </div>
-            </div>
 
-            <p className="social-description">
-              {selectedSocial.fbDesc}
-            </p>
-
-            <div className="social-feed-mock fb-post">
-              <img src="/four_men_sunflowers.png" alt="Jeroma team at sunflower exhibition" className="fb-post-img" loading="lazy" />
-              <p className="fb-post-text">
-                <strong>{selectedSocial.fbPostStrong}</strong><br />
-                {selectedSocial.fbPostText}<br />
-                <span style={{ color: '#1877f2', fontSize: '0.75rem' }}>#JeromaFarmers #Sunflower #AgriUganda</span>
+              <p className="social-description">
+                {selectedSocial.fbDesc}
               </p>
-            </div>
 
-            <a
-              href="https://www.facebook.com/jeromafarmers"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline"
-              style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
-            >
-              <Icons.FacebookOriginal size={16} /> {selectedSocial.fbBtn}
-            </a>
-          </div>
+              <div className="social-feed-mock fb-post">
+                <img src="/four_men_sunflowers.png" alt="Jeroma team at sunflower exhibition" className="fb-post-img" loading="lazy" />
+                <p className="fb-post-text">
+                  <strong>{selectedSocial.fbPostStrong}</strong><br />
+                  {selectedSocial.fbPostText}<br />
+                  <span style={{ color: '#1877f2', fontSize: '0.75rem' }}>#JeromaFarmers #Sunflower #AgriUganda</span>
+                </p>
+              </div>
+
+              <a
+                href={socialsData.facebook?.url || "https://www.facebook.com/jeromafarmers"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+                style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
+              >
+                <Icons.FacebookOriginal size={16} /> {selectedSocial.fbBtn}
+              </a>
+            </div>
+          )}
 
           {/* WhatsApp Business Panel */}
-          <div className="social-panel glass-panel">
-            <div className="social-header-block">
-              <div className="social-profile-info">
-                <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
-                  <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+          {socialsData.whatsapp?.enabled !== false && (
+            <div className="social-panel glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="social-header-block">
+                <div className="social-profile-info">
+                  <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                    <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+                  </div>
+                  <div className="social-handle">
+                    <h4>{socialsData.whatsapp?.title || selectedSocial.waHead}</h4>
+                    <p>{socialsData.whatsapp?.handle || selectedSocial.waSub}</p>
+                  </div>
                 </div>
-                <div className="social-handle">
-                  <h4>{selectedSocial.waHead}</h4>
-                  <p>{selectedSocial.waSub}</p>
+                <div className="social-badge-icon bg-wa">
+                  <Icons.WhatsAppOriginal size={20} />
                 </div>
               </div>
-              <div className="social-badge-icon bg-wa">
-                <Icons.MessageCircle size={20} />
+
+              <p className="social-description">
+                {selectedSocial.waDesc}
+              </p>
+
+              <div className="social-feed-mock wa-catalog">
+                <h4 style={{ fontSize: '0.85rem', color: 'var(--color-primary-dark)', marginBottom: '8px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '4px' }}>
+                  {selectedSocial.waTitle}
+                </h4>
+                <div className="wa-catalog-item">
+                  <img src="/biofertilizer_bag.webp" alt="Biofertilizer Africa Bag" className="wa-item-img" loading="lazy" />
+                  <div className="wa-item-details">
+                    <h5>Biofertilizer Africa – 25 Kg</h5>
+                    <p>{selectedSocial.waBioText}</p>
+                  </div>
+                </div>
+                <div className="wa-catalog-item">
+                  <img src="/farmer_man_seedco.png" alt="SeedCo Sunflower Seeds" className="wa-item-img" loading="lazy" />
+                  <div className="wa-item-details">
+                    <h5>SeedCo LG 50745 Sunflower</h5>
+                    <p>{selectedSocial.waSeedText}</p>
+                  </div>
+                </div>
               </div>
+
+              <a
+                href={socialsData.whatsapp?.url ? `${socialsData.whatsapp.url}?text=${encodeURIComponent(socialsData.whatsapp.greeting || (lang === 'en' ? 'Hello Jeroma Farmers, I would like to inquire about your services.' : 'Mirembe Jeroma Farmers, amit me nongo kony kom tije mwa.'))}` : `https://wa.me/256773623196?text=${encodeURIComponent(lang === 'en' ? 'Hello Jeroma Farmers, I would like to inquire about your services.' : 'Mirembe Jeroma Farmers, amit me nongo kony kom tije mwa.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', marginTop: 'auto', background: '#25d366', border: 'none', color: '#fff', fontWeight: 700 }}
+              >
+                <Icons.WhatsAppOriginal size={18} />
+                {selectedSocial.waBtn}
+              </a>
             </div>
-
-            <p className="social-description">
-              {selectedSocial.waDesc}
-            </p>
-
-            <div className="social-feed-mock wa-catalog">
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--color-primary-dark)', marginBottom: '8px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '4px' }}>
-                {selectedSocial.waTitle}
-              </h4>
-              <div className="wa-catalog-item">
-                <img src="/biofertilizer_bag.webp" alt="Biofertilizer Africa Bag" className="wa-item-img" loading="lazy" />
-                <div className="wa-item-details">
-                  <h5>Biofertilizer Africa – 25 Kg</h5>
-                  <p>{selectedSocial.waBioText}</p>
-                </div>
-              </div>
-              <div className="wa-catalog-item">
-                <img src="/farmer_man_seedco.png" alt="SeedCo Sunflower Seeds" className="wa-item-img" loading="lazy" />
-                <div className="wa-item-details">
-                  <h5>SeedCo LG 50745 Sunflower</h5>
-                  <p>{selectedSocial.waSeedText}</p>
-                </div>
-              </div>
-            </div>
-
-            <a
-              href={`https://wa.me/256773623196?text=${encodeURIComponent(lang === 'en' ? 'Hello Jeroma Farmers, I would like to inquire about your services.' : 'Mirembe Jeroma Farmers, amit me nongo kony kom tije mwa.')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-primary"
-              style={{ width: '100%', justifyContent: 'center', marginTop: 'auto', background: '#25d366', border: 'none' }}
-            >
-              <Icons.MessageCircle size={18} />
-              {selectedSocial.waBtn}
-            </a>
-          </div>
+          )}
 
           {/* TikTok Panel */}
-          <div className="social-panel glass-panel">
-            <div className="social-header-block">
-              <div className="social-profile-info">
-                <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
-                  <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+          {socialsData.tiktok?.enabled !== false && (
+            <div className="social-panel glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="social-header-block">
+                <div className="social-profile-info">
+                  <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                    <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+                  </div>
+                  <div className="social-handle">
+                    <h4>{socialsData.tiktok?.title || selectedSocial.tkHead}</h4>
+                    <p>{socialsData.tiktok?.handle || selectedSocial.tkSub}</p>
+                  </div>
                 </div>
-                <div className="social-handle">
-                  <h4>{selectedSocial.tkHead}</h4>
-                  <p>{selectedSocial.tkSub}</p>
+                <div className="social-badge-icon bg-tk">
+                  <Icons.TikTokOriginal size={20} />
                 </div>
               </div>
-              <div className="social-badge-icon bg-tk">
-                <Icons.TikTokOriginal size={20} />
+
+              <p className="social-description">
+                {selectedSocial.tkDesc}
+              </p>
+
+              <div className="social-feed-mock tk-video-mock">
+                <img src="/women_coop_gathering.webp" alt="Farmers cooperative training" loading="lazy" />
+                <div className="tk-play-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                </div>
+                <div style={{ position: 'absolute', bottom: '8px', left: '8px', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                  {selectedSocial.tkVideoText}
+                </div>
               </div>
+
+              <a
+                href={socialsData.tiktok?.url || "https://www.tiktok.com/@jeromafarmers"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+                style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
+              >
+                <Icons.TikTokOriginal size={16} /> {selectedSocial.tkBtn}
+              </a>
             </div>
+          )}
 
-            <p className="social-description">
-              {selectedSocial.tkDesc}
-            </p>
+          {/* YouTube Channel Panel */}
+          {socialsData.youtube?.enabled && (
+            <div className="social-panel glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="social-header-block">
+                <div className="social-profile-info">
+                  <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                    <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+                  </div>
+                  <div className="social-handle">
+                    <h4>{socialsData.youtube?.title || 'YouTube Channel'}</h4>
+                    <p>{socialsData.youtube?.handle || '@jeromafarmers'}</p>
+                  </div>
+                </div>
+                <div className="social-badge-icon" style={{ background: 'rgba(255,0,0,0.1)' }}>
+                  <Icons.YouTubeOriginal size={20} />
+                </div>
+              </div>
 
-            <div className="social-feed-mock tk-video-mock">
-              <img src="/women_coop_gathering.webp" alt="Farmers cooperative training" loading="lazy" />
-              <div className="tk-play-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
+              <p className="social-description">
+                {lang === 'en'
+                  ? 'Watch high-definition video demonstrations of multi-crop threshers, moisture grading in action, and farmer success testimonials.'
+                  : 'Nen video me pwonj kom kabilo, machinery me pur kede nyak me opur mwa i YouTube.'}
+              </p>
+
+              <div className="social-feed-mock tk-video-mock" style={{ minHeight: '130px' }}>
+                <img src="/a2i_project_1.jpg" alt="A2I Machinery Demonstration" loading="lazy" />
+                <div className="tk-play-btn" style={{ background: '#FF0000' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                </div>
+                <div style={{ position: 'absolute', bottom: '8px', left: '8px', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                  ▶ A2I First Cohort Field Program
+                </div>
               </div>
-              <div style={{ position: 'absolute', bottom: '8px', left: '8px', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                {selectedSocial.tkVideoText}
-              </div>
+
+              <a
+                href={socialsData.youtube?.url || "https://www.youtube.com/@jeromafarmers"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+                style={{ width: '100%', justifyContent: 'center', marginTop: 'auto', borderColor: '#ff4d4d', color: '#d90429' }}
+              >
+                <Icons.YouTubeOriginal size={16} /> {lang === 'en' ? 'Watch on YouTube' : 'Nen i YouTube'}
+              </a>
             </div>
+          )}
 
-            <a
-              href="https://www.tiktok.com/@jeromafarmers"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline"
-              style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
-            >
-              <Icons.TikTokOriginal size={16} /> {selectedSocial.tkBtn}
-            </a>
-          </div>
+          {/* X (Twitter) Channel Panel */}
+          {socialsData.x?.enabled && (
+            <div className="social-panel glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="social-header-block">
+                <div className="social-profile-info">
+                  <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                    <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+                  </div>
+                  <div className="social-handle">
+                    <h4>{socialsData.x?.title || 'X (Twitter)'}</h4>
+                    <p>{socialsData.x?.handle || '@JeromaFarmers'}</p>
+                  </div>
+                </div>
+                <div className="social-badge-icon" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                  <Icons.XTwitterOriginal size={20} />
+                </div>
+              </div>
+
+              <p className="social-description">
+                {lang === 'en'
+                  ? 'Real-time announcements, daily commodity market rates, transit dispatch routes, and national agricultural policy insights.'
+                  : 'Nen bulletins me nyen, wel me market tin, kede yore me transit truck me Jeroma Farmers.'}
+              </p>
+
+              <div className="social-feed-mock fb-post" style={{ background: '#f8fafc', padding: '12px' }}>
+                <p className="fb-post-text" style={{ margin: 0, fontSize: '0.85rem', color: '#1e293b' }}>
+                  <strong>Jeroma Farmers (@JeromaFarmers)</strong><br />
+                  Grain moisture testing lines are now open at Lira collection centre. Grade-A sunflower payout premium confirmed for this season! 🌻 #AgriUganda
+                </p>
+              </div>
+
+              <a
+                href={socialsData.x?.url || "https://x.com/JeromaFarmers"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+                style={{ width: '100%', justifyContent: 'center', marginTop: 'auto' }}
+              >
+                <Icons.XTwitterOriginal size={16} /> {lang === 'en' ? 'Follow on X' : 'Lub i X'}
+              </a>
+            </div>
+          )}
+
+          {/* LinkedIn Channel Panel */}
+          {socialsData.linkedin?.enabled && (
+            <div className="social-panel glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div className="social-header-block">
+                <div className="social-profile-info">
+                  <div className="social-avatar" style={{ overflow: 'hidden', padding: 0 }}>
+                    <img src="/logo.webp" alt="Jeroma Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} loading="lazy" />
+                  </div>
+                  <div className="social-handle">
+                    <h4>{socialsData.linkedin?.title || 'LinkedIn'}</h4>
+                    <p>{socialsData.linkedin?.handle || 'jeromafarmers'}</p>
+                  </div>
+                </div>
+                <div className="social-badge-icon" style={{ background: 'rgba(10,102,194,0.1)' }}>
+                  <Icons.LinkedInOriginal size={20} />
+                </div>
+              </div>
+
+              <p className="social-description">
+                {lang === 'en'
+                  ? 'Connect with our corporate team, international development partners (Access to Innovation, Danish Govt), and supply chain stakeholders.'
+                  : 'Kubu cing kede corporate team mwa, international development partners kede cooperatives.'}
+              </p>
+
+              <div className="social-feed-mock" style={{ padding: '10px 14px', background: '#f1f5f9', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.78rem', color: '#0A66C2', fontWeight: 700, marginBottom: '2px' }}>CORPORATE BRIEFING</div>
+                <div style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 500 }}>Partnering for sustainable smallholder mechanized agriculture across Northern Uganda.</div>
+              </div>
+
+              <a
+                href={socialsData.linkedin?.url || "https://www.linkedin.com/company/jeromafarmers"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+                style={{ width: '100%', justifyContent: 'center', marginTop: 'auto', borderColor: '#0A66C2', color: '#0A66C2' }}
+              >
+                <Icons.LinkedInOriginal size={16} /> {lang === 'en' ? 'Connect on LinkedIn' : 'Kubu i LinkedIn'}
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </section>

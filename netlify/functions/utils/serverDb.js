@@ -58,9 +58,102 @@ const DEFAULT_CROPS = {
 };
 
 const DEFAULT_USERS = [
-  { username: 'admin', password: hashPassword('admin123'), name: 'Center Administrator', role: 'admin', phone: '+256 773 623 196', district: 'Lira' },
-  { username: 'okello', password: hashPassword('pass123'), name: 'John Okello', role: 'client', phone: '+256 772 445 599', district: 'Lira', farmSize: '12 acres' },
-  { username: 'akello', password: hashPassword('pass123'), name: 'Florence Akello', role: 'client', phone: '+256 782 608 721', district: 'Kole', farmSize: '8 acres' }
+  { 
+    username: 'admin', 
+    password: hashPassword('admin123'), 
+    name: 'Center Administrator', 
+    role: 'admin', 
+    department: 'Managing Director',
+    phone: '+256 773 623 196', 
+    district: 'Lira',
+    permissions: ['prices', 'deliveries', 'dispatches', 'projects', 'staff', 'cooperatives', 'departments', 'forms', 'inquiries', 'users', 'logins', 'language', 'manual', 'chatbot', 'slides']
+  },
+  { 
+    username: 'md', 
+    password: hashPassword('jeroma2026'), 
+    name: 'Acuti Sam', 
+    title: 'Managing Director',
+    role: 'managing_director', 
+    department: 'Managing Director',
+    phone: '+256 773 623 196', 
+    district: 'Pader',
+    permissions: ['prices', 'deliveries', 'dispatches', 'projects', 'staff', 'cooperatives', 'departments', 'forms', 'inquiries', 'users', 'logins', 'language', 'manual', 'chatbot', 'slides']
+  },
+  { 
+    username: 'finance', 
+    password: hashPassword('jeroma2026'), 
+    name: 'Sharon Akello', 
+    title: 'Finance Manager',
+    role: 'finance_manager', 
+    department: 'Finance manager',
+    phone: '+256 774 332 901', 
+    district: 'Lira',
+    permissions: ['departments', 'prices', 'deliveries', 'inquiries']
+  },
+  { 
+    username: 'projects', 
+    password: hashPassword('jeroma2026'), 
+    name: 'Daniel Okot', 
+    title: 'Project / Program Manager',
+    role: 'project_manager', 
+    department: 'project/Program manager',
+    phone: '+256 775 889 012', 
+    district: 'Pader',
+    permissions: ['projects', 'cooperatives', 'manual', 'forms']
+  },
+  { 
+    username: 'secretary', 
+    password: hashPassword('jeroma2026'), 
+    name: 'Logira Richard', 
+    title: 'General Secretary',
+    role: 'general_secretary', 
+    department: 'General Secretary',
+    phone: '+256 772 890 123', 
+    district: 'Lira',
+    permissions: ['staff', 'cooperatives', 'inquiries', 'departments']
+  },
+  { 
+    username: 'logistics', 
+    password: hashPassword('jeroma2026'), 
+    name: 'Denis Ojok', 
+    title: 'Procurement & Logistic Officer',
+    role: 'procurement_officer', 
+    department: 'Procurement and logistic officer',
+    phone: '+256 773 998 877', 
+    district: 'Lira',
+    permissions: ['dispatches', 'deliveries', 'cooperatives', 'slides']
+  },
+  { 
+    username: 'mne', 
+    password: hashPassword('jeroma2026'), 
+    name: 'David Odongo', 
+    title: 'Monitoring & Evaluation Officer',
+    role: 'mne_officer', 
+    department: 'Monitoring and Evaluation',
+    phone: '+256 771 889 900', 
+    district: 'Agago',
+    permissions: ['forms', 'projects', 'cooperatives', 'departments']
+  },
+  { 
+    username: 'okello', 
+    password: hashPassword('pass123'), 
+    name: 'John Okello', 
+    role: 'client', 
+    department: 'Registered Farmer',
+    phone: '+256 772 445 599', 
+    district: 'Lira', 
+    farmSize: '12 acres' 
+  },
+  { 
+    username: 'akello', 
+    password: hashPassword('pass123'), 
+    name: 'Florence Akello', 
+    role: 'client', 
+    department: 'Registered Farmer',
+    phone: '+256 782 608 721', 
+    district: 'Kole', 
+    farmSize: '8 acres' 
+  }
 ];
 
 const DEFAULT_DELIVERIES = [
@@ -420,6 +513,357 @@ const DEFAULT_MANUAL = [
   }
 ];
 
+const DEFAULT_PROJECTS = [
+  {
+    id: 'proj-a2i-01',
+    code: 'A2I-COHORT-1',
+    title: 'Access to Innovation (A2I) Mechanization & Capacity Building',
+    partner: 'Access to Innovation (A2I) & Danish Government',
+    status: 'Implementation',
+    progressPercent: 65,
+    budget: 450000000,
+    spent: 210000000,
+    currency: 'UGX',
+    startDate: '2026-07-01',
+    endDate: '2027-06-30',
+    targetBeneficiaries: 1800,
+    achievedBeneficiaries: 1240,
+    targetCooperatives: 15,
+    engagedCooperatives: 12,
+    cooperatives: [
+      'Pader Sunflower Growers Cooperative Society',
+      'Agago Grain Producers SACCO',
+      'Kitgum Mixed Farming Cooperative Society',
+      'Lira Central Smallholders Cooperative',
+      'Kole Agro-Producers Association'
+    ],
+    objectives: 'Identify machinery needs, evaluate cooperative capacities, and deploy appropriate processing technology (threshers, shellers, solar dryers) without debt burden on farmers.',
+    riskMitigation: 'Machine maintenance trained local operators; warranty backed by Danida and equipment manufacturers.',
+    milestones: [
+      { id: 'm1', phase: 'Initiation', title: 'Cohort 1 Field Needs Assessment in Lango & Acholi', completed: true, targetDate: '2026-07-14' },
+      { id: 'm2', phase: 'Planning', title: 'Selection & Vetting of 12 Pilot Cooperatives & SACCOs', completed: true, targetDate: '2026-08-01' },
+      { id: 'm3', phase: 'On Process', title: 'Operator Training & Safety Protocol Mobilization', completed: true, targetDate: '2026-08-25' },
+      { id: 'm4', phase: 'Implementation', title: 'Deployment of Multi-Crop Threshers & Cyclone Shellers', completed: false, targetDate: '2026-09-30' },
+      { id: 'm5', phase: 'Monitoring', title: 'Mid-Term Machine Utilization & Yield Quality Audit', completed: false, targetDate: '2026-11-15' },
+      { id: 'm6', phase: 'Completed', title: 'Cohort 2 Handover & Annual Impact Evaluation', completed: false, targetDate: '2027-06-15' }
+    ],
+    manager: 'Daniel Okot (Projects Manager)'
+  },
+  {
+    id: 'proj-seed-02',
+    code: 'SEED-SUB-2026',
+    title: 'Certified Sunflower & Hybrid Maize Seed Subsidy Initiative',
+    partner: 'Jeroma FCC Ltd & SeedCo Uganda',
+    status: 'On Process',
+    progressPercent: 40,
+    budget: 180000000,
+    spent: 145000000,
+    currency: 'UGX',
+    startDate: '2026-03-01',
+    endDate: '2026-11-30',
+    targetBeneficiaries: 2500,
+    achievedBeneficiaries: 2150,
+    targetCooperatives: 20,
+    engagedCooperatives: 18,
+    cooperatives: [
+      'Pader Sunflower Growers Cooperative Society',
+      'Agago Grain Producers SACCO',
+      'Kitgum Mixed Farming Cooperative Society',
+      'Abim Oilseed & Agroforestry Association',
+      'Karenga Green Growers Farmer Group'
+    ],
+    objectives: 'Subsidize high-oil hybrid sunflower seeds (LG 56.58 / Aguara) and drought-tolerant certified maize (Longe 10H) with guaranteed buy-back contracts.',
+    riskMitigation: 'Weather index insurance bundled with seed distribution to protect against drought delays.',
+    milestones: [
+      { id: 'm1', phase: 'Initiation', title: 'Seed Supplier MoUs & Subsidy Framework Agreement', completed: true, targetDate: '2026-03-15' },
+      { id: 'm2', phase: 'Planning', title: 'Farmer Registration & Seed Volume Forecasting', completed: true, targetDate: '2026-04-10' },
+      { id: 'm3', phase: 'On Process', title: 'Distribution Hub Mobilization & Seed Bag Tagging', completed: false, targetDate: '2026-05-20' },
+      { id: 'm4', phase: 'Implementation', title: 'Field Distribution to 2,500 Smallholder Farmers', completed: false, targetDate: '2026-08-30' },
+      { id: 'm5', phase: 'Monitoring', title: 'Germination & Pest Control Field Verification', completed: false, targetDate: '2026-10-15' },
+      { id: 'm6', phase: 'Completed', title: 'Harvest Aggregation & Offtake Buy-Back Closure', completed: false, targetDate: '2026-11-30' }
+    ],
+    manager: 'Sharon Akello (Finance & Input Credit)'
+  },
+  {
+    id: 'proj-tree-03',
+    code: 'ENV-NURSERY-07',
+    title: 'Northern Uganda Commercial Tree Nursery & Afforestation Initiative',
+    partner: 'National Forestry Authority (NFA) & Jeroma Environmental Hub',
+    status: 'Implementation',
+    progressPercent: 55,
+    budget: 95000000,
+    spent: 52000000,
+    currency: 'UGX',
+    startDate: '2026-01-15',
+    endDate: '2026-12-31',
+    targetBeneficiaries: 1200,
+    achievedBeneficiaries: 890,
+    targetCooperatives: 10,
+    engagedCooperatives: 8,
+    cooperatives: [
+      'Kitgum Mixed Farming Cooperative Society',
+      'Abim Oilseed & Agroforestry Association',
+      'Karenga Green Growers Farmer Group'
+    ],
+    objectives: 'Establish commercial tree nurseries propagating 250,000 seedlings (Fruit trees, Melia Volkensii, Grevillea, Teak) for agroforestry, shade cover, and carbon resilience.',
+    riskMitigation: 'Nursery shades equipped with solar-powered drip irrigation against dry season seedling mortality.',
+    milestones: [
+      { id: 'm1', phase: 'Initiation', title: 'NFA Land Use Permission & Seedling Viability Protocol', completed: true, targetDate: '2026-02-28' },
+      { id: 'm2', phase: 'Planning', title: 'Soil Potting Mix & Shade Netting Procurement', completed: true, targetDate: '2026-04-15' },
+      { id: 'm3', phase: 'On Process', title: 'Seedbed Germination & 180,000 Seedlings Potting', completed: true, targetDate: '2026-05-15' },
+      { id: 'm4', phase: 'Implementation', title: 'Distribution of Fruit & Agroforestry Trees to Farmers', completed: false, targetDate: '2026-09-30' },
+      { id: 'm5', phase: 'Monitoring', title: 'Survival Rate Audit & Tree Growth Tracking', completed: false, targetDate: '2026-11-20' },
+      { id: 'm6', phase: 'Completed', title: 'Forestry Handover & Carbon Offset Assessment', completed: false, targetDate: '2026-12-31' }
+    ],
+    manager: 'Patrick Ocen (Environment & Forestry Supervisor)'
+  },
+  {
+    id: 'proj-gap-04',
+    code: 'GAP-TRAIN-2026',
+    title: 'Good Agronomic Practices (GAP) & Aflatoxin Reduction Training',
+    partner: 'NARO Uganda & Jeroma Agronomy Division',
+    status: 'Implementation',
+    progressPercent: 75,
+    budget: 65000000,
+    spent: 48000000,
+    currency: 'UGX',
+    startDate: '2026-02-01',
+    endDate: '2026-10-31',
+    targetBeneficiaries: 3000,
+    achievedBeneficiaries: 2640,
+    targetCooperatives: 25,
+    engagedCooperatives: 22,
+    cooperatives: [
+      'Pader Sunflower Growers Cooperative Society',
+      'Agago Grain Producers SACCO',
+      'Kitgum Mixed Farming Cooperative Society',
+      'Lira Central Smallholders Cooperative',
+      'Kole Agro-Producers Association'
+    ],
+    objectives: 'Train smallholder farmers on raised-rack drying, digital moisture grading, IPM pest control, and proper hermetic grain storage to achieve 0% aflatoxin contamination.',
+    riskMitigation: 'Practical hands-on village demonstration plots with local language (Acholi / Lango) manuals.',
+    milestones: [
+      { id: 'm1', phase: 'Initiation', title: 'Curriculum Harmonization with NARO & Ministry of Agriculture', completed: true, targetDate: '2026-02-20' },
+      { id: 'm2', phase: 'Planning', title: 'TOT Training of 24 Field Extension Officers', completed: true, targetDate: '2026-04-10' },
+      { id: 'm3', phase: 'On Process', title: 'Community Mobilization & Demo Plot Preparation', completed: true, targetDate: '2026-06-15' },
+      { id: 'm4', phase: 'Implementation', title: 'Raised Racks & Hermetic Storage Bag Distribution', completed: true, targetDate: '2026-08-20' },
+      { id: 'm5', phase: 'Monitoring', title: 'Aflatoxin Lab Testing & Grain Quality Sampling', completed: false, targetDate: '2026-09-30' },
+      { id: 'm6', phase: 'Completed', title: 'Farmer Certification & Final Training Report', completed: false, targetDate: '2026-10-31' }
+    ],
+    manager: 'James Opio (Extension & Agronomy Lead)'
+  }
+];
+
+const DEFAULT_STAFF = [
+  { id: 'stf-001', employeeId: 'JER-MD-001', name: 'Acuti Sam', title: 'Managing Director', department: 'Managing Director', district: 'Pader', phone: '+256 773 623 196', email: 'acuti.sam@jeromafarmers.co.ug', gender: 'Male', status: 'Active', employmentType: 'Full-time', responsibilities: 'Executive oversight, overall operations, strategic donor partnerships' },
+  { id: 'stf-002', employeeId: 'JER-FIN-002', name: 'Sharon Akello', title: 'Finance Manager', department: 'Finance manager', district: 'Lira', phone: '+256 774 332 901', email: 'finance@jeromafarmers.co.ug', gender: 'Female', status: 'Active', employmentType: 'Full-time', responsibilities: 'Treasury, grain payout rates, seed subsidy disbursements, accounting ledger' },
+  { id: 'stf-003', employeeId: 'JER-PRJ-003', name: 'Daniel Okot', title: 'Project / Program Manager', department: 'project/Program manager', district: 'Pader', phone: '+256 775 889 012', email: 'projects@jeromafarmers.co.ug', gender: 'Male', status: 'Active', employmentType: 'Full-time', responsibilities: 'Access to Innovation (A2I), seed programs, partner cooperatives, deliverables' },
+  { id: 'stf-004', employeeId: 'JER-SEC-004', name: 'Logira Richard', title: 'General Secretary', department: 'General Secretary', district: 'Lira', phone: '+256 772 890 123', email: 'secretary@jeromafarmers.co.ug', gender: 'Male', status: 'Active', employmentType: 'Full-time', responsibilities: 'Corporate governance, staff positions, cooperative legal profiling, records' },
+  { id: 'stf-005', employeeId: 'JER-LOG-005', name: 'Denis Ojok', title: 'Procurement & Logistic Officer', department: 'Procurement and logistic officer', district: 'Lira', phone: '+256 773 998 877', email: 'logistics@jeromafarmers.co.ug', gender: 'Male', status: 'Active', employmentType: 'Full-time', responsibilities: 'Grain collections, truck dispatch, warehouse receiving, machinery fleet' },
+  { id: 'stf-006', employeeId: 'JER-MNE-006', name: 'David Odongo', title: 'Monitoring & Evaluation Officer', department: 'Monitoring and Evaluation', district: 'Agago', phone: '+256 771 889 900', email: 'mne@jeromafarmers.co.ug', gender: 'Male', status: 'Active', employmentType: 'Full-time', responsibilities: 'Google Forms ingestion, field surveys, impact evaluation, beneficiary verification' },
+  { id: 'stf-007', employeeId: 'JER-AGR-007', name: 'James Opio', title: 'Senior Agronomist & Field Lead', department: 'project/Program manager', district: 'Agago', phone: '+256 781 445 678', email: 'agronomy@jeromafarmers.co.ug', gender: 'Male', status: 'Active', employmentType: 'Full-time', responsibilities: 'GAP training, field extension supervision, soil and seed quality testing' },
+  { id: 'stf-008', employeeId: 'JER-ENV-008', name: 'Patrick Ocen', title: 'Environment & Forestry Supervisor', department: 'Monitoring and Evaluation', district: 'Kitgum', phone: '+256 752 334 556', email: 'environment@jeromafarmers.co.ug', gender: 'Male', status: 'Active', employmentType: 'Full-time', responsibilities: 'Tree nursery propagation, commercial forestry, reforestation monitoring' },
+  { id: 'stf-009', employeeId: 'JER-OPS-009', name: 'Isaac Ogwang', title: 'Warehouse & Storekeeper Lead', department: 'Procurement and logistic officer', district: 'Lira', phone: '+256 785 667 890', email: 'stores@jeromafarmers.co.ug', gender: 'Male', status: 'Active', employmentType: 'Full-time', responsibilities: 'Grain inventory, bagging scales, moisture testing, stock security' }
+];
+
+const DEFAULT_COOPERATIVES = [
+  {
+    id: 'coop-001',
+    name: 'Pader Sunflower Growers Cooperative Society Ltd',
+    district: 'Pader',
+    subcounty: 'Pader Town Council / Lapul',
+    contactPerson: 'Okot George',
+    phone: '+256 772 345 678',
+    email: 'pader.sunflower@gmail.com',
+    memberCount: 340,
+    maleMembers: 160,
+    femaleMembers: 180,
+    primaryCrops: ['Sunflower', 'Maize', 'Soybeans'],
+    linkedProjects: ['proj-a2i-01', 'proj-seed-02', 'proj-gap-04'],
+    machineryAssigned: ['Multi-Crop Thresher (JF-TH-01)', '2x Moisture Meters'],
+    status: 'Active',
+    registeredDate: '2024-03-12'
+  },
+  {
+    id: 'coop-002',
+    name: 'Agago Grain Producers SACCO',
+    district: 'Agago',
+    subcounty: 'Kalongo / Patongo',
+    contactPerson: 'Akello Beatrice',
+    phone: '+256 782 901 234',
+    email: 'agago.grains@gmail.com',
+    memberCount: 290,
+    maleMembers: 130,
+    femaleMembers: 160,
+    primaryCrops: ['Maize', 'Sunflower', 'Dry Beans'],
+    linkedProjects: ['proj-a2i-01', 'proj-seed-02'],
+    machineryAssigned: ['Tractor Walking Unit (JF-TR-01)', 'Maize Sheller'],
+    status: 'Active',
+    registeredDate: '2024-05-18'
+  },
+  {
+    id: 'coop-003',
+    name: 'Kitgum Mixed Farming Cooperative Society',
+    district: 'Kitgum',
+    subcounty: 'Kitgum Matidi / Mucwini',
+    contactPerson: 'Ocen Patrick',
+    phone: '+256 752 678 901',
+    email: 'kitgum.farmers@yahoo.com',
+    memberCount: 410,
+    maleMembers: 195,
+    femaleMembers: 215,
+    primaryCrops: ['Sunflower', 'Simsim', 'Maize'],
+    linkedProjects: ['proj-a2i-01', 'proj-tree-03', 'proj-gap-04'],
+    machineryAssigned: ['Solar Drying Rack Unit (JF-SR-01)', 'Multi-Crop Thresher'],
+    status: 'Active',
+    registeredDate: '2023-11-04'
+  },
+  {
+    id: 'coop-004',
+    name: 'Abim Oilseed & Agroforestry Association',
+    district: 'Abim',
+    subcounty: 'Nyakwae / Morulem',
+    contactPerson: 'Auma Lucy',
+    phone: '+256 779 889 012',
+    email: 'abim.oilseeds@gmail.com',
+    memberCount: 185,
+    maleMembers: 80,
+    femaleMembers: 105,
+    primaryCrops: ['Sunflower', 'Sorghum', 'Melia Trees'],
+    linkedProjects: ['proj-seed-02', 'proj-tree-03'],
+    machineryAssigned: ['Seed Planter Unit', 'Digital Moisture Meter'],
+    status: 'Active',
+    registeredDate: '2025-01-20'
+  },
+  {
+    id: 'coop-005',
+    name: 'Karenga Green Growers Farmer Group',
+    district: 'Karenga',
+    subcounty: 'Karenga Sub-county / Sangar',
+    contactPerson: 'Lokiru Moses',
+    phone: '+256 788 123 456',
+    email: 'karenga.growers@gmail.com',
+    memberCount: 160,
+    maleMembers: 75,
+    femaleMembers: 85,
+    primaryCrops: ['Sorghum', 'Sunflower', 'Grevillea'],
+    linkedProjects: ['proj-tree-03', 'proj-gap-04'],
+    machineryAssigned: ['Nursery Shade Net System', 'Manual Seed Sorter'],
+    status: 'Active',
+    registeredDate: '2025-04-10'
+  },
+  {
+    id: 'coop-006',
+    name: 'Lira Central Smallholders Cooperative Union',
+    district: 'Lira',
+    subcounty: 'Erute North / Adekokwok',
+    contactPerson: 'Ogwang Richard',
+    phone: '+256 774 556 789',
+    email: 'lira.centralcoop@gmail.com',
+    memberCount: 520,
+    maleMembers: 240,
+    femaleMembers: 280,
+    primaryCrops: ['Maize', 'Sunflower', 'Soybeans', 'Beans'],
+    linkedProjects: ['proj-a2i-01', 'proj-seed-02', 'proj-gap-04'],
+    machineryAssigned: ['Heavy-Duty Maize Sheller (JF-MS-01)', 'Multi-Crop Thresher', '2x Moisture Meters'],
+    status: 'Active',
+    registeredDate: '2023-08-15'
+  },
+  {
+    id: 'coop-007',
+    name: 'Kole Organic Farmers Cooperative Society',
+    district: 'Kole',
+    subcounty: 'Bala / Ayer',
+    contactPerson: 'Adongo Joyce',
+    phone: '+256 783 778 990',
+    email: 'kole.organic@gmail.com',
+    memberCount: 310,
+    maleMembers: 140,
+    femaleMembers: 170,
+    primaryCrops: ['Soybeans', 'Sunflower', 'Maize'],
+    linkedProjects: ['proj-a2i-01', 'proj-seed-02'],
+    machineryAssigned: ['Multi-Crop Thresher', 'Solar Drying Rack'],
+    status: 'Active',
+    registeredDate: '2024-09-02'
+  }
+];
+
+const DEFAULT_MACHINERY = [
+  { id: 'mac-001', code: 'JF-TH-01', name: 'Multi-Crop High-Capacity Thresher', type: 'Thresher', serialNumber: 'TH-2026-UG-014', assignedCoopId: 'coop-001', assignedCoopName: 'Pader Sunflower Growers Cooperative', projectId: 'proj-a2i-01', projectName: 'Access to Innovation (A2I)', status: 'Operational', maintenanceDate: '2026-08-10', condition: 'Excellent' },
+  { id: 'mac-002', code: 'JF-MS-01', name: 'Motorized Cyclone Maize Sheller (5T/Hr)', type: 'Sheller', serialNumber: 'MS-2026-UG-088', assignedCoopId: 'coop-006', assignedCoopName: 'Lira Central Smallholders Cooperative', projectId: 'proj-a2i-01', projectName: 'Access to Innovation (A2I)', status: 'Operational', maintenanceDate: '2026-08-25', condition: 'Good' },
+  { id: 'mac-003', code: 'JF-MM-01', name: 'Digital Grain Moisture Meter (Unimeter Digital)', type: 'Moisture Meter', serialNumber: 'MM-2026-042', assignedCoopId: 'coop-001', assignedCoopName: 'Pader Sunflower Growers Cooperative', projectId: 'proj-gap-04', projectName: 'Good Agronomic Practices (GAP)', status: 'Operational', maintenanceDate: '2026-07-30', condition: 'Calibrated' },
+  { id: 'mac-004', code: 'JF-SR-01', name: 'Commercial Raised Solar Drying Rack (20m x 4m)', type: 'Solar Dryer', serialNumber: 'SR-2026-003', assignedCoopId: 'coop-003', assignedCoopName: 'Kitgum Mixed Farming Cooperative', projectId: 'proj-a2i-01', projectName: 'Access to Innovation (A2I)', status: 'Operational', maintenanceDate: '2026-06-15', condition: 'Excellent' },
+  { id: 'mac-005', code: 'JF-TR-01', name: 'Walking Two-Wheel Tractor & Tiller Unit', type: 'Tractor', serialNumber: 'TR-2026-009', assignedCoopId: 'coop-002', assignedCoopName: 'Agago Grain Producers SACCO', projectId: 'proj-a2i-01', projectName: 'Access to Innovation (A2I)', status: 'Operational', maintenanceDate: '2026-08-01', condition: 'Good' }
+];
+
+const DEFAULT_FINANCE = [
+  { id: 'fin-001', type: 'Income', category: 'Offtake Sales', description: 'Bulk Maize Flour supply to World Vision / Schools', amount: 48500000, date: '2026-08-15', department: 'Operations', reference: 'INV-2026-084', status: 'Completed' },
+  { id: 'fin-002', type: 'Expense', category: 'Farmer Payouts', description: 'Disbursement for Grade-A Sunflower Deliveries (Cohort 1)', amount: 32400000, date: '2026-08-18', department: 'Finance', reference: 'PAY-SUN-019', status: 'Completed' },
+  { id: 'fin-003', type: 'Income', category: 'Grant / Project Tranche', description: 'A2I Project Cohort 1 Danish Support Tranche', amount: 110000000, date: '2026-07-05', department: 'Projects', reference: 'GRT-A2I-01', status: 'Completed' },
+  { id: 'fin-004', type: 'Expense', category: 'Input Subsidy', description: 'SeedCo Hybrid Sunflower seed procurement subsidy matching', amount: 28000000, date: '2026-07-22', department: 'Finance', reference: 'SUB-SEED-04', status: 'Completed' },
+  { id: 'fin-005', type: 'Expense', category: 'Logistics & Fuel', description: 'Produce evacuation transit fleet diesel & maintenance for 7 districts', amount: 8600000, date: '2026-08-28', department: 'Logistics', reference: 'LOG-FLEET-08', status: 'Completed' }
+];
+
+const DEFAULT_NURSERIES = [
+  { id: 'nur-pader', district: 'Pader', location: 'Pader Town Council / Lapul Nursery Hub', supervisor: 'Eunice Akot', totalTarget: 40000, currentStock: 32500, distributed: 18400, species: [{ name: 'Melia Volkensii', count: 12000 }, { name: 'Hass Avocado', count: 8500 }, { name: 'Grafted Mangoes', count: 6000 }, { name: 'Teak', count: 6000 }], status: 'Active' },
+  { id: 'nur-agago', district: 'Agago', location: 'Kalongo Agroforestry Centre', supervisor: 'Francis Otim', totalTarget: 35000, currentStock: 28000, distributed: 14200, species: [{ name: 'Grevillea Robusta', count: 10000 }, { name: 'Melia Volkensii', count: 9000 }, { name: 'Citrus / Orange', count: 5000 }, { name: 'Moringa', count: 4000 }], status: 'Active' },
+  { id: 'nur-kitgum', district: 'Kitgum', location: 'Kitgum Matidi Environmental Centre', supervisor: 'Brenda Aber', totalTarget: 45000, currentStock: 38200, distributed: 22000, species: [{ name: 'Teak Wood', count: 15000 }, { name: 'Melia Volkensii', count: 12000 }, { name: 'Hass Avocado', count: 6200 }, { name: 'Moringa', count: 5000 }], status: 'Active' },
+  { id: 'nur-abim', district: 'Abim', location: 'Morulem Afforestation Hub', supervisor: 'Walter Okumu', totalTarget: 30000, currentStock: 24000, distributed: 11500, species: [{ name: 'Melia Volkensii', count: 11000 }, { name: 'Grevillea', count: 7000 }, { name: 'Grafted Mangoes', count: 6000 }], status: 'Active' },
+  { id: 'nur-karenga', district: 'Karenga', location: 'Karenga Valley Nursery Site', supervisor: 'Patrick Ocen', totalTarget: 25000, currentStock: 19800, distributed: 9200, species: [{ name: 'Acacia Senegal', count: 8000 }, { name: 'Melia Volkensii', count: 6800 }, { name: 'Moringa Oleifera', count: 5000 }], status: 'Active' },
+  { id: 'nur-lira', district: 'Lira', location: 'Lira Central Environmental Nursery (Railway Road)', supervisor: 'Grace Auma', totalTarget: 50000, currentStock: 46000, distributed: 29000, species: [{ name: 'Hass Avocado', count: 18000 }, { name: 'Melia Volkensii', count: 14000 }, { name: 'Grevillea', count: 8000 }, { name: 'Eucalyptus Grandis', count: 6000 }], status: 'Active' },
+  { id: 'nur-kole', district: 'Kole', location: 'Bala Sub-county Agro Nursery', supervisor: 'Harriet Adongo', totalTarget: 30000, currentStock: 26500, distributed: 13800, species: [{ name: 'Hass Avocado', count: 10500 }, { name: 'Melia Volkensii', count: 9000 }, { name: 'Citrus', count: 7000 }], status: 'Active' }
+];
+
+const DEFAULT_FORM_SUBMISSIONS = [
+  {
+    id: 'sub-001',
+    formName: 'Farmer Profiling & Crop Registration Survey',
+    formType: 'Farmer Profiling',
+    fullName: 'Oola Samuel',
+    phone: '+256 774 123 999',
+    district: 'Pader',
+    subcounty: 'Lapul Sub-county',
+    village: 'Oporot Village',
+    cooperativeName: 'Pader Sunflower Growers Cooperative',
+    cropSpecialization: 'Sunflower & Maize',
+    acreage: '6.5 acres',
+    seedRequirement: '12 kg LG 56.58 Sunflower Seed',
+    machineryNeeds: 'Threshing service at harvest',
+    submittedAt: '2026-09-02T14:32:00.000Z',
+    status: 'Pending Review',
+    notes: 'Requires seed delivery by next week.'
+  },
+  {
+    id: 'sub-002',
+    formName: 'Cooperative Needs & A2I Machinery Survey',
+    formType: 'Cooperative Assessment',
+    fullName: 'Akello Christine (Chairperson)',
+    phone: '+256 782 555 444',
+    district: 'Agago',
+    subcounty: 'Patongo',
+    village: 'Alerek Center',
+    cooperativeName: 'Patongo Sunflower & Grains Farmers Group',
+    cropSpecialization: 'Sunflower & Soya',
+    acreage: '45 acres total group',
+    seedRequirement: '80 kg Hybrid seeds',
+    machineryNeeds: 'Multi-crop thresher & moisture testing meter',
+    submittedAt: '2026-09-03T09:15:00.000Z',
+    status: 'Reviewed',
+    notes: 'Qualified for A2I Cohort 2 machinery allocation.'
+  }
+];
+
+const DEFAULT_SOCIALS = {
+  whatsapp: { enabled: true, handle: '+256 773 623 196', url: 'https://wa.me/256773623196', title: 'WhatsApp Business', subtitle: 'Direct Chat & Agro Input Inquiries', greeting: 'Hello Jeroma Farmers, I would like to inquire about input subsidies, crop collection, and prices.' },
+  facebook: { enabled: true, handle: '@jeromafarmers', url: 'https://www.facebook.com/jeromafarmers', title: 'Facebook Page', subtitle: 'Jeroma Farmers Collection Centre Ltd' },
+  tiktok: { enabled: true, handle: '@jeromafarmers', url: 'https://www.tiktok.com/@jeromafarmers', title: 'TikTok Channel', subtitle: 'Farmer Training & Field Operations' },
+  x: { enabled: true, handle: '@JeromaFarmers', url: 'https://x.com/JeromaFarmers', title: 'X (Twitter)', subtitle: 'Real-time Bulletins & Commodity Updates' },
+  youtube: { enabled: true, handle: '@jeromafarmers', url: 'https://www.youtube.com/@jeromafarmers', title: 'YouTube Channel', subtitle: 'Farmer Testimonials & Machinery Demonstrations' },
+  linkedin: { enabled: true, handle: 'jeromafarmers', url: 'https://www.linkedin.com/company/jeromafarmers', title: 'LinkedIn', subtitle: 'Corporate & Institutional Partnerships' },
+  instagram: { enabled: true, handle: '@jeromafarmers', url: 'https://www.instagram.com/jeromafarmers', title: 'Instagram', subtitle: 'Farm Photography & Community Highlights' },
+  telegram: { enabled: false, handle: '@jeromafarmers', url: 'https://t.me/jeromafarmers', title: 'Telegram Community', subtitle: 'Broadcasts & Cooperative Alerts' }
+};
+
 // Persistent state in memory across serverless invocations (if warm)
 let dbState = loadDb() || {
   crops: { ...DEFAULT_CROPS },
@@ -430,8 +874,25 @@ let dbState = loadDb() || {
   translations: null,
   slides: [...DEFAULT_SLIDES],
   manual: [...DEFAULT_MANUAL],
+  projects: [...DEFAULT_PROJECTS],
+  staff: [...DEFAULT_STAFF],
+  cooperatives: [...DEFAULT_COOPERATIVES],
+  machinery: [...DEFAULT_MACHINERY],
+  finance: [...DEFAULT_FINANCE],
+  nurseries: [...DEFAULT_NURSERIES],
+  formSubmissions: [...DEFAULT_FORM_SUBMISSIONS],
+  socials: { ...DEFAULT_SOCIALS },
   logins: []
 };
+
+if (!dbState.projects) dbState.projects = [...DEFAULT_PROJECTS];
+if (!dbState.staff) dbState.staff = [...DEFAULT_STAFF];
+if (!dbState.cooperatives) dbState.cooperatives = [...DEFAULT_COOPERATIVES];
+if (!dbState.machinery) dbState.machinery = [...DEFAULT_MACHINERY];
+if (!dbState.finance) dbState.finance = [...DEFAULT_FINANCE];
+if (!dbState.nurseries) dbState.nurseries = [...DEFAULT_NURSERIES];
+if (!dbState.formSubmissions) dbState.formSubmissions = [...DEFAULT_FORM_SUBMISSIONS];
+if (!dbState.socials) dbState.socials = { ...DEFAULT_SOCIALS };
 
 if (!dbState.slides) {
   dbState.slides = [...DEFAULT_SLIDES];
@@ -589,6 +1050,24 @@ module.exports = {
     }
     return false;
   },
+  updateDispatch: async (id, updatedFields) => {
+    const idx = dbState.dispatches.findIndex(d => d.id === id);
+    if (idx !== -1) {
+      dbState.dispatches[idx] = { ...dbState.dispatches[idx], ...updatedFields };
+      saveDb();
+      return dbState.dispatches[idx];
+    }
+    return null;
+  },
+  deleteDispatch: async (id) => {
+    const idx = dbState.dispatches.findIndex(d => d.id === id);
+    if (idx !== -1) {
+      dbState.dispatches.splice(idx, 1);
+      saveDb();
+      return true;
+    }
+    return false;
+  },
 
   getInquiries: async () => dbState.inquiries,
   saveInquiry: async (inquiry) => {
@@ -680,6 +1159,210 @@ module.exports = {
     }
     return false;
   },
+  // ── Universal Projects Management ──────────────────────────────────────
+  getProjects: async () => dbState.projects || [],
+  saveProject: async (project) => {
+    if (!dbState.projects) dbState.projects = [];
+    if (!project.id) {
+      project.id = 'proj-' + Date.now();
+    }
+    const idx = dbState.projects.findIndex(p => p.id === project.id);
+    if (idx !== -1) {
+      dbState.projects[idx] = { ...dbState.projects[idx], ...project, updatedAt: new Date().toISOString() };
+    } else {
+      dbState.projects.unshift({ ...project, createdAt: new Date().toISOString() });
+    }
+    saveDb();
+    return project;
+  },
+  deleteProject: async (id) => {
+    if (!dbState.projects) return false;
+    const initialLen = dbState.projects.length;
+    dbState.projects = dbState.projects.filter(p => p.id !== id);
+    if (dbState.projects.length !== initialLen) {
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+
+  // ── Staff & Positions HR Management ─────────────────────────────────────
+  getStaff: async () => dbState.staff || [],
+  saveStaff: async (staffMember) => {
+    if (!dbState.staff) dbState.staff = [];
+    if (!staffMember.id) {
+      staffMember.id = 'stf-' + Date.now();
+    }
+    const idx = dbState.staff.findIndex(s => s.id === staffMember.id);
+    if (idx !== -1) {
+      dbState.staff[idx] = { ...dbState.staff[idx], ...staffMember, updatedAt: new Date().toISOString() };
+    } else {
+      dbState.staff.unshift({ ...staffMember, createdAt: new Date().toISOString() });
+    }
+    saveDb();
+    return staffMember;
+  },
+  deleteStaff: async (id) => {
+    if (!dbState.staff) return false;
+    const initialLen = dbState.staff.length;
+    dbState.staff = dbState.staff.filter(s => s.id !== id);
+    if (dbState.staff.length !== initialLen) {
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+
+  // ── Cooperatives & SACCOs Directory ─────────────────────────────────────
+  getCooperatives: async () => dbState.cooperatives || [],
+  saveCooperative: async (coop) => {
+    if (!dbState.cooperatives) dbState.cooperatives = [];
+    if (!coop.id) {
+      coop.id = 'coop-' + Date.now();
+    }
+    const idx = dbState.cooperatives.findIndex(c => c.id === coop.id);
+    if (idx !== -1) {
+      dbState.cooperatives[idx] = { ...dbState.cooperatives[idx], ...coop, updatedAt: new Date().toISOString() };
+    } else {
+      dbState.cooperatives.unshift({ ...coop, createdAt: new Date().toISOString() });
+    }
+    saveDb();
+    return coop;
+  },
+  deleteCooperative: async (id) => {
+    if (!dbState.cooperatives) return false;
+    const initialLen = dbState.cooperatives.length;
+    dbState.cooperatives = dbState.cooperatives.filter(c => c.id !== id);
+    if (dbState.cooperatives.length !== initialLen) {
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+
+  // ── Machinery & Technology Allocation ──────────────────────────────────
+  getMachinery: async () => dbState.machinery || [],
+  saveMachinery: async (machine) => {
+    if (!dbState.machinery) dbState.machinery = [];
+    if (!machine.id) {
+      machine.id = 'mac-' + Date.now();
+    }
+    const idx = dbState.machinery.findIndex(m => m.id === machine.id);
+    if (idx !== -1) {
+      dbState.machinery[idx] = { ...dbState.machinery[idx], ...machine, updatedAt: new Date().toISOString() };
+    } else {
+      dbState.machinery.unshift({ ...machine, createdAt: new Date().toISOString() });
+    }
+    saveDb();
+    return machine;
+  },
+  deleteMachinery: async (id) => {
+    if (!dbState.machinery) return false;
+    const initialLen = dbState.machinery.length;
+    dbState.machinery = dbState.machinery.filter(m => m.id !== id);
+    if (dbState.machinery.length !== initialLen) {
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+
+  // ── Department Operations: Finance & Ledger ─────────────────────────────
+  getFinance: async () => dbState.finance || [],
+  saveFinanceRecord: async (record) => {
+    if (!dbState.finance) dbState.finance = [];
+    if (!record.id) {
+      record.id = 'fin-' + Date.now();
+    }
+    const idx = dbState.finance.findIndex(f => f.id === record.id);
+    if (idx !== -1) {
+      dbState.finance[idx] = { ...dbState.finance[idx], ...record, updatedAt: new Date().toISOString() };
+    } else {
+      dbState.finance.unshift({ ...record, createdAt: new Date().toISOString() });
+    }
+    saveDb();
+    return record;
+  },
+  deleteFinanceRecord: async (id) => {
+    if (!dbState.finance) return false;
+    const initialLen = dbState.finance.length;
+    dbState.finance = dbState.finance.filter(f => f.id !== id);
+    if (dbState.finance.length !== initialLen) {
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+
+  // ── Department Operations: 7-District Tree Nurseries ─────────────────────
+  getNurseries: async () => dbState.nurseries || [],
+  saveNursery: async (nursery) => {
+    if (!dbState.nurseries) dbState.nurseries = [];
+    if (!nursery.id) {
+      nursery.id = 'nur-' + Date.now();
+    }
+    const idx = dbState.nurseries.findIndex(n => n.id === nursery.id);
+    if (idx !== -1) {
+      dbState.nurseries[idx] = { ...dbState.nurseries[idx], ...nursery, updatedAt: new Date().toISOString() };
+    } else {
+      dbState.nurseries.push({ ...nursery, createdAt: new Date().toISOString() });
+    }
+    saveDb();
+    return nursery;
+  },
+  deleteNursery: async (id) => {
+    if (!dbState.nurseries) return false;
+    const initialLen = dbState.nurseries.length;
+    dbState.nurseries = dbState.nurseries.filter(n => n.id !== id);
+    if (dbState.nurseries.length !== initialLen) {
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+
+  // ── Google Forms & External Surveys Live Ingestion ───────────────────────
+  getFormSubmissions: async () => dbState.formSubmissions || [],
+  submitFormResponse: async (submission) => {
+    if (!dbState.formSubmissions) dbState.formSubmissions = [];
+    const newSubmission = {
+      id: 'sub-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      submittedAt: new Date().toISOString(),
+      status: 'New',
+      ...submission
+    };
+    dbState.formSubmissions.unshift(newSubmission);
+    if (dbState.formSubmissions.length > 5000) {
+      dbState.formSubmissions = dbState.formSubmissions.slice(0, 5000);
+    }
+    saveDb();
+    return newSubmission;
+  },
+  deleteFormSubmission: async (id) => {
+    if (!dbState.formSubmissions) return false;
+    const initialLen = dbState.formSubmissions.length;
+    dbState.formSubmissions = dbState.formSubmissions.filter(s => s.id !== id);
+    if (dbState.formSubmissions.length !== initialLen) {
+      saveDb();
+      return true;
+    }
+    return false;
+  },
+
+  getSocials: async () => {
+    return dbState.socials || { ...DEFAULT_SOCIALS };
+  },
+  updateSocials: async (socialsData) => {
+    if (!socialsData || typeof socialsData !== 'object') return dbState.socials;
+    dbState.socials = {
+      ...DEFAULT_SOCIALS,
+      ...(dbState.socials || {}),
+      ...socialsData
+    };
+    saveDb();
+    return dbState.socials;
+  },
+
   restoreBackup: async (backup) => {
     if (backup.crops) dbState.crops = backup.crops;
     if (backup.users && Array.isArray(backup.users)) {
@@ -717,6 +1400,14 @@ module.exports = {
     if (backup.translations) dbState.translations = backup.translations;
     if (backup.manual && Array.isArray(backup.manual)) dbState.manual = backup.manual;
     if (backup.slides && Array.isArray(backup.slides)) dbState.slides = backup.slides;
+    if (backup.projects && Array.isArray(backup.projects)) dbState.projects = backup.projects;
+    if (backup.staff && Array.isArray(backup.staff)) dbState.staff = backup.staff;
+    if (backup.cooperatives && Array.isArray(backup.cooperatives)) dbState.cooperatives = backup.cooperatives;
+    if (backup.machinery && Array.isArray(backup.machinery)) dbState.machinery = backup.machinery;
+    if (backup.finance && Array.isArray(backup.finance)) dbState.finance = backup.finance;
+    if (backup.nurseries && Array.isArray(backup.nurseries)) dbState.nurseries = backup.nurseries;
+    if (backup.formSubmissions && Array.isArray(backup.formSubmissions)) dbState.formSubmissions = backup.formSubmissions;
+    if (backup.socials) dbState.socials = { ...DEFAULT_SOCIALS, ...backup.socials };
     if (backup.settings) dbState.settings = backup.settings;
     
     saveDb();
@@ -732,6 +1423,14 @@ module.exports = {
       translations: null,
       slides: [...DEFAULT_SLIDES],
       manual: [...DEFAULT_MANUAL],
+      projects: [...DEFAULT_PROJECTS],
+      staff: [...DEFAULT_STAFF],
+      cooperatives: [...DEFAULT_COOPERATIVES],
+      machinery: [...DEFAULT_MACHINERY],
+      finance: [...DEFAULT_FINANCE],
+      nurseries: [...DEFAULT_NURSERIES],
+      formSubmissions: [...DEFAULT_FORM_SUBMISSIONS],
+      socials: { ...DEFAULT_SOCIALS },
       alerts: [],
       logins: [],
       settings: { hideManual: false }

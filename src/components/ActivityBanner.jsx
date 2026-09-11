@@ -74,12 +74,140 @@ const getSlidesFallback = (lang) => [
   }
 ];
 
+// Helper to detect video format across extensions, Base64 data URLs, and embeds
+export const isVideoUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const lower = url.toLowerCase().trim();
+  if (lower.startsWith('data:video/')) return true;
+  if (lower.includes('youtube.com') || lower.includes('youtu.be') || lower.includes('vimeo.com')) return true;
+  const cleanUrl = lower.split('?')[0].split('#')[0];
+  return cleanUrl.endsWith('.mp4') ||
+         cleanUrl.endsWith('.webm') ||
+         cleanUrl.endsWith('.ogg') ||
+         cleanUrl.endsWith('.mov') ||
+         cleanUrl.endsWith('.m4v') ||
+         cleanUrl.endsWith('.mkv');
+};
+
+export const getEmbedUrl = (url) => {
+  if (!url) return '';
+  if (url.includes('youtube.com/watch?v=')) {
+    const id = url.split('watch?v=')[1]?.split('&')[0];
+    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=1`;
+  }
+  if (url.includes('youtu.be/')) {
+    const id = url.split('youtu.be/')[1]?.split('?')[0];
+    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=1`;
+  }
+  if (url.includes('vimeo.com/')) {
+    const id = url.split('vimeo.com/')[1]?.split('?')[0];
+    return `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1`;
+  }
+  return url;
+};
+
+export function BannerMedia({ mediaUrl, title, fit, animating, isMobile, onVideoEnd, setIsVideoPlaying }) {
+  const videoRef = useRef(null);
+  const isVideo = isVideoUrl(mediaUrl);
+
+  useEffect(() => {
+    if (isVideo && videoRef.current) {
+      const v = videoRef.current;
+      v.defaultMuted = true;
+      v.muted = true;
+      v.playsInline = true;
+      const playPromise = v.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn('Video auto-playback deferred:', err);
+        });
+      }
+    }
+  }, [isVideo, mediaUrl]);
+
+  if (!mediaUrl) {
+    return (
+      <div style={{ width: '100%', height: '100%', backgroundColor: '#081c15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: '3rem' }}>🌾</span>
+      </div>
+    );
+  }
+
+  if (isVideo) {
+    const isEmbed = mediaUrl.includes('youtube.com') || mediaUrl.includes('youtu.be') || mediaUrl.includes('vimeo.com');
+    if (isEmbed) {
+      return (
+        <iframe
+          src={getEmbedUrl(mediaUrl)}
+          title={title || 'Banner Video'}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            objectFit: 'cover'
+          }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+
+    return (
+      <video
+        ref={videoRef}
+        key={mediaUrl}
+        src={mediaUrl}
+        controls
+        autoPlay
+        muted
+        loop
+        playsInline
+        onPlay={() => setIsVideoPlaying && setIsVideoPlaying(true)}
+        onPause={() => setIsVideoPlaying && setIsVideoPlaying(false)}
+        onEnded={() => {
+          if (setIsVideoPlaying) setIsVideoPlaying(false);
+          if (onVideoEnd) onVideoEnd();
+        }}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          boxSizing: 'border-box',
+          transition: 'opacity 0.3s ease-in-out',
+          opacity: animating ? 0.2 : 1,
+        }}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={mediaUrl}
+      alt={title}
+      onError={(e) => {
+        e.target.onerror = null;
+        e.target.src = '/community_gathering.webp';
+      }}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: fit || 'cover',
+        padding: fit === 'contain' ? (isMobile ? '8px' : '20px') : '0',
+        boxSizing: 'border-box',
+        transition: 'opacity 0.3s ease-in-out',
+        opacity: animating ? 0.2 : 1,
+      }}
+    />
+  );
+}
+
 export default function ActivityBanner({ lang }) {
   const [slides, setSlides] = useState([]);
   const [current, setCurrent] = useState(0);
   const [animating, setAnimating] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -145,11 +273,11 @@ export default function ActivityBanner({ lang }) {
   };
 
   useEffect(() => {
-    if (slides.length === 0) return;
+    if (slides.length === 0 || isVideoPlaying) return;
     timerRef.current = setInterval(goNext, 10000); // 10 seconds slide transition
     return () => clearInterval(timerRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current, slides, lang]);
+  }, [current, slides, lang, isVideoPlaying]);
 
   if (isLoading || slides.length === 0) {
     // Show a clean loading placeholder
@@ -170,12 +298,14 @@ export default function ActivityBanner({ lang }) {
     );
   }
 
-  const slide = slides[current];
+  const safeCurrent = (current >= 0 && current < slides.length) ? current : 0;
+  const slide = slides[safeCurrent] || slides[0] || {};
 
   // Map translation properties
-  const slideTag = slide[`tag_${lang}`] || slide.tag || slide.tag_en || '';
-  const slideTitle = slide[`title_${lang}`] || slide.title || slide.title_en || '';
+  const slideTag = slide[`tag_${lang}`] || slide.tag || slide.tag_en || 'News';
+  const slideTitle = slide[`title_${lang}`] || slide.title || slide.title_en || 'Jeroma Farmers Collection Centre Ltd';
   const slideBody = slide[`body_${lang}`] || slide.body || slide.body_en || '';
+  const mediaUrl = slide.video || slide.image;
 
   return (
     <div
@@ -205,38 +335,15 @@ export default function ActivityBanner({ lang }) {
           overflow: 'hidden',
         }}
       >
-        {slide.video || (slide.image && (slide.image.endsWith('.mp4') || slide.image.endsWith('.webm') || slide.image.endsWith('.ogg'))) ? (
-          <video
-            src={slide.video || slide.image}
-            controls
-            autoPlay
-            muted
-            loop
-            playsInline
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              boxSizing: 'border-box',
-              transition: 'opacity 0.3s ease-in-out',
-              opacity: animating ? 0.2 : 1,
-            }}
-          />
-        ) : (
-          <img
-            src={slide.image}
-            alt={slideTitle}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: slide.fit || 'cover',
-              padding: slide.fit === 'contain' ? (isMobile ? '8px' : '20px') : '0',
-              boxSizing: 'border-box',
-              transition: 'opacity 0.3s ease-in-out',
-              opacity: animating ? 0.2 : 1,
-            }}
-          />
-        )}
+        <BannerMedia
+          mediaUrl={mediaUrl}
+          title={slideTitle}
+          fit={slide.fit}
+          animating={animating}
+          isMobile={isMobile}
+          onVideoEnd={goNext}
+          setIsVideoPlaying={setIsVideoPlaying}
+        />
 
         {/* Desktop Edge Blend - very narrow to prevent dark shadow overlay */}
         {!isMobile && slide.fit !== 'contain' && (

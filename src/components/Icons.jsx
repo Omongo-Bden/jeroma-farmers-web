@@ -258,4 +258,81 @@ export const Camera = ({ size = 24, color = 'currentColor', strokeWidth = 2 }) =
   </svg>
 );
 
+export const WhatsAppOriginal = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#25D366" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <circle cx="12" cy="12" r="12" fill="#25D366" />
+    <path d="M17.5 14.4c-.3-.1-1.8-.9-2-.9-.3-.1-.5-.1-.7.2-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4 0-.1-.2-.2-.5-.3z" fill="#ffffff" />
+  </svg>
+);
+
+export const XTwitterOriginal = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="#000000" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <circle cx="12" cy="12" r="12" fill="#0f1419" />
+    <path d="M14.7 7h1.8l-4 4.6 4.7 6.2h-3.7l-2.9-3.8-3.3 3.8H5.5l4.3-4.9L5.3 7h3.8l2.6 3.5L14.7 7zm-.6 9.7h1l-6.4-8.6h-1.1l6.5 8.6z" fill="#ffffff" />
+  </svg>
+);
+
+export const YouTubeOriginal = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <circle cx="12" cy="12" r="12" fill="#FF0000" />
+    <path d="M17.5 10.2s-.1-1-.6-1.4c-.6-.6-1.2-.6-1.5-.6-2.2-.2-5.4-.2-5.4-.2s-3.2 0-5.4.2c-.3 0-.9 0-1.5.6-.5.4-.6 1.4-.6 1.4S2.7 11.4 2.7 12.6v1.1c0 1.2.2 2.4.2 2.4s.1 1 .6 1.4c.6.6 1.3.6 1.7.7 1.2.1 5.1.2 5.1.2s3.2 0 5.4-.2c.3 0 .9 0 1.5-.6.5-.4.6-1.4.6-1.4s.2-1.2.2-2.4v-1.1c0-1.2-.2-2.4-.2-2.4zM10.7 14.3v-4.2l4.1 2.1-4.1 2.1z" fill="#ffffff" />
+  </svg>
+);
+
+export const LinkedInOriginal = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <circle cx="12" cy="12" r="12" fill="#0A66C2" />
+    <path d="M8.5 7.2a1.2 1.2 0 1 1-2.4 0 1.2 1.2 0 0 1 2.4 0zM6.3 9h2v7h-2V9zm3.5 0h1.9v1h.1c.3-.5 1-1.1 2.1-1.1 2.3 0 2.7 1.5 2.7 3.5V16h-2v-3.1c0-.7 0-1.7-1-1.7-1.1 0-1.2.8-1.2 1.6V16h-2V9z" fill="#ffffff" />
+  </svg>
+);
+
+export const InstagramOriginal = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <defs>
+      <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#fdf497" />
+        <stop offset="5%" stopColor="#fdf497" />
+        <stop offset="45%" stopColor="#fd5949" />
+        <stop offset="60%" stopColor="#d6249f" />
+        <stop offset="90%" stopColor="#285AEB" />
+      </linearGradient>
+    </defs>
+    <circle cx="12" cy="12" r="12" fill="url(#ig-grad)" />
+    <path d="M14.8 6.5H9.2A2.7 2.7 0 0 0 6.5 9.2v5.6a2.7 2.7 0 0 0 2.7 2.7h5.6a2.7 2.7 0 0 0 2.7-2.7V9.2a2.7 2.7 0 0 0-2.7-2.7zm1.3 8.3a1.4 1.4 0 0 1-1.3 1.3H9.2a1.4 1.4 0 0 1-1.3-1.3V9.2a1.4 1.4 0 0 1 1.3-1.3h5.6a1.4 1.4 0 0 1 1.3 1.3v5.6zm-4.1-5.1a2.3 2.3 0 1 0 2.3 2.3 2.3 2.3 0 0 0-2.3-2.3zm0 3.3a1 1 0 1 1 1-1 1 1 0 0 1-1 1zm2.9-3.7a.5.5 0 1 1-.5-.5.5.5 0 0 1 .5.5z" fill="#ffffff" />
+  </svg>
+);
+
+export const TelegramOriginal = ({ size = 24 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+    <circle cx="12" cy="12" r="12" fill="#24A1DE" />
+    <path d="M17.2 7.1L5.9 11.5c-.8.3-.8.8-.1 1l2.9.9 6.7-4.2c.3-.2.6-.1.4.1l-5.4 4.9v2.6c.3 0 .4-.1.6-.3l1.5-1.5 3.1 2.3c.6.3 1 .2 1.2-.5l2-9.5c.2-.9-.3-1.3-.9-1z" fill="#ffffff" />
+  </svg>
+);
+
+export const ExternalLink = ({ size = 24, color = 'currentColor', strokeWidth = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+export const Share2 = ({ size = 24, color = 'currentColor', strokeWidth = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+  </svg>
+);
+
+export const Edit = ({ size = 24, color = 'currentColor', strokeWidth = 2 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+
+
 

@@ -75,7 +75,10 @@ const jsonResponse = (res, statusCode, data) => {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
   });
   res.end(JSON.stringify(data));
 };
@@ -94,9 +97,14 @@ const serveStatic = (req, res, pathname) => {
 
   let filePath = path.join(__dirname, 'dist', safePath);
 
-  // If path doesn't exist or is a directory, fallback to index.html for SPA router support
+  // If path doesn't exist in dist, check public folder (for direct uploads and assets)
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-    filePath = path.join(__dirname, 'dist', 'index.html');
+    const publicPath = path.join(__dirname, 'public', safePath);
+    if (fs.existsSync(publicPath) && !fs.statSync(publicPath).isDirectory()) {
+      filePath = publicPath;
+    } else {
+      filePath = path.join(__dirname, 'dist', 'index.html');
+    }
   }
 
   // If even index.html doesn't exist, the build was not run yet
@@ -108,7 +116,22 @@ const serveStatic = (req, res, pathname) => {
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-  res.writeHead(200, { 'Content-Type': contentType });
+  const responseHeaders = {
+    'Content-Type': contentType,
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
+  };
+
+  if (safePath.startsWith('/assets/')) {
+    responseHeaders['Cache-Control'] = 'public, max-age=31536000, immutable';
+  } else if (safePath === '/index.html') {
+    responseHeaders['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+  } else {
+    responseHeaders['Cache-Control'] = 'public, max-age=86400';
+  }
+
+  res.writeHead(200, responseHeaders);
   if (req.method === 'HEAD') {
     return res.end();
   }

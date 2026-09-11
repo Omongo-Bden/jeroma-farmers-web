@@ -503,7 +503,12 @@ function App() {
         {currentView === 'manual' && !settings.hideManual && (
           <TrainingManual
             lang={lang}
+            currentUser={currentUser}
             onBackToHome={() => setCurrentView('home')}
+            onOpenAdminManual={() => {
+              window.location.hash = '#manual';
+              setCurrentView('dashboard');
+            }}
           />
         )}
         
@@ -536,7 +541,7 @@ function App() {
 
         {currentView === 'dashboard' && currentUser && (
           <Suspense fallback={<DashboardFallback />}>
-            {currentUser.role === 'admin' ? (
+            {currentUser.role !== 'client' ? (
               <AdminDashboard 
                 lang={lang} 
                 translations={translations}

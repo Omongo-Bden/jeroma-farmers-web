@@ -150,6 +150,17 @@ export const saveCrops = async (crops) => {
   }
 };
 
+export const deleteCrop = async (cropId) => {
+  const currentCrops = await getCrops();
+  if (currentCrops && currentCrops[cropId]) {
+    const updated = { ...currentCrops };
+    delete updated[cropId];
+    await saveCrops(updated);
+    return true;
+  }
+  return false;
+};
+
 // ─── Users & Auth ─────────────────────────────────────────────────────────────
 export const getUsers = async () => {
   try {
@@ -520,6 +531,59 @@ export const updateDispatchStatus = async (id, status) => {
   return false;
 };
 
+export const updateDispatch = async (id, updatedFields) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/dispatches/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...updatedFields })
+    });
+    if (res.ok) {
+      const dispatches = await getDispatches();
+      await idbPut('dispatches', { id: 'all', data: dispatches });
+      return true;
+    }
+  } catch (e) {
+    // Offline fallback
+  }
+  const cachedDispatchesObj = await idbGet('dispatches', 'all');
+  const dispatches = cachedDispatchesObj ? cachedDispatchesObj.data : [];
+  const idx = dispatches.findIndex(d => d.id === id);
+  if (idx !== -1) {
+    dispatches[idx] = { ...dispatches[idx], ...updatedFields, _localTimestamp: Date.now() };
+    await idbPut('dispatches', { id: 'all', data: dispatches });
+    await queueOfflineAction('updateDispatch', { id, ...updatedFields });
+    return true;
+  }
+  return false;
+};
+
+export const deleteDispatch = async (id) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/dispatches/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    if (res.ok) {
+      const dispatches = await getDispatches();
+      await idbPut('dispatches', { id: 'all', data: dispatches });
+      return true;
+    }
+  } catch (e) {
+    // Offline fallback
+  }
+  const cachedDispatchesObj = await idbGet('dispatches', 'all');
+  const dispatches = cachedDispatchesObj ? cachedDispatchesObj.data : [];
+  const filtered = dispatches.filter(d => d.id !== id);
+  if (filtered.length !== dispatches.length) {
+    await idbPut('dispatches', { id: 'all', data: filtered });
+    await queueOfflineAction('deleteDispatch', { id });
+    return true;
+  }
+  return false;
+};
+
 // ─── Inquiries ────────────────────────────────────────────────────────────────
 export const getInquiries = async () => {
   try {
@@ -805,6 +869,18 @@ export const syncOfflineData = async () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+      } else if (actionType === 'saveSlides') {
+        res = await fetchWithAuth(`${API_BASE}/slides`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else if (actionType === 'saveManual') {
+        res = await fetchWithAuth(`${API_BASE}/manual`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
       }
 
       if (res && res.ok) {
@@ -823,19 +899,97 @@ export const syncOfflineData = async () => {
 };
 
 // ─── Slides Management ────────────────────────────────────────────────────────
+const DEFAULT_SLIDES = [
+  {
+    id: 'districts',
+    icon: '📢',
+    tag_en: 'News',
+    tag_ach: 'Kop Manyen',
+    title_en: 'Jeroma Farmers Now Operational in 7 Districts!',
+    title_ach: 'Jeroma Farmers Do tye ka tic i District 7!',
+    body_en: 'Pader, Agago, Kitgum, Abim, Karenga, Lira and Kole districts are all connected to Jeroma\'s collection network. More than 1,200 registered farmers benefit from daily pickup routes.',
+    body_ach: 'District me Pader, Agago, Kitgum, Abim, Karenga, Lira ki Kole ducu dong ocokke i kabedo me cogo keyo me Jeroma. Lupur ma okwoye makato 1,200 dong gunongo ber me tic man.',
+    image: '/jeroma_banner_7_districts.jpg',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'contain',
+  },
+  {
+    id: 'training',
+    icon: '🌱',
+    tag_en: 'Activity',
+    tag_ach: 'Ginnipiny',
+    title_en: 'GAP Farmer Training Sessions Underway',
+    title_ach: 'Dwol me Pwonj me GAP pi Lupur Tye ka Medde',
+    body_en: 'Our extension officers are conducting Good Agronomic Practice (GAP) training workshops for registered farmers across all 7 districts — covering soil health, pest management, and post-harvest handling.',
+    body_ach: 'Lutic mwa me extension tye ka kuto pwonj me Good Agronomic Practice (GAP) bot lupur ma okwoye i district ducu 7 — lok i kom ngom maber, gengo kwoyo, ki cogo keyo maber.',
+    image: '/farmers_training_1.jpg',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
+    id: 'sunflower',
+    icon: '🌻',
+    tag_en: 'Activity',
+    tag_ach: 'Ginnipiny',
+    title_en: 'Sunflower Season: Grades Now Open for Delivery',
+    title_ach: 'Cawa me Anyim (Sunflower): Rwom me Cogo tye Ayela',
+    body_en: 'Sunflower is accepted at all collection hubs. Target moisture: 9–10%. Grade-A payout is UGX 2,200/Kg. Ensure proper drying on raised racks before delivery to secure premium rates.',
+    body_ach: 'Cogo anyim (sunflower) dong tye i kabedo mwa ducu me cogo keyo. Dit me pii: 9-10%. Wel Grade-A payout tye UGX 2,200/Kg. Tim be itoyo maber anyim ma peya itero botwa.',
+    image: '/maize_crop_banner.jpg',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
+    id: 'team',
+    icon: '👥',
+    tag_en: 'Team',
+    tag_ach: 'Lutic mwa',
+    title_en: 'Meet Our Dedicated Jeroma FCC Ltd. Staff',
+    title_ach: 'Nen Lutic mwa me Jeroma FCC Ltd.',
+    body_en: 'Our professional team of managers, agronomy experts, extension officers, and support staff are committed to transforming subsistence farming into commercial agriculture and improving rural livelihoods.',
+    body_ach: 'Team mwa me lutic madito, lutic me agronomy, extension officers, ki lutic ducu gubed guwankere pi loko pur me codo keyo me donyo i lobo me biro biyo kwo maber.',
+    image: '/jeroma_staffs.jpg',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
+    id: 'partnership_a2i',
+    icon: '🤝',
+    tag_en: 'Partnership',
+    tag_ach: 'Ribbe Tic',
+    title_en: 'Jeroma in Conjunction with Access to Innovation (A2I)',
+    title_ach: 'Jeroma i Conjunction ki Access to Innovation (A2I)',
+    body_en: 'Jeroma, in conjunction with Access to Innovation and with support from the Danish Government, completed its First Cohort field program from July 10 to July 14, 2026. The team visited SACCOs, cooperatives, and farming institutions in the Lango and Acholi subregions to identify needs, see capacities, and select machinery that best supports farmers without financial burden.',
+    body_ach: 'Jeroma, i ribbe tic ki Access to Innovation kede cwak ma oa ki bot Gavumenti me Denmark, ocoyo Program me Cohort Mukwongo me abiri 10-14 July 2026. Team mwa olimo SACCOs kede cooperatives i Lango ki Acholi subregions pi neno machinery ma twero konyo lupur maber.',
+    image: '/a2i_project_2.jpg',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  }
+];
+
 export const getSlides = async () => {
   try {
     const res = await fetchWithAuth(`${API_BASE}/slides`);
     if (res.ok) {
       const slides = await res.json();
-      await idbPut('slides', { id: 'all', data: slides });
-      return slides;
+      if (Array.isArray(slides) && slides.length > 0) {
+        await idbPut('slides', { id: 'all', data: slides });
+        return slides;
+      }
     }
   } catch (e) {
     console.error('Offline or error getting slides:', e);
   }
   const cached = await idbGet('slides', 'all');
-  return cached ? cached.data : [];
+  if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
+    return cached.data;
+  }
+  return DEFAULT_SLIDES;
 };
 
 export const saveSlides = async (slides) => {
@@ -854,6 +1008,7 @@ export const saveSlides = async (slides) => {
   } catch (e) {
     console.error('Offline or error saving slides:', e);
   }
+  await queueOfflineAction('saveSlides', slides);
   await idbPut('slides', { id: 'all', data: slides });
   return slides;
 };
@@ -870,28 +1025,32 @@ export const uploadImage = async (file) => {
     reader.onerror = error => reject(error);
   });
 
-  const headers = {
-    'Content-Type': 'application/json'
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await window.fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        filename: file.name,
+        base64: base64Data
+      })
+    });
+
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('Server upload endpoint unreachable, using local data URL fallback:', err);
   }
 
-  const res = await window.fetch(`${API_BASE}/upload`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      filename: file.name,
-      base64: base64Data
-    })
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.error || 'Upload failed');
-  }
-
-  return res.json();
+  // Graceful fallback to data URL directly
+  return { success: true, url: base64Data };
 };
 
 // ─── Training Manual Database Helpers ──────────────────────────────────────────
@@ -1050,12 +1209,21 @@ export const restoreServerFromLocalBackup = async () => {
     const manual = (await idbGet('manual', 'all'))?.data;
     const slides = (await idbGet('slides', 'all'))?.data;
     const settings = (await idbGet('settings', 'all'))?.data;
+    const projects = (await idbGet('projects', 'all'))?.data;
+    const staff = (await idbGet('staff', 'all'))?.data;
+    const cooperatives = (await idbGet('cooperatives', 'all'))?.data;
+    const machinery = (await idbGet('machinery', 'all'))?.data;
+    const finance = (await idbGet('finance', 'all'))?.data;
+    const nurseries = (await idbGet('nurseries', 'all'))?.data;
+    const formSubmissions = (await idbGet('formSubmissions', 'all'))?.data;
 
     const res = await fetchWithAuth(`${API_BASE}/restore-backup`, {
       method: 'POST',
       body: JSON.stringify({
         crops, users, deliveries, dispatches, inquiries,
-        translations, manual, slides, settings
+        translations, manual, slides, settings,
+        projects, staff, cooperatives, machinery,
+        finance, nurseries, formSubmissions
       })
     });
     
@@ -1067,3 +1235,540 @@ export const restoreServerFromLocalBackup = async () => {
   }
   return { success: false };
 };
+
+// ─── Universal Projects Management ────────────────────────────────────────────
+export const getProjects = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/projects`);
+    if (res.ok) {
+      const projects = await res.json();
+      if (Array.isArray(projects)) {
+        await idbPut('projects', { id: 'all', data: projects });
+        return projects;
+      }
+    }
+  } catch (e) {
+    console.error('Offline or error getting projects:', e);
+  }
+  const cached = await idbGet('projects', 'all');
+  return cached ? cached.data : [];
+};
+
+export const saveProject = async (project) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/projects`, {
+      method: 'POST',
+      body: JSON.stringify(project)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const current = await getProjects();
+      await idbPut('projects', { id: 'all', data: current });
+      return data.project || project;
+    }
+  } catch (e) {
+    console.error('Offline saving project:', e);
+  }
+  const cached = await idbGet('projects', 'all');
+  let list = cached ? cached.data : [];
+  if (!project.id) project.id = 'proj-' + Date.now();
+  const idx = list.findIndex(p => p.id === project.id);
+  if (idx !== -1) {
+    list[idx] = { ...list[idx], ...project };
+  } else {
+    list.unshift(project);
+  }
+  await idbPut('projects', { id: 'all', data: list });
+  await queueOfflineAction('saveProject', project);
+  return project;
+};
+
+export const deleteProject = async (id) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/projects/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+    if (res.ok) {
+      const current = await getProjects();
+      await idbPut('projects', { id: 'all', data: current });
+      return true;
+    }
+  } catch (e) {
+    console.error('Offline deleting project:', e);
+  }
+  const cached = await idbGet('projects', 'all');
+  if (cached && cached.data) {
+    const filtered = cached.data.filter(p => p.id !== id);
+    await idbPut('projects', { id: 'all', data: filtered });
+  }
+  await queueOfflineAction('deleteProject', { id });
+  return true;
+};
+
+// ─── Staff & Positions HR Management ───────────────────────────────────────────
+export const getStaffMembers = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/staff`);
+    if (res.ok) {
+      const staff = await res.json();
+      if (Array.isArray(staff)) {
+        await idbPut('staff', { id: 'all', data: staff });
+        return staff;
+      }
+    }
+  } catch (e) {
+    console.error('Offline or error getting staff:', e);
+  }
+  const cached = await idbGet('staff', 'all');
+  return cached ? cached.data : [];
+};
+
+export const saveStaffMember = async (staffMember) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/staff`, {
+      method: 'POST',
+      body: JSON.stringify(staffMember)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const current = await getStaffMembers();
+      await idbPut('staff', { id: 'all', data: current });
+      return data.staffMember || staffMember;
+    }
+  } catch (e) {
+    console.error('Offline saving staff:', e);
+  }
+  const cached = await idbGet('staff', 'all');
+  let list = cached ? cached.data : [];
+  if (!staffMember.id) staffMember.id = 'stf-' + Date.now();
+  const idx = list.findIndex(s => s.id === staffMember.id);
+  if (idx !== -1) {
+    list[idx] = { ...list[idx], ...staffMember };
+  } else {
+    list.unshift(staffMember);
+  }
+  await idbPut('staff', { id: 'all', data: list });
+  await queueOfflineAction('saveStaffMember', staffMember);
+  return staffMember;
+};
+
+export const deleteStaffMember = async (id) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/staff/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+    if (res.ok) {
+      const current = await getStaffMembers();
+      await idbPut('staff', { id: 'all', data: current });
+      return true;
+    }
+  } catch (e) {
+    console.error('Offline deleting staff:', e);
+  }
+  const cached = await idbGet('staff', 'all');
+  if (cached && cached.data) {
+    const filtered = cached.data.filter(s => s.id !== id);
+    await idbPut('staff', { id: 'all', data: filtered });
+  }
+  await queueOfflineAction('deleteStaffMember', { id });
+  return true;
+};
+
+// ─── Cooperatives & SACCOs Directory ───────────────────────────────────────────
+export const getCooperatives = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/cooperatives`);
+    if (res.ok) {
+      const cooperatives = await res.json();
+      if (Array.isArray(cooperatives)) {
+        await idbPut('cooperatives', { id: 'all', data: cooperatives });
+        return cooperatives;
+      }
+    }
+  } catch (e) {
+    console.error('Offline or error getting cooperatives:', e);
+  }
+  const cached = await idbGet('cooperatives', 'all');
+  return cached ? cached.data : [];
+};
+
+export const saveCooperative = async (cooperative) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/cooperatives`, {
+      method: 'POST',
+      body: JSON.stringify(cooperative)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const current = await getCooperatives();
+      await idbPut('cooperatives', { id: 'all', data: current });
+      return data.cooperative || cooperative;
+    }
+  } catch (e) {
+    console.error('Offline saving cooperative:', e);
+  }
+  const cached = await idbGet('cooperatives', 'all');
+  let list = cached ? cached.data : [];
+  if (!cooperative.id) cooperative.id = 'coop-' + Date.now();
+  const idx = list.findIndex(c => c.id === cooperative.id);
+  if (idx !== -1) {
+    list[idx] = { ...list[idx], ...cooperative };
+  } else {
+    list.unshift(cooperative);
+  }
+  await idbPut('cooperatives', { id: 'all', data: list });
+  await queueOfflineAction('saveCooperative', cooperative);
+  return cooperative;
+};
+
+export const deleteCooperative = async (id) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/cooperatives/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+    if (res.ok) {
+      const current = await getCooperatives();
+      await idbPut('cooperatives', { id: 'all', data: current });
+      return true;
+    }
+  } catch (e) {
+    console.error('Offline deleting cooperative:', e);
+  }
+  const cached = await idbGet('cooperatives', 'all');
+  if (cached && cached.data) {
+    const filtered = cached.data.filter(c => c.id !== id);
+    await idbPut('cooperatives', { id: 'all', data: filtered });
+  }
+  await queueOfflineAction('deleteCooperative', { id });
+  return true;
+};
+
+// ─── Machinery & Technology Allocation ─────────────────────────────────────────
+export const getMachineryAssets = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/machinery`);
+    if (res.ok) {
+      const machinery = await res.json();
+      if (Array.isArray(machinery)) {
+        await idbPut('machinery', { id: 'all', data: machinery });
+        return machinery;
+      }
+    }
+  } catch (e) {
+    console.error('Offline or error getting machinery:', e);
+  }
+  const cached = await idbGet('machinery', 'all');
+  return cached ? cached.data : [];
+};
+
+export const saveMachineryAsset = async (machine) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/machinery`, {
+      method: 'POST',
+      body: JSON.stringify(machine)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const current = await getMachineryAssets();
+      await idbPut('machinery', { id: 'all', data: current });
+      return data.machinery || machine;
+    }
+  } catch (e) {
+    console.error('Offline saving machine:', e);
+  }
+  const cached = await idbGet('machinery', 'all');
+  let list = cached ? cached.data : [];
+  if (!machine.id) machine.id = 'mac-' + Date.now();
+  const idx = list.findIndex(m => m.id === machine.id);
+  if (idx !== -1) {
+    list[idx] = { ...list[idx], ...machine };
+  } else {
+    list.unshift(machine);
+  }
+  await idbPut('machinery', { id: 'all', data: list });
+  await queueOfflineAction('saveMachineryAsset', machine);
+  return machine;
+};
+
+export const deleteMachineryAsset = async (id) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/machinery/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+    if (res.ok) {
+      const current = await getMachineryAssets();
+      await idbPut('machinery', { id: 'all', data: current });
+      return true;
+    }
+  } catch (e) {
+    console.error('Offline deleting machine:', e);
+  }
+  const cached = await idbGet('machinery', 'all');
+  if (cached && cached.data) {
+    const filtered = cached.data.filter(m => m.id !== id);
+    await idbPut('machinery', { id: 'all', data: filtered });
+  }
+  await queueOfflineAction('deleteMachineryAsset', { id });
+  return true;
+};
+
+// ─── Department Operations: Finance ───────────────────────────────────────────
+export const getFinancialRecords = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/departments/finance`);
+    if (res.ok) {
+      const finance = await res.json();
+      if (Array.isArray(finance)) {
+        await idbPut('finance', { id: 'all', data: finance });
+        return finance;
+      }
+    }
+  } catch (e) {
+    console.error('Offline or error getting finance:', e);
+  }
+  const cached = await idbGet('finance', 'all');
+  return cached ? cached.data : [];
+};
+
+export const saveFinancialRecord = async (record) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/departments/finance`, {
+      method: 'POST',
+      body: JSON.stringify(record)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const current = await getFinancialRecords();
+      await idbPut('finance', { id: 'all', data: current });
+      return data.record || record;
+    }
+  } catch (e) {
+    console.error('Offline saving finance:', e);
+  }
+  const cached = await idbGet('finance', 'all');
+  let list = cached ? cached.data : [];
+  if (!record.id) record.id = 'fin-' + Date.now();
+  const idx = list.findIndex(f => f.id === record.id);
+  if (idx !== -1) {
+    list[idx] = { ...list[idx], ...record };
+  } else {
+    list.unshift(record);
+  }
+  await idbPut('finance', { id: 'all', data: list });
+  await queueOfflineAction('saveFinancialRecord', record);
+  return record;
+};
+
+export const deleteFinancialRecord = async (id) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/departments/finance/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+    if (res.ok) {
+      const current = await getFinancialRecords();
+      await idbPut('finance', { id: 'all', data: current });
+      return true;
+    }
+  } catch (e) {
+    console.error('Offline deleting finance record:', e);
+  }
+  const cached = await idbGet('finance', 'all');
+  if (cached && cached.data) {
+    const filtered = cached.data.filter(f => f.id !== id);
+    await idbPut('finance', { id: 'all', data: filtered });
+  }
+  await queueOfflineAction('deleteFinancialRecord', { id });
+  return true;
+};
+
+// ─── Department Operations: Tree Nurseries ─────────────────────────────────────
+export const getNurseries = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/departments/nurseries`);
+    if (res.ok) {
+      const nurseries = await res.json();
+      if (Array.isArray(nurseries)) {
+        await idbPut('nurseries', { id: 'all', data: nurseries });
+        return nurseries;
+      }
+    }
+  } catch (e) {
+    console.error('Offline or error getting nurseries:', e);
+  }
+  const cached = await idbGet('nurseries', 'all');
+  return cached ? cached.data : [];
+};
+
+export const saveNursery = async (nursery) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/departments/nurseries`, {
+      method: 'POST',
+      body: JSON.stringify(nursery)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const current = await getNurseries();
+      await idbPut('nurseries', { id: 'all', data: current });
+      return data.nursery || nursery;
+    }
+  } catch (e) {
+    console.error('Offline saving nursery:', e);
+  }
+  const cached = await idbGet('nurseries', 'all');
+  let list = cached ? cached.data : [];
+  if (!nursery.id) nursery.id = 'nur-' + Date.now();
+  const idx = list.findIndex(n => n.id === nursery.id);
+  if (idx !== -1) {
+    list[idx] = { ...list[idx], ...nursery };
+  } else {
+    list.unshift(nursery);
+  }
+  await idbPut('nurseries', { id: 'all', data: list });
+  await queueOfflineAction('saveNursery', nursery);
+  return nursery;
+};
+
+// ─── Google Forms & Survey Ingestion ───────────────────────────────────────────
+export const getFormSubmissions = async () => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/forms/submissions`);
+    if (res.ok) {
+      const submissions = await res.json();
+      if (Array.isArray(submissions)) {
+        await idbPut('formSubmissions', { id: 'all', data: submissions });
+        return submissions;
+      }
+    }
+  } catch (e) {
+    console.error('Offline or error getting submissions:', e);
+  }
+  const cached = await idbGet('formSubmissions', 'all');
+  return cached ? cached.data : [];
+};
+
+export const submitFormResponse = async (submission) => {
+  try {
+    const res = await fetch(`${API_BASE}/forms/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(submission)
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (e) {
+    console.error('Offline submitting form response:', e);
+  }
+  const cached = await idbGet('formSubmissions', 'all');
+  let list = cached ? cached.data : [];
+  const localSubmission = {
+    id: 'sub-' + Date.now(),
+    submittedAt: new Date().toISOString(),
+    status: 'New (Local)',
+    ...submission
+  };
+  list.unshift(localSubmission);
+  await idbPut('formSubmissions', { id: 'all', data: list });
+  await queueOfflineAction('submitFormResponse', submission);
+  return { success: true, id: localSubmission.id };
+};
+
+export const deleteFormSubmission = async (id) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/forms/submissions/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+    if (res.ok) {
+      const current = await getFormSubmissions();
+      await idbPut('formSubmissions', { id: 'all', data: current });
+      return true;
+    }
+  } catch (e) {
+    console.error('Offline deleting submission:', e);
+  }
+  const cached = await idbGet('formSubmissions', 'all');
+  if (cached && cached.data) {
+    const filtered = cached.data.filter(s => s.id !== id);
+    await idbPut('formSubmissions', { id: 'all', data: filtered });
+  }
+  await queueOfflineAction('deleteFormSubmission', { id });
+  return true;
+};
+
+export const syncGoogleSheet = async (sheetUrl, rawData = null) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/forms/sync-sheet`, {
+      method: 'POST',
+      body: JSON.stringify({ sheetUrl, rawData })
+    });
+    if (res.ok) {
+      const result = await res.json();
+      if (result.submissions) {
+        await idbPut('formSubmissions', { id: 'all', data: result.submissions });
+      }
+      return result;
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to sync Google Sheet');
+    }
+  } catch (e) {
+    console.error('syncGoogleSheet error:', e);
+    throw e;
+  }
+};
+
+export const DEFAULT_SOCIALS = {
+  whatsapp: { enabled: true, handle: '+256 773 623 196', url: 'https://wa.me/256773623196', title: 'WhatsApp Business', subtitle: 'Direct Chat & Agro Input Inquiries', greeting: 'Hello Jeroma Farmers, I would like to inquire about input subsidies, crop collection, and prices.' },
+  facebook: { enabled: true, handle: '@jeromafarmers', url: 'https://www.facebook.com/jeromafarmers', title: 'Facebook Page', subtitle: 'Jeroma Farmers Collection Centre Ltd' },
+  tiktok: { enabled: true, handle: '@jeromafarmers', url: 'https://www.tiktok.com/@jeromafarmers', title: 'TikTok Channel', subtitle: 'Farmer Training & Field Operations' },
+  x: { enabled: true, handle: '@JeromaFarmers', url: 'https://x.com/JeromaFarmers', title: 'X (Twitter)', subtitle: 'Real-time Bulletins & Commodity Updates' },
+  youtube: { enabled: true, handle: '@jeromafarmers', url: 'https://www.youtube.com/@jeromafarmers', title: 'YouTube Channel', subtitle: 'Farmer Testimonials & Machinery Demonstrations' },
+  linkedin: { enabled: true, handle: 'jeromafarmers', url: 'https://www.linkedin.com/company/jeromafarmers', title: 'LinkedIn', subtitle: 'Corporate & Institutional Partnerships' },
+  instagram: { enabled: true, handle: '@jeromafarmers', url: 'https://www.instagram.com/jeromafarmers', title: 'Instagram', subtitle: 'Farm Photography & Community Highlights' },
+  telegram: { enabled: false, handle: '@jeromafarmers', url: 'https://t.me/jeromafarmers', title: 'Telegram Community', subtitle: 'Broadcasts & Cooperative Alerts' }
+};
+
+export const getSocials = async () => {
+  try {
+    const res = await window.fetch(`${API_BASE}/socials`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        await idbPut('socials', { id: 'all', data });
+        return data;
+      }
+    }
+  } catch (e) {
+    // network fallback
+  }
+  const cached = await idbGet('socials', 'all');
+  if (cached && cached.data) return cached.data;
+  return { ...DEFAULT_SOCIALS };
+};
+
+export const saveSocials = async (socialsData) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/socials`, {
+      method: 'POST',
+      body: JSON.stringify(socialsData)
+    });
+    if (res.ok) {
+      const result = await res.json();
+      const saved = result.socials || socialsData;
+      await idbPut('socials', { id: 'all', data: saved });
+      return saved;
+    }
+  } catch (e) {
+    console.error('Offline saving socials:', e);
+  }
+  await idbPut('socials', { id: 'all', data: socialsData });
+  await queueOfflineAction('saveSocials', socialsData);
+  return socialsData;
+};
+

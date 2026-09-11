@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from './Icons';
-import { getDeliveries, getDispatches, saveDispatch, getCrops, updateUser, uploadImage } from '../utils/db';
+import { getDeliveries, getDispatches, saveDispatch, updateDispatch, getCrops, updateUser, uploadImage } from '../utils/db';
 
 export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) {
   const [activeTab, setActiveTab] = useState('deliveries'); // 'deliveries' | 'dispatch' | 'inputs'
@@ -67,6 +67,17 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
   const [dispNotes, setDispNotes] = useState('');
   const [dispSuccess, setDispSuccess] = useState('');
   const [dispError, setDispError] = useState('');
+
+  // Editing Dispatch State
+  const [editingDisp, setEditingDisp] = useState(null);
+  const [editDispCrop, setEditDispCrop] = useState('sunflower');
+  const [editDispWeight, setEditDispWeight] = useState('');
+  const [editDispDate, setEditDispDate] = useState('');
+  const [editDispLocation, setEditDispLocation] = useState('');
+  const [editDispNotes, setEditDispNotes] = useState('');
+  const [editDispError, setEditDispError] = useState('');
+  const [editDispSuccess, setEditDispSuccess] = useState('');
+  const [editDispSaving, setEditDispSaving] = useState(false);
 
   // Translations
   const translations = {
@@ -236,6 +247,51 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
     setDispDate('');
     setDispNotes('');
     await loadData();
+  };
+
+  const openEditDispatchModal = (disp) => {
+    setEditingDisp(disp);
+    setEditDispCrop(disp.cropId || (disp.cropName ? disp.cropName.toLowerCase() : 'sunflower'));
+    setEditDispWeight(disp.weight !== undefined ? String(disp.weight) : '');
+    setEditDispDate(disp.date || '');
+    setEditDispLocation(disp.location || '');
+    setEditDispNotes(disp.notes || '');
+    setEditDispError('');
+    setEditDispSuccess('');
+  };
+
+  const handleSaveEditDispatch = async (e) => {
+    e.preventDefault();
+    if (!editingDisp) return;
+    if (!editDispWeight || !editDispDate || !editDispLocation.trim()) {
+      setEditDispError(lang === 'en' ? 'Please fill out all fields.' : 'Tim be ico lok ducu piny.');
+      return;
+    }
+
+    setEditDispSaving(true);
+    setEditDispError('');
+    try {
+      const cropObj = crops[editDispCrop];
+      const updatedFields = {
+        cropId: editDispCrop,
+        cropName: cropObj?.name || (editDispCrop.charAt(0).toUpperCase() + editDispCrop.slice(1)),
+        weight: parseFloat(editDispWeight),
+        date: editDispDate,
+        location: editDispLocation.trim(),
+        notes: editDispNotes.trim()
+      };
+      await updateDispatch(editingDisp.id, updatedFields);
+      setEditDispSuccess(lang === 'en' ? 'Request updated successfully!' : 'Request oyubere maber!');
+      await loadData();
+      setTimeout(() => {
+        setEditingDisp(null);
+      }, 750);
+    } catch (err) {
+      console.error('Error updating dispatch request:', err);
+      setEditDispError(lang === 'en' ? 'Failed to update request.' : 'Gweny me yubo request.');
+    } finally {
+      setEditDispSaving(false);
+    }
   };
 
   const handleGeneratePwCode = async (e) => {
@@ -661,12 +717,172 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
                             </p>
                           </div>
                         )}
+
+                        {disp.status === 'Pending' && (
+                          <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={() => openEditDispatchModal(disp)}
+                              className="btn btn-outline"
+                              style={{
+                                padding: '5px 12px',
+                                fontSize: '0.8rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                borderColor: 'var(--color-primary)',
+                                color: 'var(--color-primary-dark)'
+                              }}
+                            >
+                              <Icons.Edit size={13} />
+                              {lang === 'en' ? 'Edit Request' : 'Yub Lok me Request'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
+              {/* Farmer Edit Dispatch Modal */}
+              {editingDisp && (
+                <div style={{
+                  position: 'fixed', inset: 0, zIndex: 10000,
+                  backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+                }}>
+                  <div className="glass-panel" style={{
+                    maxWidth: '500px', width: '100%', backgroundColor: '#ffffff',
+                    color: '#1a1a1a', borderRadius: '12px', padding: '24px',
+                    boxShadow: '0 16px 40px rgba(0,0,0,0.25)', maxHeight: '90vh', overflowY: 'auto'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary-dark)' }}>
+                        ✏️ {lang === 'en' ? `Edit Transit Request #${editingDisp.id}` : `Yub Request #${editingDisp.id}`}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setEditingDisp(null)}
+                        style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#666', lineHeight: 1 }}
+                      >
+                        &times;
+                      </button>
+                    </div>
+
+                    {editDispError && (
+                      <div style={{ padding: '8px 12px', backgroundColor: 'rgba(217,4,41,0.1)', color: '#d90429', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '12px' }}>
+                        {editDispError}
+                      </div>
+                    )}
+                    {editDispSuccess && (
+                      <div style={{ padding: '8px 12px', backgroundColor: 'rgba(82,183,136,0.15)', color: '#1b4332', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '12px', fontWeight: 'bold' }}>
+                        {editDispSuccess}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSaveEditDispatch} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: '4px', color: '#333' }}>
+                          {t.selectCrop}
+                        </label>
+                        <select
+                          className="form-input"
+                          value={editDispCrop}
+                          onChange={(e) => setEditDispCrop(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        >
+                          {Object.keys(crops).length > 0 ? (
+                            Object.entries(crops).map(([key, item]) => (
+                              <option key={key} value={key}>{item.name}</option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="sunflower">Sunflower</option>
+                              <option value="maize">Maize (Grain)</option>
+                              <option value="beans">Soya / Beans</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: '4px', color: '#333' }}>
+                          {t.estWeight}
+                        </label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={editDispWeight}
+                          onChange={(e) => setEditDispWeight(e.target.value)}
+                          required
+                          min="100"
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: '4px', color: '#333' }}>
+                          {t.pickupDate}
+                        </label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={editDispDate}
+                          onChange={(e) => setEditDispDate(e.target.value)}
+                          required
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: '4px', color: '#333' }}>
+                          {t.pickupLocation}
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={editDispLocation}
+                          onChange={(e) => setEditDispLocation(e.target.value)}
+                          required
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', marginBottom: '4px', color: '#333' }}>
+                          {t.transitNotes}
+                        </label>
+                        <textarea
+                          className="form-input"
+                          value={editDispNotes}
+                          onChange={(e) => setEditDispNotes(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', minHeight: '60px' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setEditingDisp(null)}
+                          className="btn btn-outline"
+                          style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                        >
+                          {lang === 'en' ? 'Cancel' : 'Juki'}
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={editDispSaving}
+                          style={{ padding: '8px 20px', fontSize: '0.85rem' }}
+                        >
+                          {editDispSaving ? '...' : (lang === 'en' ? 'Save Changes' : 'Gweny Yub')}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

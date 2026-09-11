@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Icons from './Icons';
 import { getUsers, registerUser, validateLogin, updateUser } from '../utils/db';
+import { UGANDA_DISTRICTS, generateAutoFarmerId } from '../utils/ugandaDistricts';
 
 export default function AuthPortal({ lang, onLoginSuccess, onCancel, translations: dynamicTranslations }) {
   // Default to login view (not register), regardless of screen size
@@ -10,13 +11,21 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Register Form States
+  // Register Form States with Heading Guides & Auto-Generated Numbers
   const [regUsername, setRegUsername] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regDistrict, setRegDistrict] = useState('Lira');
   const [regFarmSize, setRegFarmSize] = useState('');
+  const [regNin, setRegNin] = useState('');
+  const [regAutoId, setRegAutoId] = useState(() => generateAutoFarmerId('Lira'));
+
+  // Update auto-farmer ID when district changes
+  const handleDistrictChange = (dName) => {
+    setRegDistrict(dName);
+    setRegAutoId(generateAutoFarmerId(dName));
+  };
 
   // Forgot Password States
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -107,7 +116,10 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
       name,
       phone,
       district,
-      farmSize: farmSize + ' acres'
+      farmSize: farmSize + ' acres',
+      nin: regNin,
+      farmerId: regAutoId,
+      role: 'client'
     };
 
     setIsLoading(true);
@@ -216,29 +228,6 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
       setIsLoading(false);
     }
   };
-
-  const ugandanDistricts = [
-    // Lango
-    'Lira', 'Kole', 'Dokolo', 'Oyam', 'Apac', 'Otuke', 'Alebtong', 'Amolatar', 'Kwania',
-    // Acholi
-    'Gulu', 'Kitgum', 'Pader', 'Agago', 'Lamwo', 'Amuru', 'Nwoya', 'Omoro',
-    // Karamoja
-    'Abim', 'Kotido', 'Kaabong', 'Karenga', 'Moroto', 'Napak', 'Nakapiripirit', 'Amudat', 'Nabilatuk',
-    // West Nile
-    'Arua', 'Nebbi', 'Zombo', 'Yumbe', 'Moyo', 'Adjumani', 'Koboko', 'Maracha', 'Terego', 'Obongi',
-    // Teso
-    'Soroti', 'Amuria', 'Kaberamaido', 'Katakwi', 'Kumi', 'Bukedea', 'Ngora', 'Kalaki', 'Kapelebyong',
-    // Elgon/Bugisu
-    'Mbale', 'Sironko', 'Manafwa', 'Bududa', 'Bulambuli', 'Namisindwa',
-    // Bukedi
-    'Tororo', 'Busia', 'Butaleja', 'Pallisa', 'Kibuku', 'Butebo', 'Budaka',
-    // Busoga
-    'Jinja', 'Kamuli', 'Iganga', 'Kaliro', 'Mayuge', 'Bugiri', 'Namutumba', 'Luuka', 'Buyende', 'Namayingo',
-    // Sebei
-    'Kapchorwa', 'Bukwo', 'Kween',
-    // Central/Others
-    'Kampala'
-  ].sort();
 
   const clearState = () => { setError(''); setSuccess(''); };
 
@@ -491,71 +480,153 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
               </div>
             </form>
           ) : (
-            /* Register Form */
+            /* Register Form with Field Heading Guides & Auto-Numbered Districts */
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Auto Number Farmer ID Banner */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(27,67,50,0.08) 0%, rgba(82,183,136,0.12) 100%)',
+                border: '1.5px dashed var(--color-primary)',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-primary-dark)', fontWeight: 700, letterSpacing: '0.04em' }}>
+                    🏷️ Auto-Generated Farmer ID
+                  </div>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-primary-dark)', fontFamily: 'monospace', marginTop: '2px' }}>
+                    {regAutoId}
+                  </div>
+                </div>
+                <span style={{ fontSize: '0.72rem', background: '#2d6a4f', color: '#fff', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                  Auto-Assigned
+                </span>
+              </div>
+
+              {/* 1. Full Legal Name Field */}
               <div className="form-group">
-                <label htmlFor="reg-name" style={{ color: 'var(--color-primary-dark)' }}>{t.authFullName}</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                  <label htmlFor="reg-name" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
+                    👤 Your Full Name
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>As on NIN / National ID</span>
+                </div>
                 <input
                   type="text" id="reg-name" name="name" autoComplete="name"
-                  className="form-input" placeholder="John Okello"
+                  className="form-input" placeholder="e.g. John Okello"
                   value={regName} onChange={(e) => setRegName(e.target.value)}
                   style={{ width: '100%', boxSizing: 'border-box' }}
+                  required
                 />
               </div>
 
+              {/* 2. Telephone Contact Field */}
               <div className="form-group">
-                <label htmlFor="reg-phone" style={{ color: 'var(--color-primary-dark)' }}>{t.authPhone}</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                  <label htmlFor="reg-phone" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
+                    📞 Telephone Contact
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Active Mobile Money Line</span>
+                </div>
                 <input
                   type="tel" id="reg-phone" name="phone" autoComplete="tel"
-                  className="form-input" placeholder="+256 772 123 456"
+                  className="form-input" placeholder="e.g. +256 772 123 456"
                   value={regPhone} onChange={(e) => setRegPhone(e.target.value)}
                   style={{ width: '100%', boxSizing: 'border-box' }}
+                  required
                 />
               </div>
 
+              {/* 3. National ID (NIN) Field */}
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                  <label htmlFor="reg-nin" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
+                    🆔 Your NIN (National ID Number)
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>14-Character National ID</span>
+                </div>
+                <input
+                  type="text" id="reg-nin" name="nin" maxLength="14"
+                  className="form-input" placeholder="e.g. CM8901234567AB"
+                  value={regNin} onChange={(e) => setRegNin(e.target.value.toUpperCase())}
+                  style={{ width: '100%', boxSizing: 'border-box', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                />
+              </div>
+
+              {/* 4. District in Uganda & Farm Size */}
               <div className="form-row-responsive">
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label htmlFor="reg-district" style={{ color: 'var(--color-primary-dark)' }}>{t.authDistrict}</label>
+                <div className="form-group" style={{ flex: 1.2 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                    <label htmlFor="reg-district" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
+                      📍 District in Uganda
+                    </label>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>146 Districts</span>
+                  </div>
                   <select
                     id="reg-district" name="district" className="form-input"
-                    value={regDistrict} onChange={(e) => setRegDistrict(e.target.value)}
+                    value={regDistrict} onChange={(e) => handleDistrictChange(e.target.value)}
                     style={{ width: '100%', boxSizing: 'border-box', background: 'var(--color-bg-white)', color: 'var(--color-text-dark)', border: '1px solid rgba(27,67,50,0.2)' }}
                   >
-                    {ugandanDistricts.map(d => (
-                      <option key={d} value={d} style={{ background: '#ffffff', color: 'var(--color-text-dark)' }}>{d}</option>
+                    {UGANDA_DISTRICTS.map(d => (
+                      <option key={d.code} value={d.name} style={{ background: '#ffffff', color: 'var(--color-text-dark)' }}>
+                        {d.code}. {d.name} ({d.region})
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label htmlFor="reg-farm" style={{ color: 'var(--color-primary-dark)' }}>{t.authFarmSize}</label>
+                <div className="form-group" style={{ flex: 0.8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                    <label htmlFor="reg-farm" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
+                      🌾 Farm Size
+                    </label>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Acres</span>
+                  </div>
                   <input
                     type="number" id="reg-farm" name="farmSize"
-                    className="form-input" placeholder="e.g. 5"
+                    className="form-input" placeholder="e.g. 5" min="0.5" step="0.5"
                     value={regFarmSize} onChange={(e) => setRegFarmSize(e.target.value)}
                     style={{ width: '100%', boxSizing: 'border-box' }}
+                    required
                   />
                 </div>
               </div>
 
+              {/* 5. Portal Username Field */}
               <div className="form-group">
-                <label htmlFor="reg-username" style={{ color: 'var(--color-primary-dark)' }}>{t.authUsername}</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                  <label htmlFor="reg-username" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
+                    🔑 Portal Login Username
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Unique ID</span>
+                </div>
                 <input
                   type="text" id="reg-username" name="username" autoComplete="username"
                   className="form-input" placeholder="e.g. johnokello"
                   value={regUsername} onChange={(e) => setRegUsername(e.target.value)}
                   style={{ width: '100%', boxSizing: 'border-box' }}
+                  required
                 />
               </div>
 
+              {/* 6. Secure Password Field */}
               <div className="form-group">
-                <label htmlFor="reg-password" style={{ color: 'var(--color-primary-dark)' }}>{t.authPassword}</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                  <label htmlFor="reg-password" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
+                    🔒 Create Secure Password
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Min. 6 chars (text + digits)</span>
+                </div>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showRegPassword ? "text" : "password"} id="reg-password" name="password" autoComplete="new-password"
                     className="form-input" placeholder="••••••••"
                     value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
                     style={{ width: '100%', boxSizing: 'border-box', paddingRight: '40px' }}
+                    required
                   />
                   <button
                     type="button"
@@ -576,7 +647,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                 style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }}
                 disabled={isLoading}
               >
-                <span>{isLoading ? '...' : t.authRegisterBtn}</span>
+                <span>{isLoading ? 'Registering...' : (t.authRegisterBtn || 'Register Farmer Account')}</span>
                 {!isLoading && <Icons.ArrowRight size={18} />}
               </button>
 

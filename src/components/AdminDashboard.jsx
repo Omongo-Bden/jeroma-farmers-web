@@ -3,10 +3,14 @@ import * as Icons from './Icons';
 import { 
   getCrops, 
   saveCrops, 
+  deleteCrop,
   getDeliveries, 
   saveDelivery, 
   updateDeliveryStatus, 
   getDispatches, 
+  saveDispatch,
+  updateDispatch,
+  deleteDispatch,
   updateDispatchStatus, 
   getInquiries, 
   updateInquiryStatus, 
@@ -30,10 +34,66 @@ import {
   saveSettings,
   replyToInquiry,
   replyToDispatch,
-  restoreServerFromLocalBackup
+  restoreServerFromLocalBackup,
+  getProjects,
+  saveProject,
+  deleteProject,
+  getStaffMembers,
+  saveStaffMember,
+  deleteStaffMember,
+  getCooperatives,
+  saveCooperative,
+  deleteCooperative,
+  getMachineryAssets,
+  saveMachineryAsset,
+  deleteMachineryAsset,
+  getFinancialRecords,
+  saveFinancialRecord,
+  deleteFinancialRecord,
+  getNurseries,
+  saveNursery,
+  getFormSubmissions,
+  submitFormResponse,
+  deleteFormSubmission,
+  syncGoogleSheet,
+  getSocials,
+  saveSocials
 } from '../utils/db';
 import { idbGet } from '../utils/indexedDbHelper';
 import { translations as defaultTranslations } from './translations';
+import { BannerMedia, isVideoUrl } from './ActivityBanner';
+import { 
+  UGANDA_DISTRICTS, 
+  JEROMA_DEPARTMENTS, 
+  getDepartmentById, 
+  getDepartmentPermissions,
+  generateAutoFarmerId,
+  generateAutoCoopCode,
+  generateAutoEmployeeId,
+  generateAutoProjectCode
+} from '../utils/ugandaDistricts';
+
+export const WATERFALL_PHASES = [
+  { id: 'Initiation', order: 1, step: '1. Initiation', label: 'Initiation', desc: 'Concept & Stakeholder Alignment', color: '#2563eb', bg: '#eff6ff', border: '#93c5fd' },
+  { id: 'Planning', order: 2, step: '2. Planning', label: 'Planning', desc: 'Scope, Budget & Work Breakdown', color: '#d97706', bg: '#fffbeb', border: '#fcd34d' },
+  { id: 'On Process', order: 3, step: '3. On Process', label: 'On Process', desc: 'Preparation, Design & Mobilization', color: '#7c3aed', bg: '#faf5ff', border: '#c4b5fd' },
+  { id: 'Implementation', order: 4, step: '4. Implementation', label: 'Implementation', desc: 'Active Field Execution & Rollout', color: '#059669', bg: '#ecfdf5', border: '#6ee7b7' },
+  { id: 'Monitoring', order: 5, step: '5. Monitoring', label: 'Monitoring & Evaluation', desc: 'Quality, Verification & Audit', color: '#0891b2', bg: '#ecfeff', border: '#67e8f9' },
+  { id: 'Completed', order: 6, step: '6. Completed', label: 'Completed', desc: 'Final Handover & Impact Report', color: '#15803d', bg: '#f0fdf4', border: '#86efac' },
+  { id: 'On Hold', order: 99, step: '⏸️ On Hold', label: 'On Hold', desc: 'Temporarily Paused / Suspended', color: '#c2410c', bg: '#fff7ed', border: '#fdba74' }
+];
+
+export const getWaterfallPhaseInfo = (status) => {
+  const s = (status || '').toLowerCase().trim();
+  if (s.includes('initiat')) return WATERFALL_PHASES[0];
+  if (s.includes('plan')) return WATERFALL_PHASES[1];
+  if (s.includes('process') || s.includes('on process')) return WATERFALL_PHASES[2];
+  if (s.includes('implement') || s.includes('active') || s.includes('execut')) return WATERFALL_PHASES[3];
+  if (s.includes('monitor') || s.includes('evaluat') || s.includes('m&e')) return WATERFALL_PHASES[4];
+  if (s.includes('complet') || s.includes('finish') || s.includes('handover')) return WATERFALL_PHASES[5];
+  if (s.includes('hold') || s.includes('pause')) return WATERFALL_PHASES[6];
+  return WATERFALL_PHASES[3]; // default to Implementation
+};
 
 export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onStateChange }) {
   const [activeTab, setActiveTab] = useState('prices'); // 'prices' | 'deliveries' | 'dispatches' | 'inquiries'
@@ -67,6 +127,36 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   useEffect(() => {
     setCurrentUserState(user);
   }, [user]);
+
+  // Role-Based Access Control (RBAC) Determination
+  const isFullAdmin = (currentUserState?.username || '').toLowerCase() === 'admin' || 
+                      (currentUserState?.department || '') === 'Managing Director' || 
+                      (currentUserState?.role || '') === 'Managing Director' ||
+                      (currentUserState?.role || '') === 'managing_director';
+
+  const userAllowedPermissions = currentUserState?.permissions || 
+                                 getDepartmentPermissions(currentUserState?.department) || 
+                                 getDepartmentPermissions(currentUserState?.role) || 
+                                 (isFullAdmin ? ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot', 'projects', 'staff', 'cooperatives', 'departments', 'forms', 'users', 'logins', 'language', 'socials', 'slides'] : []);
+
+  const canAccessTab = (tabId) => {
+    if (isFullAdmin) return true;
+    if (tabId === 'users' || tabId === 'logins') return false;
+    return Array.isArray(userAllowedPermissions) && userAllowedPermissions.includes(tabId);
+  };
+
+  const canDisbursePayout = isFullAdmin ||
+    (currentUserState?.department || '').toLowerCase() === 'finance manager' ||
+    (currentUserState?.role || '').toLowerCase() === 'finance_manager';
+
+  // Auto-switch to first permitted tab if activeTab is not allowed for user
+  useEffect(() => {
+    if (!isFullAdmin && userAllowedPermissions && userAllowedPermissions.length > 0) {
+      if (!userAllowedPermissions.includes(activeTab)) {
+        setActiveTab(userAllowedPermissions[0]);
+      }
+    }
+  }, [currentUserState, userAllowedPermissions, isFullAdmin, activeTab]);
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -147,6 +237,18 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const [stageError, setStageError] = useState('');
   const [isManualUploading, setIsManualUploading] = useState(false);
   
+  // Create New Training Manual Stage States
+  const [isAddingStage, setIsAddingStage] = useState(false);
+  const [newStageNum, setNewStageNum] = useState('');
+  const [newStageTitleEn, setNewStageTitleEn] = useState('');
+  const [newStageTitleLuo, setNewStageTitleLuo] = useState('');
+  const [newStageSubtitleEn, setNewStageSubtitleEn] = useState('');
+  const [newStageSubtitleLuo, setNewStageSubtitleLuo] = useState('');
+  const [newStagePointsText, setNewStagePointsText] = useState('');
+  const [newStageNaroAdvice, setNewStageNaroAdvice] = useState('');
+  const [newStageImage, setNewStageImage] = useState('');
+  const [isNewStageUploading, setIsNewStageUploading] = useState(false);
+  
   // Slides Management States
   const [editingSlide, setEditingSlide] = useState(null); // null | id | 'new'
   const [slideIcon, setSlideIcon] = useState('');
@@ -165,6 +267,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   // User Management States
   const [mngUserForm, setMngUserForm] = useState(false);
   const [mngRole, setMngRole] = useState('client');
+  const [mngDepartment, setMngDepartment] = useState('Farmer / Client');
+  const [mngDistrict, setMngDistrict] = useState('035. Gulu');
+  const [mngNin, setMngNin] = useState('');
   const [mngUsername, setMngUsername] = useState('');
   const [mngPassword, setMngPassword] = useState('');
   const [mngName, setMngName] = useState('');
@@ -172,13 +277,67 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const [mngSuccess, setMngSuccess] = useState('');
   const [mngError, setMngError] = useState('');
   const [mngPermissions, setMngPermissions] = useState(['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot']);
+
+  const handleMngDepartmentSelect = (deptName) => {
+    setMngDepartment(deptName);
+    if (deptName === 'Farmer / Client') {
+      setMngRole('client');
+      setMngPermissions([]);
+    } else {
+      setMngRole(deptName);
+      const perms = getDepartmentPermissions(deptName);
+      if (perms) {
+        setMngPermissions(perms);
+      }
+    }
+  };
   
-  // Edit Price States
+  // Price Manager States
   const [editingCrop, setEditingCrop] = useState(null);
+  const [editName, setEditName] = useState('');
   const [editRate, setEditRate] = useState('');
   const [editMoisture, setEditMoisture] = useState('');
+  const [editPackaging, setEditPackaging] = useState('');
+  const [editMarketPrice, setEditMarketPrice] = useState('');
   const [editGuide, setEditGuide] = useState('');
   const [editTips, setEditTips] = useState('');
+  const [priceSearchQuery, setPriceSearchQuery] = useState('');
+  const [isAddingCrop, setIsAddingCrop] = useState(false);
+  const [newCropName, setNewCropName] = useState('');
+  const [newCropRate, setNewCropRate] = useState('');
+  const [newCropMoisture, setNewCropMoisture] = useState('12.0% - 13.0%');
+  const [newCropPackaging, setNewCropPackaging] = useState('50 kg Woven Bags');
+  const [newCropMarketPrice, setNewCropMarketPrice] = useState('0.65');
+  const [newCropGuide, setNewCropGuide] = useState('');
+  const [newCropTips, setNewCropTips] = useState('');
+  const [priceSuccess, setPriceSuccess] = useState('');
+  const [priceError, setPriceError] = useState('');
+
+  // Transit Requests (Dispatches) Management States
+  const [editingDispatch, setEditingDispatch] = useState(null);
+  const [editDispCrop, setEditDispCrop] = useState('');
+  const [editDispCropName, setEditDispCropName] = useState('');
+  const [editDispWeight, setEditDispWeight] = useState('');
+  const [editDispDate, setEditDispDate] = useState('');
+  const [editDispLocation, setEditDispLocation] = useState('');
+  const [editDispNotes, setEditDispNotes] = useState('');
+  const [editDispStatus, setEditDispStatus] = useState('Pending');
+  const [editDispDriver, setEditDispDriver] = useState('');
+  const [editDispVehicle, setEditDispVehicle] = useState('');
+  const [editDispReply, setEditDispReply] = useState('');
+  const [isAddingDispatch, setIsAddingDispatch] = useState(false);
+  const [newDispFarmer, setNewDispFarmer] = useState('');
+  const [newDispCrop, setNewDispCrop] = useState('sunflower');
+  const [newDispWeight, setNewDispWeight] = useState('');
+  const [newDispDate, setNewDispDate] = useState(new Date().toISOString().slice(0, 10));
+  const [newDispLocation, setNewDispLocation] = useState('');
+  const [newDispNotes, setNewDispNotes] = useState('');
+  const [newDispDriver, setNewDispDriver] = useState('');
+  const [newDispVehicle, setNewDispVehicle] = useState('');
+  const [dispSuccessMsg, setDispSuccessMsg] = useState('');
+  const [dispErrorMsg, setDispErrorMsg] = useState('');
+  const [dispSearchQuery, setDispSearchQuery] = useState('');
+  const [dispStatusFilter, setDispStatusFilter] = useState('all');
 
   // Log Delivery States
   const [logClient, setLogClient] = useState('');
@@ -225,6 +384,80 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       setIsSavingTicker(false);
     }
   };
+
+  // ── Universal Projects State (Waterfall Project Management) ──────────────
+  const [projectsList, setProjectsList] = useState([]);
+  const [editingProject, setEditingProject] = useState(null);
+  const [projectStatusFilter, setProjectStatusFilter] = useState('all');
+  const [projectCoopFilter, setProjectCoopFilter] = useState('all');
+  const [projectSearch, setProjectSearch] = useState('');
+  const [isSavingProject, setIsSavingProject] = useState(false);
+  const [customCoopInput, setCustomCoopInput] = useState('');
+
+  // ── Staff & Positions HR State ────────────────────────────────────────────
+  const [staffList, setStaffList] = useState([]);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [staffDeptFilter, setStaffDeptFilter] = useState('all');
+  const [staffDistrictFilter, setStaffDistrictFilter] = useState('all');
+  const [staffSearch, setStaffSearch] = useState('');
+  const [isSavingStaff, setIsSavingStaff] = useState(false);
+
+  // ── Cooperatives & SACCOs State ───────────────────────────────────────────
+  const [cooperativesList, setCooperativesList] = useState([]);
+  const [editingCooperative, setEditingCooperative] = useState(null);
+  const [coopDistrictFilter, setCoopDistrictFilter] = useState('all');
+  const [coopSearch, setCoopSearch] = useState('');
+  const [isSavingCoop, setIsSavingCoop] = useState(false);
+
+  // ── Machinery & Technology State ──────────────────────────────────────────
+  const [machineryList, setMachineryList] = useState([]);
+  const [editingMachinery, setEditingMachinery] = useState(null);
+  const [isSavingMachinery, setIsSavingMachinery] = useState(false);
+
+  // ── Department Hub State ──────────────────────────────────────────────────
+  const [deptActiveSubtab, setDeptActiveSubtab] = useState('overview');
+  const [financialRecords, setFinancialRecords] = useState([]);
+  const [editingFinanceRecord, setEditingFinanceRecord] = useState(null);
+  const [financeCategoryFilter, setFinanceCategoryFilter] = useState('all');
+  const [financeTypeFilter, setFinanceTypeFilter] = useState('all');
+  const [isSavingFinance, setIsSavingFinance] = useState(false);
+
+  const [nurseriesList, setNurseriesList] = useState([]);
+  const [editingNursery, setEditingNursery] = useState(null);
+  const [isSavingNursery, setIsSavingNursery] = useState(false);
+
+  // ── Google Forms & Google Sheet Live Ingestion State ──────────────────────
+  const [formSubmissionsList, setFormSubmissionsList] = useState([]);
+  const [formSearch, setFormSearch] = useState('');
+  const [formTypeFilter, setFormTypeFilter] = useState('all');
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
+
+  // Google Sheet Direct Sync State
+  const [googleSheetUrl, setGoogleSheetUrl] = useState(() => {
+    try { return localStorage.getItem('jeroma_google_sheet_url') || ''; } catch { return ''; }
+  });
+  const [isSyncingSheet, setIsSyncingSheet] = useState(false);
+  const [sheetSyncSuccess, setSheetSyncSuccess] = useState('');
+  const [sheetSyncError, setSheetSyncError] = useState('');
+  const [showPasteSheetModal, setShowPasteSheetModal] = useState(false);
+  const [pastedSheetData, setPastedSheetData] = useState('');
+  const [isPastingSheet, setIsPastingSheet] = useState(false);
+  const [selectedSubmissionDetails, setSelectedSubmissionDetails] = useState(null);
+
+  // ── Social Media & Digital Channels Hub State ─────────────────────────────
+  const [socialsState, setSocialsState] = useState({
+    whatsapp: { enabled: true, handle: '+256 773 623 196', url: 'https://wa.me/256773623196', title: 'WhatsApp Business', subtitle: 'Direct Chat & Agro Input Inquiries', greeting: 'Hello Jeroma Farmers, I would like to inquire about input subsidies, crop collection, and prices.' },
+    facebook: { enabled: true, handle: '@jeromafarmers', url: 'https://www.facebook.com/jeromafarmers', title: 'Facebook Page', subtitle: 'Jeroma Farmers Collection Centre Ltd' },
+    tiktok: { enabled: true, handle: '@jeromafarmers', url: 'https://www.tiktok.com/@jeromafarmers', title: 'TikTok Channel', subtitle: 'Farmer Training & Field Operations' },
+    x: { enabled: true, handle: '@JeromaFarmers', url: 'https://x.com/JeromaFarmers', title: 'X (Twitter)', subtitle: 'Real-time Bulletins & Commodity Updates' },
+    youtube: { enabled: true, handle: '@jeromafarmers', url: 'https://www.youtube.com/@jeromafarmers', title: 'YouTube Channel', subtitle: 'Farmer Testimonials & Machinery Demonstrations' },
+    linkedin: { enabled: true, handle: 'jeromafarmers', url: 'https://www.linkedin.com/company/jeromafarmers', title: 'LinkedIn', subtitle: 'Corporate & Institutional Partnerships' },
+    instagram: { enabled: true, handle: '@jeromafarmers', url: 'https://www.instagram.com/jeromafarmers', title: 'Instagram', subtitle: 'Farm Photography & Community Highlights' },
+    telegram: { enabled: false, handle: '@jeromafarmers', url: 'https://t.me/jeromafarmers', title: 'Telegram Community', subtitle: 'Broadcasts & Cooperative Alerts' }
+  });
+  const [isSavingSocials, setIsSavingSocials] = useState(false);
+  const [socialsSuccess, setSocialsSuccess] = useState('');
+  const [socialsError, setSocialsError] = useState('');
 
   // Chatbot Manager States
   const CHATBOT_CONFIG_KEY = 'jeroma_chatbot_config';
@@ -410,7 +643,10 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [cropsData, deliveriesData, dispatchesData, inquiriesData, allUsers, slidesData, manualData, settingsData] = await Promise.all([
+      const [
+        cropsData, deliveriesData, dispatchesData, inquiriesData, allUsers, slidesData, manualData, settingsData,
+        projectsData, staffData, coopsData, machineryData, financeData, nurseriesData, formSubsData, socialsData
+      ] = await Promise.all([
         getCrops(),
         getDeliveries(),
         getDispatches(),
@@ -418,7 +654,15 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
         getUsers(),
         getSlides(),
         getManual(),
-        getSettings()
+        getSettings(),
+        getProjects(),
+        getStaffMembers(),
+        getCooperatives(),
+        getMachineryAssets(),
+        getFinancialRecords(),
+        getNurseries(),
+        getFormSubmissions(),
+        getSocials()
       ]);
       setCrops(cropsData || {});
       setDeliveries(deliveriesData || []);
@@ -428,6 +672,14 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       setClients((allUsers || []).filter(u => u.role === 'client'));
       setSlides(slidesData || []);
       setManualStages(manualData || []);
+      setProjectsList(projectsData || []);
+      setStaffList(staffData || []);
+      setCooperativesList(coopsData || []);
+      setMachineryList(machineryData || []);
+      setFinancialRecords(financeData || []);
+      setNurseriesList(nurseriesData || []);
+      setFormSubmissionsList(formSubsData || []);
+      if (socialsData) setSocialsState(socialsData);
       if (settingsData) {
         setSettings(settingsData);
         localStorage.setItem('jeroma_settings', JSON.stringify(settingsData));
@@ -671,25 +923,192 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     }
   };
 
-  // ── Slide Handlers ────────────────────────────────────────────────────────
-  const handleImageUpload = async (e) => {
+  const handleNewManualImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setIsNewStageUploading(true);
+    setStageSuccess('');
+    setStageError('');
+    try {
+      const res = await uploadImage(file);
+      if (res.success && res.url) {
+        setNewStageImage(res.url);
+        setStageSuccess('Stage photo uploaded successfully!');
+      } else {
+        setStageError('Failed to upload image.');
+      }
+    } catch (err) {
+      setStageError(err.message || 'Failed to upload image.');
+    } finally {
+      setIsNewStageUploading(false);
+    }
+  };
+
+  const handleCreateManualStage = async (e) => {
+    e.preventDefault();
+    setStageSuccess('');
+    setStageError('');
+
+    const nextIndex = manualStages.length + 1;
+    const computedNum = newStageNum.trim() || nextIndex.toString().padStart(2, '0');
+    const stageId = `stage-${Date.now()}-${newStageTitleEn.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 20)}`;
+
+    const newStage = {
+      id: stageId,
+      num: computedNum,
+      title_en: newStageTitleEn.trim(),
+      title_luo: newStageTitleLuo.trim(),
+      subtitle_en: newStageSubtitleEn.trim(),
+      subtitle_luo: newStageSubtitleLuo.trim(),
+      points: newStagePointsText.split('\n').map(p => p.trim()).filter(Boolean),
+      naroAdvice: newStageNaroAdvice.trim(),
+      image: newStageImage.trim() || '/sunflower_field.webp'
+    };
+
+    const updatedManual = [...manualStages, newStage];
+
+    try {
+      const saved = await saveManual(updatedManual);
+      if (saved) {
+        setManualStages(saved);
+        setStageSuccess(`Phase "${newStage.title_en}" created successfully!`);
+        setIsAddingStage(false);
+        // Reset fields
+        setNewStageNum('');
+        setNewStageTitleEn('');
+        setNewStageTitleLuo('');
+        setNewStageSubtitleEn('');
+        setNewStageSubtitleLuo('');
+        setNewStagePointsText('');
+        setNewStageNaroAdvice('');
+        setNewStageImage('');
+        onStateChange();
+      } else {
+        setStageError('Failed to add new manual stage.');
+      }
+    } catch (err) {
+      setStageError('Error creating stage: ' + err.message);
+    }
+  };
+
+  const handleDeleteManualStage = async (stageId, stageTitle) => {
+    if (window.confirm(`Are you sure you want to delete training phase "${stageTitle}"? This will remove it from the website manual.`)) {
+      const updatedManual = manualStages
+        .filter(s => s.id !== stageId)
+        .map((stage, idx) => ({
+          ...stage,
+          num: (idx + 1).toString().padStart(2, '0')
+        }));
+
+      try {
+        const saved = await saveManual(updatedManual);
+        if (saved) {
+          setManualStages(saved);
+          setStageSuccess(`Phase "${stageTitle}" deleted successfully.`);
+          onStateChange();
+        } else {
+          setStageError('Failed to delete phase.');
+        }
+      } catch (err) {
+        setStageError('Error deleting phase: ' + err.message);
+      }
+    }
+  };
+
+  const handleMoveManualStage = async (index, direction) => {
+    const targetIdx = index + direction;
+    if (targetIdx < 0 || targetIdx >= manualStages.length) return;
+
+    const listCopy = [...manualStages];
+    const temp = listCopy[index];
+    listCopy[index] = listCopy[targetIdx];
+    listCopy[targetIdx] = temp;
+
+    // Renumber sequentially
+    const renumbered = listCopy.map((stage, idx) => ({
+      ...stage,
+      num: (idx + 1).toString().padStart(2, '0')
+    }));
+
+    try {
+      const saved = await saveManual(renumbered);
+      if (saved) {
+        setManualStages(saved);
+        setStageSuccess('Stages reordered successfully!');
+        setTimeout(() => setStageSuccess(''), 2500);
+        onStateChange();
+      }
+    } catch (err) {
+      setStageError('Error reordering stages: ' + err.message);
+    }
+  };
+
+  // ── Slide Handlers & Media Optimization ───────────────────────────────────
+  const compressImageFile = (file, maxWidth = 1600, maxHeight = 1200, quality = 0.85) => {
+    return new Promise((resolve) => {
+      if (!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+        return resolve(file);
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth || height > maxHeight) {
+            if (width / height > maxWidth / maxHeight) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            if (blob && blob.size < file.size) {
+              const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), {
+                type: 'image/webp',
+                lastModified: Date.now()
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          }, 'image/webp', quality);
+        };
+        img.onerror = () => resolve(file);
+        img.src = event.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e) => {
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
     setIsUploading(true);
     setSlidesError('');
     setSlidesSuccess('');
     try {
+      const file = await compressImageFile(rawFile);
       const res = await uploadImage(file);
       if (res.success && res.url) {
         setSlideImage(res.url);
-        setSlidesSuccess('Image uploaded successfully! Path updated.');
+        setSlidesSuccess(file.type.startsWith('video/') ? '🎬 Video uploaded & ready!' : '📷 Photo uploaded & optimized!');
       } else {
-        setSlidesError('Failed to upload image.');
+        setSlidesError('Failed to upload media.');
       }
     } catch (err) {
-      setSlidesError(err.message || 'Image upload failed.');
+      setSlidesError(err.message || 'Media upload failed.');
     } finally {
       setIsUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -706,6 +1125,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     setSlideFit('cover');
     setSlidesSuccess('');
     setSlidesError('');
+    setTimeout(() => {
+      document.getElementById('slide-edit-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   const openEditSlide = (slide) => {
@@ -721,6 +1143,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     setSlideFit(slide.fit || 'cover');
     setSlidesSuccess('');
     setSlidesError('');
+    setTimeout(() => {
+      document.getElementById('slide-edit-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   const cancelEditSlide = () => {
@@ -796,32 +1221,713 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     }
   };
 
+  // ── Universal Projects Handlers ───────────────────────────────────────────
+  const handleSaveProjectSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingProject) return;
+    setIsSavingProject(true);
+    try {
+      const saved = await saveProject(editingProject);
+      if (saved) {
+        setProjectsList(prev => {
+          const idx = prev.findIndex(p => p.id === saved.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = saved;
+            return next;
+          }
+          return [saved, ...prev];
+        });
+        setEditingProject(null);
+      }
+    } catch (err) {
+      console.error('Error saving project:', err);
+      alert('Failed to save project: ' + err.message);
+    } finally {
+      setIsSavingProject(false);
+    }
+  };
+
+  const handleDeleteProjectClick = async (id) => {
+    if (!window.confirm(lang === 'en' ? 'Are you sure you want to delete this project?' : 'Itye maber ni imito jwayo project man?')) return;
+    try {
+      await deleteProject(id);
+      setProjectsList(prev => prev.filter(p => p.id !== id));
+      if (editingProject?.id === id) setEditingProject(null);
+    } catch (err) {
+      alert('Failed to delete project: ' + err.message);
+    }
+  };
+
+  const handleToggleMilestone = async (project, milestoneId) => {
+    const updatedMilestones = (project.milestones || []).map(m => 
+      m.id === milestoneId ? { ...m, completed: !m.completed } : m
+    );
+    const updated = { ...project, milestones: updatedMilestones };
+    try {
+      const saved = await saveProject(updated);
+      setProjectsList(prev => prev.map(p => p.id === saved.id ? saved : p));
+      if (editingProject?.id === project.id) setEditingProject(saved);
+    } catch (err) {
+      console.error('Failed to update milestone:', err);
+    }
+  };
+
+  // ── Staff Management Handlers ─────────────────────────────────────────────
+  const handleSaveStaffSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    setIsSavingStaff(true);
+    try {
+      const saved = await saveStaffMember(editingStaff);
+      if (saved) {
+        setStaffList(prev => {
+          const idx = prev.findIndex(s => s.id === saved.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = saved;
+            return next;
+          }
+          return [saved, ...prev];
+        });
+        setEditingStaff(null);
+      }
+    } catch (err) {
+      alert('Failed to save staff member: ' + err.message);
+    } finally {
+      setIsSavingStaff(false);
+    }
+  };
+
+  const handleDeleteStaffClick = async (id) => {
+    if (!window.confirm(lang === 'en' ? 'Are you sure you want to delete this staff record?' : 'Itye maber ni imito kwanyo latic man?')) return;
+    try {
+      await deleteStaffMember(id);
+      setStaffList(prev => prev.filter(s => s.id !== id));
+      if (editingStaff?.id === id) setEditingStaff(null);
+    } catch (err) {
+      alert('Failed to delete staff: ' + err.message);
+    }
+  };
+
+  // ── Cooperatives Handlers ─────────────────────────────────────────────────
+  const handleSaveCoopSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingCooperative) return;
+    setIsSavingCoop(true);
+    try {
+      const saved = await saveCooperative(editingCooperative);
+      if (saved) {
+        setCooperativesList(prev => {
+          const idx = prev.findIndex(c => c.id === saved.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = saved;
+            return next;
+          }
+          return [saved, ...prev];
+        });
+        setEditingCooperative(null);
+      }
+    } catch (err) {
+      alert('Failed to save cooperative: ' + err.message);
+    } finally {
+      setIsSavingCoop(false);
+    }
+  };
+
+  const handleDeleteCoopClick = async (id) => {
+    if (!window.confirm(lang === 'en' ? 'Are you sure you want to delete this cooperative?' : 'Itye maber ni imito kwanyo cooperative man?')) return;
+    try {
+      await deleteCooperative(id);
+      setCooperativesList(prev => prev.filter(c => c.id !== id));
+      if (editingCooperative?.id === id) setEditingCooperative(null);
+    } catch (err) {
+      alert('Failed to delete cooperative: ' + err.message);
+    }
+  };
+
+  const handleExportCoopsCsv = () => {
+    const headers = ['Code', 'Name', 'District', 'Subcounty', 'Chairperson', 'Phone', 'Members Count', 'Female Members', 'Youth Members', 'Acreage', 'Crops'];
+    const rows = cooperativesList.map(c => [
+      c.code || '',
+      `"${(c.name || '').replace(/"/g, '""')}"`,
+      c.district || '',
+      c.subcounty || '',
+      `"${(c.contactPerson || '').replace(/"/g, '""')}"`,
+      c.phone || '',
+      c.membersCount || 0,
+      c.femaleMembers || 0,
+      c.youthMembers || 0,
+      c.totalAcreage || 0,
+      `"${(c.cropsSpecialization || []).join('; ')}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `Jeroma_Cooperatives_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // ── Machinery Handlers ────────────────────────────────────────────────────
+  const handleSaveMachinerySubmit = async (e) => {
+    e.preventDefault();
+    if (!editingMachinery) return;
+    setIsSavingMachinery(true);
+    try {
+      const saved = await saveMachineryAsset(editingMachinery);
+      if (saved) {
+        setMachineryList(prev => {
+          const idx = prev.findIndex(m => m.id === saved.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = saved;
+            return next;
+          }
+          return [saved, ...prev];
+        });
+        setEditingMachinery(null);
+      }
+    } catch (err) {
+      alert('Failed to save machinery asset: ' + err.message);
+    } finally {
+      setIsSavingMachinery(false);
+    }
+  };
+
+  const handleDeleteMachineryClick = async (id) => {
+    if (!window.confirm(lang === 'en' ? 'Delete this machinery asset?' : 'Ikwany lela man woko?')) return;
+    try {
+      await deleteMachineryAsset(id);
+      setMachineryList(prev => prev.filter(m => m.id !== id));
+      if (editingMachinery?.id === id) setEditingMachinery(null);
+    } catch (err) {
+      alert('Failed to delete asset: ' + err.message);
+    }
+  };
+
+  // ── Department Hub Handlers ───────────────────────────────────────────────
+  const handleSaveFinanceSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingFinanceRecord) return;
+    setIsSavingFinance(true);
+    try {
+      const saved = await saveFinancialRecord(editingFinanceRecord);
+      if (saved) {
+        setFinancialRecords(prev => {
+          const idx = prev.findIndex(f => f.id === saved.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = saved;
+            return next;
+          }
+          return [saved, ...prev];
+        });
+        setEditingFinanceRecord(null);
+      }
+    } catch (err) {
+      alert('Failed to save financial entry: ' + err.message);
+    } finally {
+      setIsSavingFinance(false);
+    }
+  };
+
+  const handleDeleteFinanceClick = async (id) => {
+    if (!window.confirm('Delete this financial entry?')) return;
+    try {
+      await deleteFinancialRecord(id);
+      setFinancialRecords(prev => prev.filter(f => f.id !== id));
+      if (editingFinanceRecord?.id === id) setEditingFinanceRecord(null);
+    } catch (err) {
+      alert('Failed to delete financial record: ' + err.message);
+    }
+  };
+
+  const handleExportFinanceCsv = () => {
+    const headers = ['Ref ID', 'Date', 'Type', 'Category', 'Description', 'Amount (UGX)', 'Paid To / By', 'Project Code', 'Status'];
+    const rows = financialRecords.map(f => [
+      f.id || '',
+      f.date || '',
+      f.type || '',
+      f.category || '',
+      `"${(f.description || '').replace(/"/g, '""')}"`,
+      f.amount || 0,
+      `"${(f.recipientOrSource || '').replace(/"/g, '""')}"`,
+      f.projectCode || '',
+      f.status || ''
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `Jeroma_Financial_Ledger_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleSaveNurserySubmit = async (e) => {
+    e.preventDefault();
+    if (!editingNursery) return;
+    setIsSavingNursery(true);
+    try {
+      const saved = await saveNursery(editingNursery);
+      if (saved) {
+        setNurseriesList(prev => {
+          const idx = prev.findIndex(n => n.id === saved.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = saved;
+            return next;
+          }
+          return [saved, ...prev];
+        });
+        setEditingNursery(null);
+      }
+    } catch (err) {
+      alert('Failed to save nursery data: ' + err.message);
+    } finally {
+      setIsSavingNursery(false);
+    }
+  };
+
+  // ── Google Forms Handlers ─────────────────────────────────────────────────
+  const handleDeleteSubmission = async (id) => {
+    if (!window.confirm('Delete this form submission?')) return;
+    try {
+      await deleteFormSubmission(id);
+      setFormSubmissionsList(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+      alert('Failed to delete submission: ' + err.message);
+    }
+  };
+
+  const handleSyncGoogleSheet = async () => {
+    if (!googleSheetUrl.trim()) {
+      setSheetSyncError('Please enter your Google Sheet link or spreadsheet ID first.');
+      return;
+    }
+    if (googleSheetUrl.includes('/forms/')) {
+      setSheetSyncError(
+        'The link you entered is a Google Form responses page (docs.google.com/forms/...) which is private to your Google account. ' +
+        'To display your responses:\n' +
+        '1. Click the green "View in Sheets" icon inside your Google Form to open its linked Google Spreadsheet.\n' +
+        '2. In that Google Spreadsheet, click Share (top-right) -> set to "Anyone with the link can view", and paste that spreadsheet link here.\n' +
+        '3. OR in your Google Form, click the ⋮ (3 dots) menu next to the green icon -> "Download responses (.csv)", and click "📁 Upload Responses CSV" above!'
+      );
+      return;
+    }
+    setIsSyncingSheet(true);
+    setSheetSyncError('');
+    setSheetSyncSuccess('');
+    try {
+      localStorage.setItem('jeroma_google_sheet_url', googleSheetUrl.trim());
+      const res = await syncGoogleSheet(googleSheetUrl.trim());
+      if (res && res.success) {
+        setSheetSyncSuccess(res.message || 'Successfully synchronized responses from Google Sheet!');
+        if (res.submissions) setFormSubmissionsList(res.submissions);
+        else setFormSubmissionsList(await getFormSubmissions());
+      } else {
+        setSheetSyncError(res?.error || 'Failed to sync responses from Google Sheet.');
+      }
+    } catch (err) {
+      setSheetSyncError(err.message || 'Error connecting to Google Sheet.');
+    } finally {
+      setIsSyncingSheet(false);
+    }
+  };
+
+  const handlePasteSheetSubmit = async (e) => {
+    e.preventDefault();
+    if (!pastedSheetData.trim()) return;
+    setIsPastingSheet(true);
+    try {
+      const res = await syncGoogleSheet(null, pastedSheetData.trim());
+      if (res && res.success) {
+        alert(res.message || 'Successfully imported sheet responses!');
+        if (res.submissions) setFormSubmissionsList(res.submissions);
+        else setFormSubmissionsList(await getFormSubmissions());
+        setShowPasteSheetModal(false);
+        setPastedSheetData('');
+      } else {
+        alert(res?.error || 'Failed to import pasted data.');
+      }
+    } catch (err) {
+      alert('Error importing pasted sheet rows: ' + err.message);
+    } finally {
+      setIsPastingSheet(false);
+    }
+  };
+
+  const handleFileUploadCsv = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const text = evt.target?.result;
+      if (!text || typeof text !== 'string') return;
+      setIsSyncingSheet(true);
+      try {
+        const res = await syncGoogleSheet(null, text);
+        if (res && res.success) {
+          alert(res.message || 'Successfully imported responses from CSV file!');
+          if (res.submissions) setFormSubmissionsList(res.submissions);
+          else setFormSubmissionsList(await getFormSubmissions());
+        } else {
+          alert(res?.error || 'Failed to parse CSV file.');
+        }
+      } catch (err) {
+        alert('Error parsing uploaded CSV: ' + err.message);
+      } finally {
+        setIsSyncingSheet(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleLoadSampleLiveResponses = async () => {
+    const samples = [
+      {
+        formType: 'farmer_registration',
+        formName: 'JEROMA FARMERS COLLECTION CENTER (Live Google Sheet)',
+        data: {
+          'Timestamp': new Date(Date.now() - 3600000 * 2).toLocaleString(),
+          '1. Full Name:': 'Okot George Patrick',
+          '2. Phone Number:': '+256 772 491 820',
+          '3. Email Address (Optional):': 'okot.george@gmail.com',
+          '4. Gender:': 'Male',
+          '5. National Identification Number (NIN):': 'CM900481028391',
+          '6. Age:': '38',
+          '7. Farmer ID (Auto-generated or Assigned):': 'JRM-FMR-101-4821',
+          '8. District:': '101. Pader',
+          '9. Subcounty:': 'Lapul Sub-county',
+          '10. Parish:': 'Pajule Parish',
+          '11. Village:': 'Oporot Central',
+          '12. Household Size:': '6',
+          '13. Main Crops Grown:': 'Sunflower (LG 56.58), Soya Beans (Maksoy 3N)',
+          '14. Do you have any form of disability?': 'No',
+          '15. Are you a member of a Farmer Group?': 'Yes',
+          '16. If yes, what is the name of your Farmer Group?': 'Lapul Oilseed Farmers Group',
+          '17. Total members in your Farmer Group:': '28',
+          '18. Are you a member of a Cooperative Society?': 'Yes',
+          '19. If yes, what is the name of your Cooperative?': 'Pader Progressive Farmers Cooperative Society',
+          fullName: 'Okot George Patrick',
+          phone: '+256 772 491 820',
+          district: '101. Pader',
+          nin: 'CM900481028391'
+        },
+        status: 'Synced from Google Sheet'
+      },
+      {
+        formType: 'farmer_registration',
+        formName: 'JEROMA FARMERS COLLECTION CENTER (Live Google Sheet)',
+        data: {
+          'Timestamp': new Date(Date.now() - 3600000 * 5).toLocaleString(),
+          '1. Full Name:': 'Acayo Harriet Sharon',
+          '2. Phone Number:': '+256 788 314 902',
+          '3. Email Address (Optional):': 'acayo.harriet@yahoo.com',
+          '4. Gender:': 'Female',
+          '5. National Identification Number (NIN):': 'CF940291039482',
+          '6. Age:': '31',
+          '7. Farmer ID (Auto-generated or Assigned):': 'JRM-FMR-003-9182',
+          '8. District:': '003. Agago',
+          '9. Subcounty:': 'Patongo Sub-county',
+          '10. Parish:': 'Alerek',
+          '11. Village:': 'Agago East',
+          '12. Household Size:': '5',
+          '13. Main Crops Grown:': 'Soybeans, Sunflower, Sesame',
+          '14. Do you have any form of disability?': 'No',
+          '15. Are you a member of a Farmer Group?': 'Yes',
+          '16. If yes, what is the name of your Farmer Group?': 'Patongo Women In Agriculture',
+          '17. Total members in your Farmer Group:': '35',
+          '18. Are you a member of a Cooperative Society?': 'Yes',
+          '19. If yes, what is the name of your Cooperative?': 'Agago Agro-Produce SACCO',
+          fullName: 'Acayo Harriet Sharon',
+          phone: '+256 788 314 902',
+          district: '003. Agago',
+          nin: 'CF940291039482'
+        },
+        status: 'Synced from Google Sheet'
+      },
+      {
+        formType: 'farmer_registration',
+        formName: 'JEROMA FARMERS COLLECTION CENTER (Live Google Sheet)',
+        data: {
+          'Timestamp': new Date(Date.now() - 3600000 * 12).toLocaleString(),
+          '1. Full Name:': 'Komakech Denis',
+          '2. Phone Number:': '+256 774 550 119',
+          '3. Email Address (Optional):': '',
+          '4. Gender:': 'Male',
+          '5. National Identification Number (NIN):': 'CM880192837461',
+          '6. Age:': '44',
+          '7. Farmer ID (Auto-generated or Assigned):': 'JRM-FMR-035-6629',
+          '8. District:': '035. Gulu',
+          '9. Subcounty:': 'Unyama Sub-county',
+          '10. Parish:': 'Pugwinyi',
+          '11. Village:': 'Bobi Cell',
+          '12. Household Size:': '7',
+          '13. Main Crops Grown:': 'White Sorghum, Sunflower, Maize',
+          '14. Do you have any form of disability?': 'No',
+          '15. Are you a member of a Farmer Group?': 'Yes',
+          '16. If yes, what is the name of your Farmer Group?': 'Gulu Modern Grain Growers',
+          '17. Total members in your Farmer Group:': '42',
+          '18. Are you a member of a Cooperative Society?': 'Yes',
+          '19. If yes, what is the name of your Cooperative?': 'Northern Grains Cooperative Union',
+          fullName: 'Komakech Denis',
+          phone: '+256 774 550 119',
+          district: '035. Gulu',
+          nin: 'CM880192837461'
+        },
+        status: 'Synced from Google Sheet'
+      }
+    ];
+
+    for (const s of samples) {
+      await submitFormResponse(s);
+    }
+    const fresh = await getFormSubmissions();
+    setFormSubmissionsList(fresh);
+    alert('Sample responses loaded! You can now view all responses in the table and test 1-click account conversions.');
+  };
+
+  const handleConvertSubmissionToFarmer = async (sub) => {
+    const raw = sub.data || {};
+    const name = raw.fullName || raw.name || raw['Full Name'] || raw['Farmer Name'] || 'Registered Farmer';
+    const phone = raw.phone || raw.phoneNumber || raw['Phone'] || raw['Phone Number'] || '';
+    const district = raw.district || raw['District'] || 'Pader';
+    const subcounty = raw.subcounty || raw['Subcounty'] || '';
+    const village = raw.village || raw['Village'] || '';
+    const crop = raw.crop || raw['Main Crop'] || raw['Crop'] || 'sunflower';
+
+    const username = (name.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(100 + Math.random() * 900));
+    try {
+      const res = await registerUser({
+        username,
+        password: 'Farmer' + Math.floor(1000 + Math.random() * 9000),
+        name,
+        phone,
+        district,
+        subcounty,
+        village,
+        primaryCrop: crop,
+        role: 'client',
+        acreage: raw.acreage || raw['Acreage'] || 1
+      });
+      if (res && (res.success || res.id)) {
+        alert(`Successfully converted into farmer account!\nUsername: ${username}\nDefault Password generated.`);
+        setClients(await getUsers().then(u => (u || []).filter(c => c.role === 'client')));
+      } else {
+        alert(res?.message || 'Farmer registered, refreshing list.');
+      }
+    } catch (err) {
+      alert('Registration result: ' + err.message);
+    }
+  };
+
+  const handleConvertSubmissionToCoop = async (sub) => {
+    const raw = sub.data || {};
+    const coopName = raw.cooperativeName || raw.groupName || raw['Cooperative Name'] || raw['Group Name'] || raw.name || 'New Cooperative';
+    const district = raw.district || raw['District'] || 'Pader';
+    const contact = raw.fullName || raw.chairperson || raw['Chairperson'] || raw.contactPerson || '';
+    const phone = raw.phone || raw['Phone'] || '';
+    const members = parseInt(raw.members || raw.membersCount || raw['Total Members'] || 30);
+
+    const newCoop = {
+      code: 'COP-' + Math.floor(100 + Math.random() * 900),
+      name: coopName,
+      district,
+      subcounty: raw.subcounty || raw['Subcounty'] || '',
+      contactPerson: contact,
+      phone,
+      membersCount: members,
+      femaleMembers: Math.floor(members * 0.5),
+      youthMembers: Math.floor(members * 0.35),
+      totalAcreage: parseInt(raw.acreage || raw['Acreage'] || 50),
+      cropsSpecialization: [raw.crop || raw['Main Crop'] || 'Sunflower', 'Soya Beans'],
+      machineryAllocated: [],
+      status: 'Active'
+    };
+
+    try {
+      const saved = await saveCooperative(newCoop);
+      if (saved) {
+        setCooperativesList(prev => [saved, ...prev]);
+        alert(`Cooperative "${coopName}" successfully added to Cooperatives & SACCOs directory!`);
+      }
+    } catch (err) {
+      alert('Failed to convert to cooperative: ' + err.message);
+    }
+  };
+
+  const handleExportFormsCsv = () => {
+    if (!formSubmissionsList.length) {
+      alert('No form submissions to export.');
+      return;
+    }
+    const allKeys = Array.from(new Set(formSubmissionsList.flatMap(s => Object.keys(s.data || {}))));
+    const headers = ['Submission ID', 'Form Type', 'Submitted At', ...allKeys];
+    const rows = formSubmissionsList.map(s => [
+      s.id,
+      s.formType || 'general',
+      s.createdAt || '',
+      ...allKeys.map(k => `"${String(s.data?.[k] || '').replace(/"/g, '""')}"`)
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const link = document.createElement('a');
+    link.setAttribute('href', encodeURI(csvContent));
+    link.setAttribute('download', `Jeroma_Form_Submissions_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // ── Social Media Hub Handlers ─────────────────────────────────────────────
+  const handleSocialFieldChange = (channelKey, field, value) => {
+    setSocialsState(prev => ({
+      ...prev,
+      [channelKey]: {
+        ...(prev[channelKey] || {}),
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSaveSocialsSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setIsSavingSocials(true);
+    setSocialsSuccess('');
+    setSocialsError('');
+    try {
+      const saved = await saveSocials(socialsState);
+      if (saved) {
+        setSocialsState(saved);
+        setSocialsSuccess(lang === 'en' ? 'Social media accounts & channels updated successfully!' : 'Socials okedo maber!');
+        if (onStateChange) onStateChange();
+      }
+    } catch (err) {
+      setSocialsError(err.message || 'Failed to update social channels.');
+    } finally {
+      setIsSavingSocials(false);
+    }
+  };
+
+  const handleResetSocialsToDefault = async () => {
+    if (!window.confirm('Reset all social links & handles back to official Jeroma defaults?')) return;
+    const defaults = {
+      whatsapp: { enabled: true, handle: '+256 773 623 196', url: 'https://wa.me/256773623196', title: 'WhatsApp Business', subtitle: 'Direct Chat & Agro Input Inquiries', greeting: 'Hello Jeroma Farmers, I would like to inquire about input subsidies, crop collection, and prices.' },
+      facebook: { enabled: true, handle: '@jeromafarmers', url: 'https://www.facebook.com/jeromafarmers', title: 'Facebook Page', subtitle: 'Jeroma Farmers Collection Centre Ltd' },
+      tiktok: { enabled: true, handle: '@jeromafarmers', url: 'https://www.tiktok.com/@jeromafarmers', title: 'TikTok Channel', subtitle: 'Farmer Training & Field Operations' },
+      x: { enabled: true, handle: '@JeromaFarmers', url: 'https://x.com/JeromaFarmers', title: 'X (Twitter)', subtitle: 'Real-time Bulletins & Commodity Updates' },
+      youtube: { enabled: true, handle: '@jeromafarmers', url: 'https://www.youtube.com/@jeromafarmers', title: 'YouTube Channel', subtitle: 'Farmer Testimonials & Machinery Demonstrations' },
+      linkedin: { enabled: true, handle: 'jeromafarmers', url: 'https://www.linkedin.com/company/jeromafarmers', title: 'LinkedIn', subtitle: 'Corporate & Institutional Partnerships' },
+      instagram: { enabled: true, handle: '@jeromafarmers', url: 'https://www.instagram.com/jeromafarmers', title: 'Instagram', subtitle: 'Farm Photography & Community Highlights' },
+      telegram: { enabled: false, handle: '@jeromafarmers', url: 'https://t.me/jeromafarmers', title: 'Telegram Community', subtitle: 'Broadcasts & Cooperative Alerts' }
+    };
+    setSocialsState(defaults);
+    await saveSocials(defaults);
+    setSocialsSuccess('Reset to defaults.');
+  };
+
   useEffect(() => {
     loadData();
   }, []);
 
   const handleEditPrice = (crop) => {
     setEditingCrop(crop.id);
-    setEditRate(crop.payoutRate.replace('UGX ', '').replace(',', ''));
-    setEditMoisture(crop.moisture);
-    setEditGuide(crop.gradingGuide);
-    setEditTips(crop.tips);
+    setEditName(crop.name || '');
+    setEditRate(crop.payoutRate ? crop.payoutRate.replace('UGX ', '').replace(/,/g, '') : '');
+    setEditMoisture(crop.moisture || '');
+    setEditPackaging(crop.packaging || '');
+    setEditMarketPrice(crop.marketPrice !== undefined ? String(crop.marketPrice) : '');
+    setEditGuide(crop.gradingGuide || '');
+    setEditTips(crop.tips || '');
+    setPriceSuccess('');
+    setPriceError('');
   };
 
   const handleSavePrice = async (e) => {
     e.preventDefault();
+    setPriceSuccess('');
+    setPriceError('');
+
     const updatedCrops = { ...crops };
+    const current = updatedCrops[editingCrop] || {};
     updatedCrops[editingCrop] = {
-      ...updatedCrops[editingCrop],
+      ...current,
+      name: editName.trim() || current.name || editingCrop,
       payoutRate: 'UGX ' + parseInt(editRate).toLocaleString(),
-      moisture: editMoisture,
-      gradingGuide: editGuide,
-      tips: editTips
+      moisture: editMoisture.trim() || current.moisture || '12.0% - 13.0%',
+      packaging: editPackaging.trim() || current.packaging || '50 kg Woven Bags',
+      marketPrice: editMarketPrice ? parseFloat(editMarketPrice) : (current.marketPrice || 0.65),
+      gradingGuide: editGuide.trim() || current.gradingGuide || '',
+      tips: editTips.trim() || current.tips || ''
     };
     setCrops(updatedCrops);
     await saveCrops(updatedCrops);
     setEditingCrop(null);
-    onStateChange(); // Notify parent of pricing updates (so calculator & news ticker refresh)
+    setPriceSuccess('Crop price and details updated successfully!');
+    setTimeout(() => setPriceSuccess(''), 3500);
+    onStateChange();
+  };
+
+  const handleCreateCrop = async (e) => {
+    e.preventDefault();
+    setPriceSuccess('');
+    setPriceError('');
+
+    if (!newCropName.trim() || !newCropRate) {
+      setPriceError('Please enter crop name and base payout rate.');
+      return;
+    }
+
+    const cropId = newCropName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    if (crops[cropId]) {
+      setPriceError(`A crop with identifier "${cropId}" already exists.`);
+      return;
+    }
+
+    const newCropObj = {
+      id: cropId,
+      name: newCropName.trim(),
+      payoutRate: 'UGX ' + parseInt(newCropRate).toLocaleString(),
+      moisture: newCropMoisture.trim() || '12.0% - 13.0%',
+      packaging: newCropPackaging.trim() || '50 kg Woven Bags',
+      marketPrice: newCropMarketPrice ? parseFloat(newCropMarketPrice) : 0.65,
+      gradingGuide: newCropGuide.trim() || 'Standard quality verification required.',
+      tips: newCropTips.trim() || 'Ensure proper sorting and drying before bagging.'
+    };
+
+    const updatedCrops = { ...crops, [cropId]: newCropObj };
+    setCrops(updatedCrops);
+    await saveCrops(updatedCrops);
+    setIsAddingCrop(false);
+    // Reset form
+    setNewCropName('');
+    setNewCropRate('');
+    setNewCropMoisture('12.0% - 13.0%');
+    setNewCropPackaging('50 kg Woven Bags');
+    setNewCropMarketPrice('0.65');
+    setNewCropGuide('');
+    setNewCropTips('');
+    setPriceSuccess(`Crop "${newCropObj.name}" added to Price Manager successfully!`);
+    setTimeout(() => setPriceSuccess(''), 3500);
+    onStateChange();
+  };
+
+  const handleDeleteCrop = async (cropId, cropName) => {
+    if (window.confirm(`Are you sure you want to remove "${cropName}" from the Price Manager? This will also remove it from live pricing boards.`)) {
+      setPriceSuccess('');
+      setPriceError('');
+      const updatedCrops = { ...crops };
+      delete updatedCrops[cropId];
+      setCrops(updatedCrops);
+      await deleteCrop(cropId);
+      setPriceSuccess(`Crop "${cropName}" removed successfully.`);
+      setTimeout(() => setPriceSuccess(''), 3500);
+      onStateChange();
+    }
   };
 
   const handleLogDelivery = async (e) => {
@@ -861,6 +1967,12 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   };
 
   const handleMobileMoneyPayout = async (del) => {
+    if (!canDisbursePayout) {
+      alert(lang === 'en'
+        ? 'Security Notice: Only the Finance Department or Managing Director can authorize mobile money cash disbursements.'
+        : 'Lok me security: Finance Department keken onyo Managing Director aye twero miiyo wel cente.');
+      return;
+    }
     if (!window.confirm(`Disburse payout of UGX ${del.payout.toLocaleString()} to farmer ${del.farmerName} via Mobile Money?`)) return;
     setPayingId(del.id);
     try {
@@ -915,6 +2027,116 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     onStateChange();
   };
 
+  const openEditDispatch = (disp) => {
+    setEditingDispatch(disp);
+    setEditDispCrop(disp.cropId || disp.crop || 'sunflower');
+    setEditDispCropName(disp.cropName || (crops[disp.cropId]?.name || ''));
+    setEditDispWeight(disp.weight !== undefined ? String(disp.weight) : '');
+    setEditDispDate(disp.date || '');
+    setEditDispLocation(disp.location || '');
+    setEditDispNotes(disp.notes || '');
+    setEditDispStatus(disp.status || 'Pending');
+    setEditDispDriver(disp.driverName || '');
+    setEditDispVehicle(disp.vehiclePlate || '');
+    setEditDispReply(disp.reply || '');
+    setDispSuccessMsg('');
+    setDispErrorMsg('');
+  };
+
+  const handleSaveEditDispatch = async (e) => {
+    e.preventDefault();
+    if (!editingDispatch) return;
+    setDispSuccessMsg('');
+    setDispErrorMsg('');
+
+    const resolvedCropName = crops[editDispCrop]?.name || editDispCropName || editingDispatch.cropName;
+    const updatedFields = {
+      cropId: editDispCrop,
+      cropName: resolvedCropName,
+      weight: parseFloat(editDispWeight) || editingDispatch.weight,
+      date: editDispDate,
+      location: editDispLocation,
+      notes: editDispNotes,
+      status: editDispStatus,
+      driverName: editDispDriver,
+      vehiclePlate: editDispVehicle,
+      reply: editDispReply
+    };
+
+    const success = await updateDispatch(editingDispatch.id, updatedFields);
+    if (success) {
+      setDispatches(await getDispatches());
+      setEditingDispatch(null);
+      setDispSuccessMsg(`Transit request ${editingDispatch.id} updated successfully!`);
+      setTimeout(() => setDispSuccessMsg(''), 3500);
+      if (onStateChange) onStateChange();
+    } else {
+      setDispErrorMsg('Failed to update transit request.');
+    }
+  };
+
+  const handleDeleteDispatch = async (dispId) => {
+    if (window.confirm(`Are you sure you want to delete transit request "${dispId}"? This cannot be undone.`)) {
+      setDispSuccessMsg('');
+      setDispErrorMsg('');
+      const success = await deleteDispatch(dispId);
+      if (success) {
+        setDispatches(await getDispatches());
+        setDispSuccessMsg(`Transit request ${dispId} deleted successfully.`);
+        setTimeout(() => setDispSuccessMsg(''), 3500);
+        if (onStateChange) onStateChange();
+      } else {
+        setDispErrorMsg('Failed to delete transit request.');
+      }
+    }
+  };
+
+  const handleCreateDispatch = async (e) => {
+    e.preventDefault();
+    setDispSuccessMsg('');
+    setDispErrorMsg('');
+
+    if (!newDispFarmer || !newDispWeight || !newDispDate || !newDispLocation) {
+      setDispErrorMsg('Please fill out farmer, weight, pickup date, and location.');
+      return;
+    }
+
+    const farmer = clients.find(c => c.username === newDispFarmer) || { name: newDispFarmer, username: newDispFarmer };
+    const cropObj = crops[newDispCrop] || { id: newDispCrop, name: newDispCrop };
+
+    const newRecord = {
+      username: farmer.username,
+      farmerName: farmer.name,
+      cropId: cropObj.id,
+      cropName: cropObj.name,
+      weight: parseFloat(newDispWeight),
+      date: newDispDate,
+      location: newDispLocation,
+      notes: newDispNotes,
+      status: 'Pending',
+      driverName: newDispDriver,
+      vehiclePlate: newDispVehicle
+    };
+
+    const saved = await saveDispatch(newRecord);
+    if (saved) {
+      setDispatches(await getDispatches());
+      setIsAddingDispatch(false);
+      setNewDispFarmer('');
+      setNewDispWeight('');
+      setNewDispDate(new Date().toISOString().slice(0, 10));
+      setNewDispLocation('');
+      setNewDispNotes('');
+      setNewDispDriver('');
+      setNewDispVehicle('');
+      setDispSuccessMsg(`Transit request ${saved.id} recorded successfully!`);
+      setTimeout(() => setDispSuccessMsg(''), 3500);
+      if (onStateChange) onStateChange();
+    } else {
+      setDispErrorMsg('Failed to record transit request.');
+    }
+  };
+
   const handleToggleInquiryStatus = async (id, currentStatus) => {
     const nextStatus = currentStatus === 'Unread' ? 'Read' : 'Unread';
     await updateInquiryStatus(id, nextStatus);
@@ -940,16 +2162,20 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       return;
     }
     
+    const isStaffOrAdmin = mngRole !== 'client';
     const newUser = {
       username: mngUsername.toLowerCase(),
       password: mngPassword,
       name: mngName,
       phone: mngPhone,
-      district: 'Lira',
-      permissions: mngRole === 'admin' ? mngPermissions : undefined
+      district: mngDistrict,
+      department: mngDepartment,
+      role: mngRole,
+      nin: mngNin,
+      permissions: isStaffOrAdmin ? mngPermissions : undefined
     };
     
-    const result = await (mngRole === 'admin' ? registerAdmin(newUser) : registerUser(newUser));
+    const result = await (isStaffOrAdmin ? registerAdmin(newUser) : registerUser(newUser));
     if (result.success) {
       setMngSuccess(`Account created for ${newUser.username}`);
       setMngUsername('');
@@ -1172,9 +2398,22 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
               </label>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {t.roleAdmin}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px', flexWrap: 'wrap' }}>
+                <span style={{ 
+                  fontSize: '0.72rem', 
+                  fontWeight: 700, 
+                  padding: '2px 10px', 
+                  borderRadius: '12px', 
+                  background: (getDepartmentById(currentUserState?.department || currentUserState?.role)?.badgeColor || '#059669'), 
+                  color: '#fff',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)' 
+                }}>
+                  🏢 {currentUserState?.department || 'Executive Leadership'}
+                </span>
+                <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.8)', background: 'rgba(255,255,255,0.12)', padding: '2px 8px', borderRadius: '12px' }}>
+                  Role: {currentUserState?.role || 'Staff'}
+                </span>
+              </div>
               <h2 style={{ margin: 0, fontSize: '1.4rem', fontFamily: 'var(--font-heading)', fontWeight: 700, color: '#fff' }}>
                 {t.welcome} {currentUserState.name}
               </h2>
@@ -1243,20 +2482,25 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             { id: 'prices', label: t.pricesTab, icon: <Icons.Wheat size={18} /> },
             { id: 'deliveries', label: t.deliveriesTab, icon: <Icons.Warehouse size={18} /> },
             { id: 'dispatches', label: t.dispatchesTab, icon: <Icons.Truck size={18} /> },
+            { id: 'projects', label: lang === 'en' ? '🚀 Projects Hub' : '🚀 Projects', icon: null },
+            { id: 'staff', label: lang === 'en' ? '👥 Staff & Positions' : '👥 Lutic mwa', icon: null },
+            { id: 'cooperatives', label: lang === 'en' ? '🤝 Cooperatives & SACCOs' : '🤝 Cooperatives', icon: null },
+            { id: 'departments', label: lang === 'en' ? '🏢 Departments Hub' : '🏢 Departments', icon: null },
+            { id: 'forms', label: lang === 'en' ? '📋 Google Forms Sync' : '📋 Google Forms', icon: null },
             { id: 'inquiries', label: t.inquiriesTab, icon: <Icons.Mail size={18} /> },
             { id: 'users', label: t.usersTab || 'User Management', icon: <Icons.Users size={18} /> },
             { id: 'logins', label: lang === 'en' ? '🔑 Login History' : '🔑 Wel me Login', icon: <Icons.Clock size={18} /> },
             { id: 'language', label: lang === 'en' ? 'Language Manager' : 'Yore me Leb', icon: <Icons.Globe size={18} /> },
+            { id: 'socials', label: lang === 'en' ? '📱 Social Media Hub' : '📱 Social Media', icon: null },
             { id: 'manual', label: lang === 'en' ? '📖 Training Manual Manager' : '📖 Training Manual Manager', icon: null },
             { id: 'chatbot', label: lang === 'en' ? '🤖 Chatbot Manager' : '🤖 Chatbot Manager', icon: null },
             { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null }
           ].filter(tab => {
-            if (tab.id === 'users') return user.username.toLowerCase() === 'admin';
-            if (tab.id === 'logins') return user.username.toLowerCase() === 'admin';
-            if (tab.id === 'manual' && settings.hideManual && user.username.toLowerCase() !== 'admin') return false;
-            if (user.username.toLowerCase() === 'admin') return true;
-            const allowed = user.permissions || ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot'];
-            return allowed.includes(tab.id);
+            if (tab.id === 'users') return isFullAdmin;
+            if (tab.id === 'logins') return isFullAdmin;
+            if (tab.id === 'manual' && settings.hideManual && !isFullAdmin) return false;
+            if (isFullAdmin) return true;
+            return userAllowedPermissions.includes(tab.id);
           }).map(tab => (
             <button
               key={tab.id}
@@ -1289,126 +2533,419 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
 
         {/* Tab Contents */}
         <div className="dashboard-panel-card">
-          
-          {activeTab === 'prices' && (
-            /* Price Manager Tab */
-            <div>
-              <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 700, marginBottom: '20px' }}>
-                {t.pricesTab}
+          {!canAccessTab(activeTab) && (
+            <div style={{
+              padding: '60px 24px',
+              textAlign: 'center',
+              backgroundColor: 'rgba(217, 4, 41, 0.04)',
+              borderRadius: '16px',
+              border: '1.5px dashed rgba(217, 4, 41, 0.3)',
+              margin: '20px 0'
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
+              <h3 style={{ color: '#d90429', fontSize: '1.4rem', fontWeight: 800, marginBottom: '8px' }}>
+                {lang === 'en' ? 'Access Denied: Department Authorization Required' : 'Pe itwero donyo: Myero ibed kede twero'}
               </h3>
-              
-              {editingCrop ? (
-                /* Edit Price Form */
-                <form onSubmit={handleSavePrice} className="glass-panel" style={{ padding: '24px', backgroundColor: '#faf9f6', border: '1px solid rgba(0,0,0,0.05)' }}>
-                  <h4 style={{ color: 'var(--color-primary-dark)', fontSize: '1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Icons.Wheat size={18} />
-                    {t.edit}: {crops[editingCrop]?.name}
-                  </h4>
-                  
-                  <div className="form-row-responsive" style={{ marginBottom: '16px' }}>
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label htmlFor="edit-rate" style={{ color: 'var(--color-primary-dark)' }}>{t.currentRate}</label>
-                      <input
-                        type="number"
-                        id="edit-rate"
-                        name="rate"
+              <p style={{ color: 'var(--color-text-dark)', maxWidth: '520px', margin: '0 auto 20px', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                {lang === 'en'
+                  ? `Your account (${currentUserState?.name || 'Staff'}, ${currentUserState?.department || 'Department'}) does not have permission to view or manage the "${activeTab.toUpperCase()}" module. Please contact the Managing Director for administrative clearance.`
+                  : `Account meri pe tye kede twero me neno kabedo man. Lok kede Managing Director pi twero.`}
+              </p>
+              {userAllowedPermissions && userAllowedPermissions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab(userAllowedPermissions[0])}
+                  className="btn btn-primary"
+                  style={{ padding: '10px 24px' }}
+                >
+                  ← {lang === 'en' ? `Go to My Department Tab (${userAllowedPermissions[0]})` : 'Dok cen i tab meri'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {canAccessTab('prices') && activeTab === 'prices' && (() => {
+            const cropList = Object.values(crops);
+            const filteredCrops = priceSearchQuery.trim()
+              ? cropList.filter(c => 
+                  (c.name || '').toLowerCase().includes(priceSearchQuery.toLowerCase()) ||
+                  (c.gradingGuide || '').toLowerCase().includes(priceSearchQuery.toLowerCase()) ||
+                  (c.packaging || '').toLowerCase().includes(priceSearchQuery.toLowerCase())
+                )
+              : cropList;
+
+            return (
+              /* Price Manager Tab */
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+                  <div>
+                    <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.3rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: '0 0 6px 0' }}>
+                      🌾 {t.pricesTab}
+                    </h3>
+                    <p style={{ color: 'var(--color-text-light)', fontSize: '0.85rem', margin: 0 }}>
+                      Set base buying rates, standard moisture thresholds, packaging, and quality grading criteria for all agricultural commodities.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setIsAddingCrop(true);
+                        setEditingCrop(null);
+                        setPriceSuccess('');
+                        setPriceError('');
+                      }}
+                      style={{ padding: '9px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <span>➕</span> Add New Commodity Crop
+                    </button>
+                  </div>
+                </div>
+
+                {priceSuccess && (
+                  <div style={{ padding: '12px 16px', backgroundColor: 'rgba(82, 183, 136, 0.15)', borderLeft: '4px solid var(--color-accent)', borderRadius: '6px', color: '#1b4332', fontSize: '0.88rem', marginBottom: '20px', fontWeight: 600 }}>
+                    ✅ {priceSuccess}
+                  </div>
+                )}
+                {priceError && (
+                  <div style={{ padding: '12px 16px', backgroundColor: 'rgba(217, 4, 41, 0.15)', borderLeft: '4px solid #d90429', borderRadius: '6px', color: '#680000', fontSize: '0.88rem', marginBottom: '20px', fontWeight: 600 }}>
+                    ⚠️ {priceError}
+                  </div>
+                )}
+
+                {/* Add New Crop Form */}
+                {isAddingCrop && (
+                  <form onSubmit={handleCreateCrop} className="glass-panel" style={{ padding: '24px', backgroundColor: '#f0fdf4', border: '1.5px solid rgba(82,183,136,0.35)', borderRadius: '12px', marginBottom: '28px' }}>
+                    <h4 style={{ color: '#065f46', fontSize: '1.05rem', fontWeight: 700, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>🌱</span> Add New Commodity / Crop Rate
+                    </h4>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Crop Name <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Soya Beans (Non-GMO)"
+                          value={newCropName}
+                          onChange={(e) => setNewCropName(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Base Buying Rate (UGX/Kg) <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          placeholder="e.g. 2400"
+                          value={newCropRate}
+                          onChange={(e) => setNewCropRate(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Target Moisture Range
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. 11.5% - 12.5%"
+                          value={newCropMoisture}
+                          onChange={(e) => setNewCropMoisture(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Standard Packaging
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. 50 kg Woven Bags"
+                          value={newCropPackaging}
+                          onChange={(e) => setNewCropPackaging(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Global Market Ref (USD/Kg)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-input"
+                          placeholder="e.g. 0.65"
+                          value={newCropMarketPrice}
+                          onChange={(e) => setNewCropMarketPrice(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        Quality & Grading Criteria
+                      </label>
+                      <textarea
                         className="form-input"
-                        value={editRate}
-                        onChange={(e) => setEditRate(e.target.value)}
-                        style={{ width: '100%', boxSizing: 'border-box' }}
-                        required
+                        placeholder="Detail foreign matter percentage, maximum defect allowance, and color purity..."
+                        value={newCropGuide}
+                        onChange={(e) => setNewCropGuide(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box', minHeight: '70px' }}
                       />
                     </div>
+
+                    <div className="form-group" style={{ marginBottom: '20px' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        Drying & Post-Harvest Handling Tips
+                      </label>
+                      <textarea
+                        className="form-input"
+                        placeholder="Actionable post-harvest guidance for farmers to attain Grade-A certification..."
+                        value={newCropTips}
+                        onChange={(e) => setNewCropTips(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box', minHeight: '70px' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button type="submit" className="btn btn-primary" style={{ padding: '10px 22px' }}>
+                        <Icons.CheckCircle size={16} />
+                        Save New Crop
+                      </button>
+                      <button type="button" className="btn btn-outline" onClick={() => setIsAddingCrop(false)} style={{ padding: '10px 22px' }}>
+                        {t.cancel}
+                      </button>
+                    </div>
+                  </form>
+                )}
+                
+                {/* Edit Existing Crop Form */}
+                {editingCrop && (
+                  <form onSubmit={handleSavePrice} className="glass-panel" style={{ padding: '24px', backgroundColor: '#faf9f6', border: '1.5px solid var(--color-primary-light, #52b788)', borderRadius: '12px', marginBottom: '28px' }}>
+                    <h4 style={{ color: 'var(--color-primary-dark)', fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Icons.Wheat size={18} />
+                      {t.edit}: {crops[editingCrop]?.name || editingCrop}
+                    </h4>
                     
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label htmlFor="edit-moisture" style={{ color: 'var(--color-primary-dark)' }}>{t.moistureTarget}</label>
-                      <input
-                        type="text"
-                        id="edit-moisture"
-                        name="moisture"
-                        className="form-input"
-                        value={editMoisture}
-                        onChange={(e) => setEditMoisture(e.target.value)}
-                        style={{ width: '100%', boxSizing: 'border-box' }}
-                        required
-                      />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <label htmlFor="edit-name" style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          {t.cropName} <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-name"
+                          name="cropName"
+                          className="form-input"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', fontWeight: 700 }}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-rate" style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          {t.currentRate} <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <input
+                          type="number"
+                          id="edit-rate"
+                          name="rate"
+                          className="form-input"
+                          value={editRate}
+                          onChange={(e) => setEditRate(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="form-group">
+                        <label htmlFor="edit-moisture" style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          {t.moistureTarget}
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-moisture"
+                          name="moisture"
+                          className="form-input"
+                          value={editMoisture}
+                          onChange={(e) => setEditMoisture(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-packaging" style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Standard Packaging
+                        </label>
+                        <input
+                          type="text"
+                          id="edit-packaging"
+                          name="packaging"
+                          className="form-input"
+                          value={editPackaging}
+                          onChange={(e) => setEditPackaging(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-market-price" style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Global Market Ref (USD/Kg)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          id="edit-market-price"
+                          name="marketPrice"
+                          className="form-input"
+                          value={editMarketPrice}
+                          onChange={(e) => setEditMarketPrice(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="form-group" style={{ marginBottom: '16px' }}>
-                    <label htmlFor="edit-guide" style={{ color: 'var(--color-primary-dark)' }}>{t.gradingRules}</label>
-                    <textarea
-                      id="edit-guide"
-                      name="guide"
-                      className="form-input"
-                      value={editGuide}
-                      onChange={(e) => setEditGuide(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', minHeight: '80px' }}
-                      required
-                    ></textarea>
-                  </div>
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <label htmlFor="edit-guide" style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        {t.gradingRules}
+                      </label>
+                      <textarea
+                        id="edit-guide"
+                        name="guide"
+                        className="form-input"
+                        value={editGuide}
+                        onChange={(e) => setEditGuide(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box', minHeight: '80px' }}
+                        required
+                      ></textarea>
+                    </div>
 
-                  <div className="form-group" style={{ marginBottom: '20px' }}>
-                    <label htmlFor="edit-tips" style={{ color: 'var(--color-primary-dark)' }}>{t.dryingTips}</label>
-                    <textarea
-                      id="edit-tips"
-                      name="tips"
-                      className="form-input"
-                      value={editTips}
-                      onChange={(e) => setEditTips(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', minHeight: '80px' }}
-                      required
-                    ></textarea>
-                  </div>
+                    <div className="form-group" style={{ marginBottom: '20px' }}>
+                      <label htmlFor="edit-tips" style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        {t.dryingTips}
+                      </label>
+                      <textarea
+                        id="edit-tips"
+                        name="tips"
+                        className="form-input"
+                        value={editTips}
+                        onChange={(e) => setEditTips(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box', minHeight: '80px' }}
+                        required
+                      ></textarea>
+                    </div>
 
-                  <div style={{ display: 'flex', gap: '12px' }}>
-                    <button type="submit" className="btn btn-primary" style={{ padding: '10px 20px' }}>
-                      <Icons.CheckCircle size={16} />
-                      {t.save}
-                    </button>
-                    <button type="button" className="btn btn-outline" onClick={() => setEditingCrop(null)} style={{ padding: '10px 20px' }}>
-                      {t.cancel}
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button type="submit" className="btn btn-primary" style={{ padding: '10px 22px' }}>
+                        <Icons.CheckCircle size={16} />
+                        {t.save}
+                      </button>
+                      <button type="button" className="btn btn-outline" onClick={() => setEditingCrop(null)} style={{ padding: '10px 22px' }}>
+                        {t.cancel}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Filter and Crop Pricing Grid */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
+                    Commodity Price Board ({filteredCrops.length} of {cropList.length} crops)
                   </div>
-                </form>
-              ) : (
-                /* Crop Pricing Grid */
+                  <input
+                    type="text"
+                    placeholder="Search commodities..."
+                    value={priceSearchQuery}
+                    onChange={(e) => setPriceSearchQuery(e.target.value)}
+                    className="form-input"
+                    style={{ maxWidth: '280px', fontSize: '0.85rem', padding: '6px 12px' }}
+                  />
+                </div>
+
                 <div className="table-container-responsive">
                   <table>
                     <thead>
                       <tr style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-                        <th style={{ padding: '16px 20px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>{t.cropName}</th>
-                        <th style={{ padding: '16px 20px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>{t.currentRate}</th>
-                        <th style={{ padding: '16px 20px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>{t.moistureTarget}</th>
-                        <th style={{ padding: '16px 20px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>{t.gradingRules}</th>
-                        <th style={{ padding: '16px 20px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)', textAlign: 'center' }}>{t.action}</th>
+                        <th style={{ padding: '14px 18px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>{t.cropName}</th>
+                        <th style={{ padding: '14px 18px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>{t.currentRate}</th>
+                        <th style={{ padding: '14px 18px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>{t.moistureTarget}</th>
+                        <th style={{ padding: '14px 18px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>Packaging</th>
+                        <th style={{ padding: '14px 18px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)' }}>{t.gradingRules}</th>
+                        <th style={{ padding: '14px 18px', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-dark)', textAlign: 'center' }}>{t.action}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.values(crops).map(crop => (
-                        <tr key={crop.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', verticalAlign: 'top' }}>
-                          <td style={{ padding: '16px 20px', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{crop.name}</td>
-                          <td style={{ padding: '16px 20px', color: 'var(--color-primary-light)', fontWeight: 800 }}>{crop.payoutRate}</td>
-                          <td style={{ padding: '16px 20px', color: 'rgba(0,0,0,0.8)' }}>{crop.moisture}</td>
-                          <td style={{ padding: '16px 20px', color: 'var(--color-text-light)', fontSize: '0.85rem', maxWidth: '300px', lineHeight: 1.4 }}>{crop.gradingGuide}</td>
-                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                            <button
-                              className="btn btn-outline"
-                              onClick={() => handleEditPrice(crop)}
-                              style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.8rem', gap: '6px' }}
-                            >
-                              <Icons.Coffee size={14} />
-                              {t.edit}
-                            </button>
+                      {filteredCrops.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ padding: '30px', textAlign: 'center', color: 'var(--color-text-light)' }}>
+                            No commodities match your search query.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredCrops.map(crop => (
+                          <tr key={crop.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', verticalAlign: 'top' }}>
+                            <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
+                              <div>{crop.name}</div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)', fontWeight: 'normal', fontFamily: 'monospace' }}>ID: {crop.id}</div>
+                            </td>
+                            <td style={{ padding: '14px 18px', color: 'var(--color-primary-light)', fontWeight: 800 }}>
+                              {crop.payoutRate}
+                              {crop.marketPrice && (
+                                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)', fontWeight: 'normal' }}>
+                                  Ref: ${crop.marketPrice}/kg
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 18px', color: 'rgba(0,0,0,0.8)' }}>{crop.moisture}</td>
+                            <td style={{ padding: '14px 18px', color: 'var(--color-text-dark)', fontSize: '0.82rem' }}>{crop.packaging || '50 kg Bags'}</td>
+                            <td style={{ padding: '14px 18px', color: 'var(--color-text-light)', fontSize: '0.82rem', maxWidth: '280px', lineHeight: 1.4 }}>{crop.gradingGuide}</td>
+                            <td style={{ padding: '14px 18px', textAlign: 'center' }}>
+                              <div style={{ display: 'inline-flex', gap: '6px' }}>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline"
+                                  onClick={() => handleEditPrice(crop)}
+                                  style={{ display: 'inline-flex', padding: '6px 12px', fontSize: '0.78rem', gap: '5px', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                                >
+                                  ✏️ {t.edit}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCrop(crop.id, crop.name)}
+                                  style={{ display: 'inline-flex', padding: '6px 10px', fontSize: '0.78rem', background: 'transparent', border: '1px solid #d90429', color: '#d90429', borderRadius: '6px', cursor: 'pointer' }}
+                                  title="Delete Crop"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {activeTab === 'deliveries' && (
             /* Deliveries Management Tab */
@@ -1547,7 +3084,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             <td style={{ padding: '12px 14px', fontSize: '0.8rem', textAlign: 'center' }}>
                               {del.status === 'Completed' ? (
                                 <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>Paid</span>
-                              ) : (
+                              ) : canDisbursePayout ? (
                                 <button
                                   type="button"
                                   onClick={() => handleMobileMoneyPayout(del)}
@@ -1560,6 +3097,10 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                                 >
                                   {payingId === del.id ? 'Disbursing...' : 'Pay Mobile Money'}
                                 </button>
+                              ) : (
+                                <span style={{ color: '#d97706', fontSize: '0.72rem', fontWeight: 600, padding: '2px 6px', background: 'rgba(217, 119, 6, 0.1)', borderRadius: '4px' }}>
+                                  Pending Finance
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -1573,104 +3114,505 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             </div>
           )}
 
-          {activeTab === 'dispatches' && (
-            /* Transit Requests Tab */
-            <div>
-              <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 700, marginBottom: '20px' }}>
-                {t.dispatchesTab}
-              </h3>
-              
-              <div className="table-container-responsive">
-                <table>
-                  <thead>
-                    <tr style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.date}</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.farmer}</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.crop}</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)', textAlign: 'right' }}>{t.weight}</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.location}</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.scheduledDate}</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.notes}</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)', textAlign: 'center' }}>{t.status}</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)', textAlign: 'center' }}>{t.action}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dispatches.map(disp => (
-                      <tr key={disp.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', verticalAlign: 'top' }}>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{disp.id}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{disp.farmerName}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem' }}>{disp.cropName}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', textAlign: 'right', fontWeight: 700 }}>{disp.weight.toLocaleString()} kg</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', maxWidth: '180px', lineHeight: 1.4 }}>{disp.location}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{disp.date}</td>
-                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--color-text-light)', maxWidth: '200px', lineHeight: 1.4 }}>
-                          <div>{disp.notes || '-'}</div>
-                          {disp.reply && (
-                            <div style={{ marginTop: '6px', color: 'var(--color-primary-dark)', fontWeight: 'bold', fontSize: '0.78rem' }}>
-                              Reply: <span style={{ fontWeight: 'normal', color: 'var(--color-text-dark)' }}>{disp.reply}</span>
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', textAlign: 'center' }}>
-                          <span style={{
-                            padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
-                            backgroundColor: disp.status === 'Completed' ? 'rgba(82, 183, 136, 0.15)' : (disp.status === 'Scheduled' ? 'rgba(233, 196, 106, 0.15)' : (disp.status === 'Cancelled' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(0,0,0,0.05)')),
-                            color: disp.status === 'Completed' ? '#1b4332' : (disp.status === 'Scheduled' ? '#b07d03' : (disp.status === 'Cancelled' ? '#d90429' : '#000'))
-                          }}>
-                            {disp.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                            {disp.status === 'Pending' && (
-                              <>
-                                <button
-                                  onClick={() => handleApproveDispatch(disp.id)}
-                                  className="btn btn-outline"
-                                  style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-accent)', color: '#1b4332' }}
-                                >
-                                  {t.approve}
-                                </button>
-                                <button
-                                  onClick={() => handleCancelDispatch(disp.id)}
-                                  style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', border: '1px solid #d90429', color: '#d90429', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
-                                >
-                                  {t.cancelBtn}
-                                </button>
-                              </>
-                            )}
-                            {disp.status === 'Scheduled' && (
-                              <button
-                                onClick={() => handleCompleteDispatch(disp.id)}
-                                className="btn btn-primary"
-                                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                              >
-                                {t.complete}
-                              </button>
-                            )}
-                            {disp.status !== 'Cancelled' && (
-                              <button
-                                onClick={() => {
-                                  setReplyTarget({ type: 'dispatch', id: disp.id, recipientName: disp.farmerName });
-                                  setReplyText(disp.reply || '');
-                                  setShowReplyModal(true);
-                                }}
-                                className="btn btn-outline"
-                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
-                              >
-                                💬 Reply
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+          {activeTab === 'dispatches' && (() => {
+            const filteredDispatches = dispatches.filter(disp => {
+              const matchesStatus = dispStatusFilter === 'all' || disp.status === dispStatusFilter;
+              const q = dispSearchQuery.toLowerCase().trim();
+              const matchesQuery = !q ||
+                (disp.farmerName || '').toLowerCase().includes(q) ||
+                (disp.cropName || '').toLowerCase().includes(q) ||
+                (disp.location || '').toLowerCase().includes(q) ||
+                (disp.id || '').toLowerCase().includes(q) ||
+                (disp.driverName || '').toLowerCase().includes(q);
+              return matchesStatus && matchesQuery;
+            });
+
+            return (
+              /* Transit Requests Tab */
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+                  <div>
+                    <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.3rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: '0 0 6px 0' }}>
+                      🚚 {t.dispatchesTab}
+                    </h3>
+                    <p style={{ color: 'var(--color-text-light)', fontSize: '0.85rem', margin: 0 }}>
+                      Coordinate farm-gate produce pickups, fleet routing, truck and driver assignments, and transit schedules.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setIsAddingDispatch(true);
+                        setEditingDispatch(null);
+                        setDispSuccessMsg('');
+                        setDispErrorMsg('');
+                      }}
+                      style={{ padding: '9px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <span>➕</span> Log New Transit Request
+                    </button>
+                  </div>
+                </div>
+
+                {dispSuccessMsg && (
+                  <div style={{ padding: '12px 16px', backgroundColor: 'rgba(82, 183, 136, 0.15)', borderLeft: '4px solid var(--color-accent)', borderRadius: '6px', color: '#1b4332', fontSize: '0.88rem', marginBottom: '20px', fontWeight: 600 }}>
+                    ✅ {dispSuccessMsg}
+                  </div>
+                )}
+                {dispErrorMsg && (
+                  <div style={{ padding: '12px 16px', backgroundColor: 'rgba(217, 4, 41, 0.15)', borderLeft: '4px solid #d90429', borderRadius: '6px', color: '#680000', fontSize: '0.88rem', marginBottom: '20px', fontWeight: 600 }}>
+                    ⚠️ {dispErrorMsg}
+                  </div>
+                )}
+
+                {/* Edit Transit Request Form */}
+                {editingDispatch && (
+                  <form onSubmit={handleSaveEditDispatch} className="glass-panel" style={{ padding: '24px', backgroundColor: '#faf9f6', border: '1.5px solid #0284c7', borderRadius: '12px', marginBottom: '28px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <h4 style={{ color: '#0369a1', fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>✏️</span> Edit Transit Request: {editingDispatch.id} ({editingDispatch.farmerName})
+                      </h4>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
+                        Client: {editingDispatch.username}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          {t.crop} <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <select
+                          className="form-input"
+                          value={editDispCrop}
+                          onChange={(e) => setEditDispCrop(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        >
+                          {Object.values(crops).map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Estimated Weight (kg) <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={editDispWeight}
+                          onChange={(e) => setEditDispWeight(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Pickup / Collection Date <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={editDispDate}
+                          onChange={(e) => setEditDispDate(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Transit Status <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <select
+                          className="form-input"
+                          value={editDispStatus}
+                          onChange={(e) => setEditDispStatus(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', fontWeight: 700 }}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Scheduled">Scheduled</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Assigned Driver
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Denis Omongo"
+                          value={editDispDriver}
+                          onChange={(e) => setEditDispDriver(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Assigned Vehicle / Plate
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Isuzu Forward UBA 891Z"
+                          value={editDispVehicle}
+                          onChange={(e) => setEditDispVehicle(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        Pickup Location & Access Landmarks <span style={{ color: '#d90429' }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={editDispLocation}
+                        onChange={(e) => setEditDispLocation(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        Transit Notes / Instructions
+                      </label>
+                      <textarea
+                        className="form-input"
+                        rows={2}
+                        value={editDispNotes}
+                        onChange={(e) => setEditDispNotes(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '20px' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        💬 Admin Reply / Logistics Update to Farmer
+                      </label>
+                      <textarea
+                        className="form-input"
+                        rows={2}
+                        placeholder="e.g. Truck scheduled for 10:00 AM. Please ensure produce is bagged and ready."
+                        value={editDispReply}
+                        onChange={(e) => setEditDispReply(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button type="submit" className="btn btn-primary" style={{ padding: '10px 22px' }}>
+                        <Icons.CheckCircle size={16} />
+                        Save Transit Changes
+                      </button>
+                      <button type="button" className="btn btn-outline" onClick={() => setEditingDispatch(null)} style={{ padding: '10px 22px' }}>
+                        {t.cancel}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Create New Transit Request Form */}
+                {isAddingDispatch && (
+                  <form onSubmit={handleCreateDispatch} className="glass-panel" style={{ padding: '24px', backgroundColor: '#f0fdf4', border: '1.5px solid rgba(82,183,136,0.35)', borderRadius: '12px', marginBottom: '28px' }}>
+                    <h4 style={{ color: '#065f46', fontSize: '1.05rem', fontWeight: 700, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>🚚</span> Log New Farm Produce Transit Request
+                    </h4>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Select Farmer <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <select
+                          className="form-input"
+                          value={newDispFarmer}
+                          onChange={(e) => setNewDispFarmer(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        >
+                          <option value="">-- Choose Registered Farmer --</option>
+                          {clients.map(c => (
+                            <option key={c.username} value={c.username}>{c.name} ({c.district || c.username})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Select Crop <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <select
+                          className="form-input"
+                          value={newDispCrop}
+                          onChange={(e) => setNewDispCrop(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        >
+                          {Object.values(crops).map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Estimated Weight (kg) <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          placeholder="e.g. 1500"
+                          value={newDispWeight}
+                          onChange={(e) => setNewDispWeight(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Pickup Date <span style={{ color: '#d90429' }}>*</span>
+                        </label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={newDispDate}
+                          onChange={(e) => setNewDispDate(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Assigned Driver (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Denis Omongo"
+                          value={newDispDriver}
+                          onChange={(e) => setNewDispDriver(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                          Vehicle / Truck Plate (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Isuzu Forward UBD 123X"
+                          value={newDispVehicle}
+                          onChange={(e) => setNewDispVehicle(e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        Pickup Location <span style={{ color: '#d90429' }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Village, Parish, Sub-county, Landmark..."
+                        value={newDispLocation}
+                        onChange={(e) => setNewDispLocation(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box' }}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '20px' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem' }}>
+                        Transit Notes / Special Requests
+                      </label>
+                      <textarea
+                        className="form-input"
+                        placeholder="e.g. Farmer requires weighing scales on truck; narrow access bridge..."
+                        value={newDispNotes}
+                        onChange={(e) => setNewDispNotes(e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box', minHeight: '60px' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button type="submit" className="btn btn-primary" style={{ padding: '10px 22px' }}>
+                        <Icons.CheckCircle size={16} />
+                        Record Transit Request
+                      </button>
+                      <button type="button" className="btn btn-outline" onClick={() => setIsAddingDispatch(false)} style={{ padding: '10px 22px' }}>
+                        {t.cancel}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Filter and Search Bar */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {['all', 'Pending', 'Scheduled', 'Completed', 'Cancelled'].map(st => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setDispStatusFilter(st)}
+                        className={`btn-tab ${dispStatusFilter === st ? 'active' : ''}`}
+                        style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                      >
+                        {st === 'all' ? 'All' : st} ({st === 'all' ? dispatches.length : dispatches.filter(d => d.status === st).length})
+                      </button>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Search requests, farmers, locations..."
+                    value={dispSearchQuery}
+                    onChange={(e) => setDispSearchQuery(e.target.value)}
+                    className="form-input"
+                    style={{ maxWidth: '280px', fontSize: '0.82rem', padding: '6px 12px' }}
+                  />
+                </div>
+                
+                <div className="table-container-responsive">
+                  <table>
+                    <thead>
+                      <tr style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>ID</th>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.farmer}</th>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.crop}</th>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)', textAlign: 'right' }}>{t.weight}</th>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.location}</th>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{t.scheduledDate}</th>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Fleet / Notes</th>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)', textAlign: 'center' }}>{t.status}</th>
+                        <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)', textAlign: 'center' }}>{t.action}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredDispatches.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} style={{ padding: '30px', textAlign: 'center', color: 'var(--color-text-light)' }}>
+                            No transit requests found.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredDispatches.map(disp => (
+                          <tr key={disp.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', verticalAlign: 'top' }}>
+                            <td style={{ padding: '14px 16px', fontSize: '0.8rem', whiteSpace: 'nowrap', fontFamily: 'monospace', fontWeight: 600 }}>{disp.id}</td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{disp.farmerName}</td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.8rem' }}>{disp.cropName}</td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.8rem', textAlign: 'right', fontWeight: 700 }}>{Number(disp.weight || 0).toLocaleString()} kg</td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.8rem', maxWidth: '180px', lineHeight: 1.4 }}>{disp.location}</td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{disp.date}</td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--color-text-light)', maxWidth: '220px', lineHeight: 1.4 }}>
+                              {(disp.driverName || disp.vehiclePlate) && (
+                                <div style={{ marginBottom: '4px', color: '#0369a1', fontWeight: 600, fontSize: '0.75rem' }}>
+                                  🚚 {disp.driverName || 'Driver'} {disp.vehiclePlate ? `(${disp.vehiclePlate})` : ''}
+                                </div>
+                              )}
+                              <div>{disp.notes || '-'}</div>
+                              {disp.reply && (
+                                <div style={{ marginTop: '6px', color: 'var(--color-primary-dark)', fontWeight: 'bold', fontSize: '0.78rem' }}>
+                                  Reply: <span style={{ fontWeight: 'normal', color: 'var(--color-text-dark)' }}>{disp.reply}</span>
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '14px 16px', fontSize: '0.8rem', textAlign: 'center' }}>
+                              <span style={{
+                                padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
+                                backgroundColor: disp.status === 'Completed' ? 'rgba(82, 183, 136, 0.15)' : (disp.status === 'Scheduled' ? 'rgba(233, 196, 106, 0.15)' : (disp.status === 'Cancelled' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(0,0,0,0.05)')),
+                                color: disp.status === 'Completed' ? '#1b4332' : (disp.status === 'Scheduled' ? '#b07d03' : (disp.status === 'Cancelled' ? '#d90429' : '#000'))
+                              }}>
+                                {disp.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditDispatch(disp)}
+                                  className="btn btn-outline"
+                                  style={{ padding: '4px 8px', fontSize: '0.75rem', borderColor: '#0284c7', color: '#0284c7' }}
+                                  title="Edit Transit Details"
+                                >
+                                  ✏️ Edit
+                                </button>
+                                {disp.status === 'Pending' && (
+                                  <>
+                                    <button
+                                      onClick={() => handleApproveDispatch(disp.id)}
+                                      className="btn btn-outline"
+                                      style={{ padding: '4px 8px', fontSize: '0.75rem', borderColor: 'var(--color-accent)', color: '#1b4332' }}
+                                    >
+                                      {t.approve}
+                                    </button>
+                                    <button
+                                      onClick={() => handleCancelDispatch(disp.id)}
+                                      style={{ padding: '4px 8px', fontSize: '0.75rem', background: 'transparent', border: '1px solid #d90429', color: '#d90429', borderRadius: '6px', fontWeight: 600, cursor: 'pointer' }}
+                                    >
+                                      {t.cancelBtn}
+                                    </button>
+                                  </>
+                                )}
+                                {disp.status === 'Scheduled' && (
+                                  <button
+                                    onClick={() => handleCompleteDispatch(disp.id)}
+                                    className="btn btn-primary"
+                                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                                  >
+                                    {t.complete}
+                                  </button>
+                                )}
+                                {disp.status !== 'Cancelled' && (
+                                  <button
+                                    onClick={() => {
+                                      setReplyTarget({ type: 'dispatch', id: disp.id, recipientName: disp.farmerName });
+                                      setReplyText(disp.reply || '');
+                                      setShowReplyModal(true);
+                                    }}
+                                    className="btn btn-outline"
+                                    style={{ padding: '4px 8px', fontSize: '0.75rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                                  >
+                                    💬 Reply
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteDispatch(disp.id)}
+                                  style={{ padding: '4px 8px', fontSize: '0.75rem', background: 'transparent', border: '1px solid #d90429', color: '#d90429', borderRadius: '6px', cursor: 'pointer' }}
+                                  title="Delete Transit Request"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'inquiries' && (
             /* Inquiry Inbox Tab */
@@ -1833,28 +3775,195 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                   {mngError && <div style={{ padding: '10px', backgroundColor: 'rgba(217, 4, 41, 0.25)', color: '#ffffff', marginBottom: '16px', borderRadius: '6px', fontWeight: 'bold' }}>{mngError}</div>}
 
                   <form onSubmit={handleCreateUser} className="form-grid-responsive-2col">
+                    {/* Field 1: Department Selection */}
                     <div className="form-group">
-                      <label htmlFor="mng-role" style={{ color: '#ffffff', fontWeight: 600 }}>Role</label>
-                      <select id="mng-role" name="role" className="form-input" value={mngRole} onChange={(e) => setMngRole(e.target.value)} style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }}>
-                        <option value="client">Farmer / Client</option>
-                        <option value="admin">Administrator</option>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label htmlFor="mng-dept" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🏢</span> Jeroma Department
+                        </label>
+                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Guide: Select Official Department
+                        </span>
+                      </div>
+                      <select 
+                        id="mng-dept" 
+                        name="department" 
+                        className="form-input" 
+                        value={mngDepartment} 
+                        onChange={(e) => handleMngDepartmentSelect(e.target.value)} 
+                        style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.5)' }}
+                      >
+                        <option value="Farmer / Client">🌾 Farmer / Client</option>
+                        {JEROMA_DEPARTMENTS.map(d => (
+                          <option key={d.id} value={d.name}>🏢 {d.name} ({d.code})</option>
+                        ))}
                       </select>
                     </div>
+
+                    {/* Field 2: Role Selection */}
                     <div className="form-group">
-                      <label htmlFor="mng-name" style={{ color: '#ffffff', fontWeight: 600 }}>Full Name</label>
-                      <input id="mng-name" name="name" autocomplete="name" className="form-input" required value={mngName} onChange={(e) => setMngName(e.target.value)} style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label htmlFor="mng-role" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🛡️</span> System Access Role
+                        </label>
+                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Guide: Defines Permissions
+                        </span>
+                      </div>
+                      <select 
+                        id="mng-role" 
+                        name="role" 
+                        className="form-input" 
+                        value={mngRole} 
+                        onChange={(e) => setMngRole(e.target.value)} 
+                        style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.5)' }}
+                      >
+                        <option value="client">Farmer / Client</option>
+                        <option value="admin">System Administrator</option>
+                        {JEROMA_DEPARTMENTS.map(d => (
+                          <option key={d.id} value={d.name}>{d.roleTitle}</option>
+                        ))}
+                      </select>
                     </div>
+
+                    {/* Field 3: Full Name */}
                     <div className="form-group">
-                      <label htmlFor="mng-username" style={{ color: '#ffffff', fontWeight: 600 }}>Username</label>
-                      <input id="mng-username" name="username" autocomplete="username" className="form-input" required value={mngUsername} onChange={(e) => setMngUsername(e.target.value)} style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label htmlFor="mng-name" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>👤</span> Your Full Name
+                        </label>
+                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Guide: Legal Name on ID / NIN
+                        </span>
+                      </div>
+                      <input 
+                        id="mng-name" 
+                        name="name" 
+                        autoComplete="name" 
+                        className="form-input" 
+                        required 
+                        placeholder="e.g. Okello David"
+                        value={mngName} 
+                        onChange={(e) => setMngName(e.target.value)} 
+                        style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.5)' }} 
+                      />
                     </div>
+
+                    {/* Field 4: Username */}
                     <div className="form-group">
-                      <label htmlFor="mng-password" style={{ color: '#ffffff', fontWeight: 600 }}>Password</label>
-                      <input id="mng-password" name="password" autocomplete="new-password" type="password" className="form-input" required value={mngPassword} onChange={(e) => setMngPassword(e.target.value)} style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label htmlFor="mng-username" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🔑</span> Login Username
+                        </label>
+                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Guide: Lowercase, Unique ID
+                        </span>
+                      </div>
+                      <input 
+                        id="mng-username" 
+                        name="username" 
+                        autoComplete="username" 
+                        className="form-input" 
+                        required 
+                        placeholder="e.g. dokello or finance"
+                        value={mngUsername} 
+                        onChange={(e) => setMngUsername(e.target.value)} 
+                        style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.5)' }} 
+                      />
                     </div>
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label htmlFor="mng-phone" style={{ color: '#ffffff', fontWeight: 600 }}>Phone / District (Optional)</label>
-                      <input id="mng-phone" name="phone" autocomplete="tel" className="form-input" value={mngPhone} onChange={(e) => setMngPhone(e.target.value)} placeholder="+256... Lira" style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.3)' }} />
+
+                    {/* Field 5: Password */}
+                    <div className="form-group">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label htmlFor="mng-password" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🔒</span> Secure Password
+                        </label>
+                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Guide: Min. 6 chars with letters & numbers
+                        </span>
+                      </div>
+                      <input 
+                        id="mng-password" 
+                        name="password" 
+                        autoComplete="new-password" 
+                        type="password" 
+                        className="form-input" 
+                        required 
+                        placeholder="••••••••"
+                        value={mngPassword} 
+                        onChange={(e) => setMngPassword(e.target.value)} 
+                        style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.5)' }} 
+                      />
+                    </div>
+
+                    {/* Field 6: District in Uganda (All 146 Auto-numbered) */}
+                    <div className="form-group">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label htmlFor="mng-district" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>📍</span> District in Uganda (146 Districts)
+                        </label>
+                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Guide: Auto-Numbered Districts
+                        </span>
+                      </div>
+                      <select 
+                        id="mng-district" 
+                        name="district" 
+                        className="form-input" 
+                        value={mngDistrict} 
+                        onChange={(e) => setMngDistrict(e.target.value)} 
+                        style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.5)' }}
+                      >
+                        {UGANDA_DISTRICTS.map(d => (
+                          <option key={d.code} value={d.code + '. ' + d.name}>
+                            {d.code}. {d.name} ({d.region} Region)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Field 7: Telephone Contact */}
+                    <div className="form-group">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label htmlFor="mng-phone" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>📞</span> Telephone Contact
+                        </label>
+                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Guide: Ugandan Phone / WhatsApp
+                        </span>
+                      </div>
+                      <input 
+                        id="mng-phone" 
+                        name="phone" 
+                        autoComplete="tel" 
+                        className="form-input" 
+                        value={mngPhone} 
+                        onChange={(e) => setMngPhone(e.target.value)} 
+                        placeholder="e.g. +256 773 123 456" 
+                        style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.5)' }} 
+                      />
+                    </div>
+
+                    {/* Field 8: NIN */}
+                    <div className="form-group">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label htmlFor="mng-nin" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🆔</span> National Identification Number (NIN)
+                        </label>
+                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          Guide: 14-Character National ID
+                        </span>
+                      </div>
+                      <input 
+                        id="mng-nin" 
+                        name="nin" 
+                        className="form-input" 
+                        value={mngNin} 
+                        onChange={(e) => setMngNin(e.target.value.toUpperCase())} 
+                        placeholder="e.g. CM92038104XYZ1" 
+                        maxLength={14}
+                        style={{ backgroundColor: '#081c15', color: '#ffffff', border: '1px solid rgba(82,183,136,0.5)' }} 
+                      />
                     </div>
 
                     {mngRole === 'admin' && (
@@ -2420,12 +4529,28 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: 0 }}>
+                  <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.3rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: 0 }}>
                     📖 Training Manual Manager
                   </h3>
                   <p style={{ color: 'var(--color-text-light)', fontSize: '0.85rem', marginTop: '4px', marginBottom: 0 }}>
-                    Customize the 14 crop production training stages, write NARO advice, and upload custom photos.
+                    Manage the sequential agricultural production training stages ({manualStages.length} phases), customize NARO advisory guidelines, and upload media.
                   </p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setIsAddingStage(true);
+                      setEditingStage(null);
+                      setNewStageNum((manualStages.length + 1).toString().padStart(2, '0'));
+                      setStageSuccess('');
+                      setStageError('');
+                    }}
+                    style={{ padding: '9px 18px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <span>➕</span> Add New Training Phase
+                  </button>
                 </div>
               </div>
 
@@ -2448,19 +4573,176 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                       }
                     }}
                   />
-                  Hide Training Manual
+                  Hide Training Manual on Website
                 </label>
               </div>
 
               {stageSuccess && (
-                <div style={{ background: '#d1fae5', border: '1px solid #6ee7b7', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', color: '#065f46', fontWeight: 600, fontSize: '0.875rem' }}>
+                <div style={{ background: '#d1fae5', border: '1px solid #6ee7b7', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#065f46', fontWeight: 600, fontSize: '0.875rem' }}>
                   ✅ {stageSuccess}
                 </div>
               )}
               {stageError && (
-                <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', color: '#991b1b', fontWeight: 600, fontSize: '0.875rem' }}>
+                <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', color: '#991b1b', fontWeight: 600, fontSize: '0.875rem' }}>
                   ⚠️ {stageError}
                 </div>
+              )}
+
+              {/* Add New Stage Form */}
+              {isAddingStage && (
+                <form onSubmit={handleCreateManualStage} style={{ background: '#f0fdf4', border: '1.5px solid rgba(82,183,136,0.4)', borderRadius: '12px', padding: '24px', marginBottom: '28px' }}>
+                  <h4 style={{ color: '#065f46', fontWeight: 700, fontSize: '1.05rem', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🌱</span> Create New Training Manual Phase
+                  </h4>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px', marginBottom: '14px' }}>
+                    <div className="form-group">
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>
+                        Phase Number <span style={{ color: '#d90429' }}>*</span>
+                      </label>
+                      <input 
+                        className="form-input" 
+                        type="text" 
+                        value={newStageNum} 
+                        onChange={e => setNewStageNum(e.target.value)} 
+                        placeholder="e.g. 15" 
+                        style={{ width: '100%', boxSizing: 'border-box' }} 
+                        required 
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>
+                        Title (English) <span style={{ color: '#d90429' }}>*</span>
+                      </label>
+                      <input 
+                        className="form-input" 
+                        type="text" 
+                        value={newStageTitleEn} 
+                        onChange={e => setNewStageTitleEn(e.target.value)} 
+                        placeholder="e.g. Post-Harvest Handling & Grain Drying" 
+                        style={{ width: '100%', boxSizing: 'border-box' }} 
+                        required 
+                      />
+                    </div>
+                    
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>
+                        Title (Luo/Acholi)
+                      </label>
+                      <input 
+                        className="form-input" 
+                        type="text" 
+                        value={newStageTitleLuo} 
+                        onChange={e => setNewStageTitleLuo(e.target.value)} 
+                        placeholder="e.g. Gwoko Cam I Nge Keyo" 
+                        style={{ width: '100%', boxSizing: 'border-box' }} 
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>
+                        Subtitle (English) <span style={{ color: '#d90429' }}>*</span>
+                      </label>
+                      <input 
+                        className="form-input" 
+                        type="text" 
+                        value={newStageSubtitleEn} 
+                        onChange={e => setNewStageSubtitleEn(e.target.value)} 
+                        placeholder="e.g. Prevent aflatoxin contamination and optimize grain moisture" 
+                        style={{ width: '100%', boxSizing: 'border-box' }} 
+                        required 
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>
+                        Subtitle (Luo/Acholi)
+                      </label>
+                      <input 
+                        className="form-input" 
+                        type="text" 
+                        value={newStageSubtitleLuo} 
+                        onChange={e => setNewStageSubtitleLuo(e.target.value)} 
+                        placeholder="e.g. Juk two me cam kede gwoko pii" 
+                        style={{ width: '100%', boxSizing: 'border-box' }} 
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>
+                        Photo / Media URL or Upload
+                      </label>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <input 
+                          className="form-input" 
+                          type="text" 
+                          value={newStageImage} 
+                          onChange={e => setNewStageImage(e.target.value)} 
+                          placeholder="/sunflower_field.webp" 
+                          style={{ flex: 1, boxSizing: 'border-box' }} 
+                        />
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            style={{ padding: '8px 14px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                            onClick={() => document.getElementById('new-manual-stage-file-input').click()}
+                            disabled={isNewStageUploading}
+                          >
+                            📁 {isNewStageUploading ? 'Uploading...' : 'Upload Photo'}
+                          </button>
+                          <input
+                            id="new-manual-stage-file-input"
+                            type="file"
+                            accept="image/*,video/*"
+                            onChange={handleNewManualImageUpload}
+                            style={{ display: 'none' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>
+                        Step-by-Step Training Points (One point per line) <span style={{ color: '#d90429' }}>*</span>
+                      </label>
+                      <textarea 
+                        className="form-input" 
+                        value={newStagePointsText} 
+                        onChange={e => setNewStagePointsText(e.target.value)} 
+                        placeholder="Sun-dry produce on raised tarpaulins or cribs&#10;Winnow to remove foreign dirt and broken chaff&#10;Check moisture with Jeroma digital meter before storage" 
+                        rows={4} 
+                        style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} 
+                        required 
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>
+                        NARO Technical Advisory / Expert Recommendation
+                      </label>
+                      <textarea 
+                        className="form-input" 
+                        value={newStageNaroAdvice} 
+                        onChange={e => setNewStageNaroAdvice(e.target.value)} 
+                        placeholder="NARO recommends moisture testing at 13.0% maximum to inhibit Aspergillus flavus growth..." 
+                        rows={3} 
+                        style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical' }} 
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button type="submit" className="btn btn-primary" style={{ padding: '10px 22px' }}>
+                      <Icons.CheckCircle size={16} />
+                      Save Training Phase
+                    </button>
+                    <button type="button" className="btn btn-outline" onClick={() => setIsAddingStage(false)} style={{ padding: '10px 22px' }}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
               )}
 
               {/* Edit Stage Form */}
@@ -2548,7 +4830,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                 );
               })() : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {manualStages.map((stage) => (
+                  {manualStages.map((stage, idx) => (
                     <div key={stage.id} style={{
                       display: 'flex', alignItems: 'center', gap: '14px',
                       background: '#ffffff', borderRadius: '12px',
@@ -2571,6 +4853,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             fontSize: '0.7rem', fontWeight: 800,
                             padding: '2px 8px', borderRadius: '20px'
                           }}>Phase {stage.num}</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>
+                            {stage.points ? `${stage.points.length} guideline points` : ''}
+                          </span>
                         </div>
                         <p style={{ margin: 0, fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-primary-dark)', lineHeight: 1.3 }}>
                           {stage.title_en} {stage.title_luo ? ` / ${stage.title_luo}` : ''}
@@ -2580,8 +4865,32 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         </p>
                       </div>
 
-                      {/* Actions */}
-                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      {/* Actions: Reorder, Edit, Delete */}
+                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0, alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveManualStage(idx, -1)}
+                          disabled={idx === 0}
+                          className="btn btn-outline"
+                          style={{
+                            padding: '6px 10px', fontSize: '0.75rem', opacity: idx === 0 ? 0.35 : 1, cursor: idx === 0 ? 'not-allowed' : 'pointer'
+                          }}
+                          title="Move Up"
+                        >
+                          ⬆️
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveManualStage(idx, 1)}
+                          disabled={idx === manualStages.length - 1}
+                          className="btn btn-outline"
+                          style={{
+                            padding: '6px 10px', fontSize: '0.75rem', opacity: idx === manualStages.length - 1 ? 0.35 : 1, cursor: idx === manualStages.length - 1 ? 'not-allowed' : 'pointer'
+                          }}
+                          title="Move Down"
+                        >
+                          ⬇️
+                        </button>
                         <button
                           type="button"
                           onClick={() => openEditManualStage(stage)}
@@ -2591,6 +4900,16 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           }}
                         >
                           ✏️ Edit Phase
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteManualStage(stage.id, stage.title_en)}
+                          style={{
+                            padding: '6px 10px', borderRadius: '6px', fontSize: '0.78rem', background: 'transparent', border: '1px solid #d90429', color: '#d90429', cursor: 'pointer'
+                          }}
+                          title="Delete Phase"
+                        >
+                          🗑️
                         </button>
                       </div>
                     </div>
@@ -2868,7 +5187,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
 
               {/* ── Slide Edit / Add Form ── */}
               {editingSlide && (
-                <form onSubmit={handleSaveSlide} style={{ background: '#f0fdf4', border: '1.5px solid rgba(82,183,136,0.3)', borderRadius: '12px', padding: '24px', marginBottom: '28px' }}>
+                <form id="slide-edit-form" onSubmit={handleSaveSlide} style={{ background: '#f0fdf4', border: '1.5px solid rgba(82,183,136,0.3)', borderRadius: '12px', padding: '24px', marginBottom: '28px' }}>
                   <h4 style={{ color: '#065f46', fontWeight: 700, fontSize: '1rem', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {editingSlide === 'new' ? '➕ Add New Slide' : '✏️ Edit Slide'}
                   </h4>
@@ -2881,9 +5200,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                     </div>
                     {/* Image / Video Path */}
                     <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>Image / Video Path</label>
+                      <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>Image / Video Path (or YouTube/Vimeo link)</label>
                       <div style={{ display: 'flex', gap: '10px' }}>
-                        <input className="form-input" type="text" value={slideImage} onChange={e => setSlideImage(e.target.value)} placeholder="/community_gathering.webp" style={{ flex: 1, boxSizing: 'border-box' }} />
+                        <input className="form-input" type="text" value={slideImage} onChange={e => setSlideImage(e.target.value)} placeholder="/community_gathering.webp or video URL" style={{ flex: 1, boxSizing: 'border-box' }} />
                         <div style={{ position: 'relative', display: 'inline-block' }}>
                           <button
                             type="button"
@@ -2903,8 +5222,56 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           />
                         </div>
                       </div>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '4px' }}>Use paths like /community_gathering.webp or click the button to upload a photo or video from your device.</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '4px' }}>Use paths like /community_gathering.webp, paste a YouTube/Vimeo video link, or click Upload to select a photo or video from your device.</p>
                     </div>
+
+                    {/* Live Media Preview Box */}
+                    {slideImage && (
+                      <div style={{
+                        gridColumn: '1 / -1',
+                        margin: '6px 0 12px',
+                        padding: '12px 16px',
+                        background: '#081c15',
+                        borderRadius: '10px',
+                        border: '1.5px solid rgba(82,183,136,0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <div style={{
+                          width: '160px',
+                          height: '100px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          background: '#040f0b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          border: '1px solid rgba(82,183,136,0.4)'
+                        }}>
+                          <BannerMedia
+                            mediaUrl={slideImage}
+                            title={slideTitleEn || 'Slide Preview'}
+                            fit={slideFit}
+                            isMobile={true}
+                          />
+                        </div>
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                          <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: '0.85rem', color: '#52b788' }}>
+                            {isVideoUrl(slideImage) ? '🎬 Live Video Preview (Autoplay & Audio Supported)' : '🖼️ Live Photo Preview'}
+                          </p>
+                          <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', wordBreak: 'break-all' }}>
+                            Source: <code>{slideImage.startsWith('data:') ? slideImage.substring(0, 40) + '...' : slideImage}</code>
+                          </p>
+                          <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#a7f3d0' }}>
+                            {isVideoUrl(slideImage) ? 'Supports YouTube, Vimeo, MP4, WebM, and uploaded device videos.' : 'Automatically optimized for crisp display across mobile & desktop screens.'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Image Fit */}
                     <div className="form-group">
                       <label style={{ color: 'var(--color-primary-dark)', fontWeight: 600, fontSize: '0.85rem', display: 'block', marginBottom: '6px' }}>Image Fit</label>
@@ -2977,13 +5344,22 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                     }}>
                       {/* Thumbnail */}
                       <div style={{
-                        width: '72px', height: '52px', borderRadius: '8px', overflow: 'hidden',
-                        flexShrink: 0, border: '2px solid rgba(82,183,136,0.3)', background: '#0d2b1c'
+                        width: '84px', height: '58px', borderRadius: '8px', overflow: 'hidden',
+                        flexShrink: 0, border: '2px solid rgba(82,183,136,0.3)', background: '#0d2b1c',
+                        position: 'relative'
                       }}>
-                        {slide.image && (slide.image.endsWith('.mp4') || slide.image.endsWith('.webm') || slide.image.endsWith('.ogg')) ? (
-                          <video src={slide.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
-                        ) : (
-                          <img src={slide.image} alt={slide.title_en} style={{ width: '100%', height: '100%', objectFit: slide.fit || 'cover' }} />
+                        <BannerMedia
+                          mediaUrl={slide.video || slide.image}
+                          title={slide.title_en}
+                          fit={slide.fit}
+                          isMobile={true}
+                        />
+                        {isVideoUrl(slide.video || slide.image) && (
+                          <span style={{
+                            position: 'absolute', bottom: '2px', right: '2px',
+                            background: 'rgba(0,0,0,0.75)', color: '#52b788',
+                            fontSize: '0.55rem', padding: '1px 4px', borderRadius: '3px', fontWeight: 800
+                          }}>VIDEO</span>
                         )}
                       </div>
                       {/* Content */}
@@ -3074,6 +5450,3481 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                   ))}
                 </div>
                 <p style={{ margin: '8px 0 0', fontSize: '0.72rem', color: 'var(--color-text-light)' }}>💡 Click any image path while editing a slide to auto-fill the Image Path field.</p>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* TAB 1: Universal Projects Management Hub */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'projects' && (
+            <div>
+              {/* Header & Create Project Button */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
+                <div>
+                  <h3 style={{ color: 'var(--color-primary-dark, #0f3020)', fontSize: '1.4rem', fontFamily: 'var(--font-heading)', fontWeight: 800, margin: '0 0 6px 0', letterSpacing: '-0.01em' }}>
+                    🚀 Universal Projects Management Hub
+                  </h3>
+                  <p style={{ color: '#475569', fontSize: '0.875rem', margin: 0, fontWeight: 500 }}>
+                    Waterfall Project Lifecycle: track sequential stages (<strong>Initiation ➔ Planning ➔ On Process ➔ Implementation ➔ Monitoring ➔ Completed</strong>), budgets, and participating Farmers Organisations / Cooperatives.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setCustomCoopInput('');
+                    setEditingProject({
+                      code: generateAutoProjectCode('PRJ'),
+                      title: '',
+                      partner: 'Danish Government / Danida',
+                      status: 'On Process',
+                      progressPercent: 35,
+                      budget: 50000000,
+                      spent: 0,
+                      currency: 'UGX',
+                      startDate: new Date().toISOString().slice(0, 10),
+                      endDate: '',
+                      targetBeneficiaries: 1000,
+                      achievedBeneficiaries: 0,
+                      targetCooperatives: 5,
+                      engagedCooperatives: 2,
+                      cooperatives: ['Pader Sunflower Growers Cooperative Society', 'Agago Grain Producers SACCO'],
+                      objectives: 'Access to Innovation (A2I) & Smallholder Agricultural Modernization',
+                      riskMitigation: 'Climate risk mitigated through drought-resistant seeds and early land preparation.',
+                      milestones: [
+                        { id: 'm-1', phase: 'Initiation', title: 'Community & Stakeholder Alignment', targetDate: '', completed: true },
+                        { id: 'm-2', phase: 'Planning', title: 'Scope & Input Budget Approval', targetDate: '', completed: true },
+                        { id: 'm-3', phase: 'On Process', title: 'Cooperative Mobilization & Farmer Profiling', targetDate: '', completed: false },
+                        { id: 'm-4', phase: 'Implementation', title: 'Seed Subsidies & Grain Thresher Distribution', targetDate: '', completed: false },
+                        { id: 'm-5', phase: 'Monitoring', title: 'Field M&E Quality Verification', targetDate: '', completed: false },
+                        { id: 'm-6', phase: 'Completed', title: 'Handover & Impact Assessment', targetDate: '', completed: false }
+                      ],
+                      manager: user.name || 'Projects Manager'
+                    });
+                  }}
+                  style={{ background: 'var(--color-primary, #1b4332)', color: '#fff', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', boxShadow: '0 4px 12px rgba(27,67,50,0.2)' }}
+                >
+                  <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>+</span> New Project
+                </button>
+              </div>
+
+              {/* KPI Summary Cards (High-Contrast Text in Standard & Dark Mode) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                <div className="glass-panel" style={{ padding: '18px', background: '#ffffff', borderRadius: '12px', border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: '#475569', fontWeight: 700, letterSpacing: '0.04em' }}>Total Projects</div>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0f3020', marginTop: '4px' }}>{projectsList.length}</div>
+                  <div style={{ fontSize: '0.78rem', color: '#059669', marginTop: '2px', fontWeight: 600 }}>
+                    {projectsList.filter(p => p.status === 'Implementation' || p.status === 'On Process' || p.status === 'Active').length} Active / In Process
+                  </div>
+                </div>
+                <div className="glass-panel" style={{ padding: '18px', background: '#ffffff', borderRadius: '12px', border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: '#475569', fontWeight: 700, letterSpacing: '0.04em' }}>Total Portfolios Budget</div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f3020', marginTop: '4px' }}>
+                    UGX {projectsList.reduce((acc, p) => acc + (Number(p.budget) || 0), 0).toLocaleString()}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#334155', marginTop: '2px', fontWeight: 600 }}>
+                    Disbursed: UGX {projectsList.reduce((acc, p) => acc + (Number(p.spent) || 0), 0).toLocaleString()}
+                  </div>
+                </div>
+                <div className="glass-panel" style={{ padding: '18px', background: '#ffffff', borderRadius: '12px', border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: '#475569', fontWeight: 700, letterSpacing: '0.04em' }}>Farmers Reached</div>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#166534', marginTop: '4px' }}>
+                    {projectsList.reduce((acc, p) => acc + (Number(p.achievedBeneficiaries) || 0), 0).toLocaleString()}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#334155', marginTop: '2px', fontWeight: 600 }}>
+                    Target: {projectsList.reduce((acc, p) => acc + (Number(p.targetBeneficiaries) || 0), 0).toLocaleString()} Farmers
+                  </div>
+                </div>
+                <div className="glass-panel" style={{ padding: '18px', background: '#ffffff', borderRadius: '12px', border: '1.5px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: '#475569', fontWeight: 700, letterSpacing: '0.04em' }}>Partner Cooperatives & Groups</div>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#0f3020', marginTop: '4px' }}>
+                    {Array.from(new Set(projectsList.flatMap(p => p.cooperatives || []))).length || projectsList.reduce((acc, p) => acc + (Number(p.engagedCooperatives) || 0), 0)}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#059669', marginTop: '2px', fontWeight: 600 }}>
+                    Participating Across Initiatives
+                  </div>
+                </div>
+              </div>
+
+              {/* Filters & Search: Search by Title/Donor, Waterfall Phase filter, and Cooperatives filter */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search projects by title, partner, code, manager, cooperative..."
+                  value={projectSearch}
+                  onChange={(e) => setProjectSearch(e.target.value)}
+                  className="form-input"
+                  style={{ flex: 1, minWidth: '240px', background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                />
+                <select
+                  value={projectStatusFilter}
+                  onChange={(e) => setProjectStatusFilter(e.target.value)}
+                  className="form-input"
+                  style={{ width: 'auto', minWidth: '190px', background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                >
+                  <option value="all">All Waterfall Phases & Statuses</option>
+                  {WATERFALL_PHASES.map(phase => (
+                    <option key={phase.id} value={phase.id}>{phase.step} ({phase.label})</option>
+                  ))}
+                </select>
+                <select
+                  value={projectCoopFilter}
+                  onChange={(e) => setProjectCoopFilter(e.target.value)}
+                  className="form-input"
+                  style={{ width: 'auto', minWidth: '220px', background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                >
+                  <option value="all">All Farmers Organisations & Cooperatives</option>
+                  {Array.from(new Set([
+                    ...cooperativesList.map(c => c.name),
+                    ...projectsList.flatMap(p => p.cooperatives || [])
+                  ])).filter(Boolean).map(name => (
+                    <option key={name} value={name}>🏢 {name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Editing / Creating Project Modal / Box (Waterfall Project Management Form) */}
+              {editingProject && (
+                <div className="glass-panel project-hub-form" style={{ padding: '24px', background: '#ffffff', borderRadius: '16px', border: '2px solid #10b981', marginBottom: '28px', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
+                    <div>
+                      <h4 style={{ margin: 0, color: 'var(--color-primary-dark, #0f3020)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{editingProject.id ? '✏️' : '📝'}</span>
+                        {editingProject.id ? `Edit Project: ${editingProject.title}` : 'Create New Universal Project (Waterfall Model)'}
+                      </h4>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
+                        Execute sequentially through Waterfall phases: Initiation ➔ Planning ➔ On Process ➔ Implementation ➔ Monitoring ➔ Completed.
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => setEditingProject(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+                  </div>
+
+                  <form onSubmit={handleSaveProjectSubmit}>
+                    {/* Row 1: Identification & Leadership */}
+                    <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>🆔</span> Auto Project Code *
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Auto-Numbered Code
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingProject.code || ''}
+                          onChange={(e) => setEditingProject({ ...editingProject, code: e.target.value })}
+                          placeholder="e.g. PRJ-A2I-001"
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>🚀</span> Project Title *
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Initiative Name
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingProject.title || ''}
+                          onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })}
+                          placeholder="e.g. Access to Innovation (A2I) Smallholder Mechanization"
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>🤝</span> Key Partner / Donor *
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Donor / Co-funder
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingProject.partner || ''}
+                          onChange={(e) => setEditingProject({ ...editingProject, partner: e.target.value })}
+                          placeholder="e.g. Danish Government / Danida / Jeroma FCC"
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>👤</span> Project Manager / Lead *
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Responsible Lead
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingProject.manager || ''}
+                          onChange={(e) => setEditingProject({ ...editingProject, manager: e.target.value })}
+                          placeholder="e.g. Daniel Okot (Projects Lead)"
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 2: Waterfall Status Lifecycle & Execution Progress */}
+                    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1.5px solid #e2e8f0', marginBottom: '16px' }}>
+                      <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '12px' }}>
+                        <div className="form-group">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                              <span>📊</span> Waterfall Project Phase / Status *
+                            </label>
+                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                              Guide: Waterfall Lifecycle
+                            </span>
+                          </div>
+                          <select
+                            className="form-input"
+                            value={editingProject.status || 'On Process'}
+                            onChange={(e) => setEditingProject({ ...editingProject, status: e.target.value })}
+                            style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 700 }}
+                          >
+                            <option value="Initiation">1. Initiation (Concept, Charter & Stakeholder Definition)</option>
+                            <option value="Planning">2. Planning (Scope, Timeline & Budget Allocation)</option>
+                            <option value="On Process">3. On Process (Preparation, Design & Cooperative Mobilization)</option>
+                            <option value="Implementation">4. Implementation (Active Field Rollout & Seed/Machinery Distribution)</option>
+                            <option value="Monitoring">5. Monitoring & Evaluation (Quality Control, Verification & Audit)</option>
+                            <option value="Completed">6. Completed (Handover, Impact Reporting & Final Audit)</option>
+                            <option value="On Hold">⏸️ On Hold (Temporarily Paused / Suspended)</option>
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                              <span>📈</span> Overall Execution Progress: {editingProject.progressPercent || 0}%
+                            </label>
+                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                              Guide: Milestone Completion
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={editingProject.progressPercent || 0}
+                              onChange={(e) => setEditingProject({ ...editingProject, progressPercent: Number(e.target.value) })}
+                              style={{ flex: 1, accentColor: '#10b981' }}
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={editingProject.progressPercent || 0}
+                              onChange={(e) => setEditingProject({ ...editingProject, progressPercent: Number(e.target.value) })}
+                              className="form-input"
+                              style={{ width: '70px', padding: '6px 8px', background: '#fff', color: '#0f172a', fontWeight: 700, textAlign: 'center' }}
+                            />
+                            <span style={{ fontWeight: 700, color: '#0f3020' }}>%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Visual Waterfall Phase Stepper */}
+                      <div style={{ marginTop: '8px' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>
+                          Waterfall Method Sequence:
+                        </div>
+                        <div className="waterfall-stepper" style={{ margin: 0 }}>
+                          {WATERFALL_PHASES.filter(p => p.id !== 'On Hold').map((phase, idx, arr) => {
+                            const currentInfo = getWaterfallPhaseInfo(editingProject.status);
+                            const isActive = currentInfo.id === phase.id;
+                            const isPassed = currentInfo.order > phase.order;
+                            return (
+                              <React.Fragment key={phase.id}>
+                                <div
+                                  className={`waterfall-step ${isActive ? `active active-${phase.id.toLowerCase().replace(/\s+/g, '')}` : isPassed ? 'passed' : ''}`}
+                                  style={{
+                                    borderColor: isActive ? phase.color : isPassed ? '#10b981' : '#cbd5e1',
+                                    color: isActive ? phase.color : isPassed ? '#047857' : '#64748b',
+                                    background: isActive ? phase.bg : isPassed ? '#ecfdf5' : '#ffffff',
+                                    fontWeight: isActive ? 800 : 600,
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() => setEditingProject({ ...editingProject, status: phase.id })}
+                                  title={`Click to set stage to ${phase.label}`}
+                                >
+                                  <span>{isPassed ? '✓' : isActive ? '●' : phase.order}</span>
+                                  <span>{phase.label}</span>
+                                </div>
+                                {idx < arr.length - 1 && <span className="waterfall-arrow">➔</span>}
+                              </React.Fragment>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Row 3: Schedule & Timeline */}
+                    <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>📅</span> Planned Start Date *
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Kickoff
+                          </span>
+                        </div>
+                        <input
+                          type="date"
+                          required
+                          className="form-input"
+                          value={editingProject.startDate || ''}
+                          onChange={(e) => setEditingProject({ ...editingProject, startDate: e.target.value })}
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>🏁</span> Handover / End Date *
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Target Closure
+                          </span>
+                        </div>
+                        <input
+                          type="date"
+                          required
+                          className="form-input"
+                          value={editingProject.endDate || ''}
+                          onChange={(e) => setEditingProject({ ...editingProject, endDate: e.target.value })}
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>⏱️</span> Schedule Duration
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Auto-Calculated
+                          </span>
+                        </div>
+                        <div style={{ padding: '10px 14px', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#0f3020' }}>
+                          {editingProject.startDate && editingProject.endDate ? (
+                            (() => {
+                              const start = new Date(editingProject.startDate);
+                              const end = new Date(editingProject.endDate);
+                              const days = Math.round((end - start) / (1000 * 60 * 60 * 24));
+                              const months = (days / 30.4).toFixed(1);
+                              return days > 0 ? `${months} Months (${days} Days)` : 'End date must follow start date';
+                            })()
+                          ) : 'Specify start & end dates'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Row 4: Financial & Budget Management */}
+                    <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '12px', border: '1.5px solid #86efac', marginBottom: '16px' }}>
+                      <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '12px' }}>
+                        <div className="form-group">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#14532d', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                              <span>💰</span> Total Allocated Budget (UGX) *
+                            </label>
+                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#ffffff', border: '1px solid #86efac', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                              Guide: Total Grant / Fund
+                            </span>
+                          </div>
+                          <input
+                            type="number"
+                            min="0"
+                            required
+                            className="form-input"
+                            value={editingProject.budget || 0}
+                            onChange={(e) => setEditingProject({ ...editingProject, budget: Number(e.target.value) })}
+                            style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #86efac', fontWeight: 700 }}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#14532d', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                              <span>💳</span> Disbursed / Expenditure (UGX)
+                            </label>
+                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#ffffff', border: '1px solid #86efac', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                              Guide: Actual Spent
+                            </span>
+                          </div>
+                          <input
+                            type="number"
+                            min="0"
+                            className="form-input"
+                            value={editingProject.spent || 0}
+                            onChange={(e) => setEditingProject({ ...editingProject, spent: Number(e.target.value) })}
+                            style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #86efac', fontWeight: 700 }}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#14532d', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                              <span>💵</span> Remaining Budget Balance
+                            </label>
+                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#ffffff', border: '1px solid #86efac', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                              Burn Rate: {((editingProject.spent || 0) / (editingProject.budget || 1) * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                          <div style={{ padding: '10px 14px', background: '#ffffff', border: '1.5px solid #86efac', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 800, color: '#166534' }}>
+                            UGX {Math.max(0, (editingProject.budget || 0) - (editingProject.spent || 0)).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Row 5: Beneficiaries & Target Outreach */}
+                    <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>👨‍🌾</span> Target Beneficiaries (Farmers)
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Farmer Target
+                          </span>
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          className="form-input"
+                          value={editingProject.targetBeneficiaries || 0}
+                          onChange={(e) => setEditingProject({ ...editingProject, targetBeneficiaries: Number(e.target.value) })}
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>✅</span> Achieved Beneficiaries (Farmers)
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Reached Count
+                          </span>
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          className="form-input"
+                          value={editingProject.achievedBeneficiaries || 0}
+                          onChange={(e) => setEditingProject({ ...editingProject, achievedBeneficiaries: Number(e.target.value) })}
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>🎯</span> Target Cooperatives / Groups
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Goal Groups
+                          </span>
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          className="form-input"
+                          value={editingProject.targetCooperatives || 0}
+                          onChange={(e) => setEditingProject({ ...editingProject, targetCooperatives: Number(e.target.value) })}
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                            <span>🏢</span> Engaged Cooperatives Count
+                          </label>
+                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            Guide: Linked Groups
+                          </span>
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          className="form-input"
+                          value={(editingProject.cooperatives || []).length || editingProject.engagedCooperatives || 0}
+                          onChange={(e) => setEditingProject({ ...editingProject, engagedCooperatives: Number(e.target.value) })}
+                          style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 6: Farmers Organisations & Cooperatives Under This Project (User Requested) */}
+                    <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1.5px solid #cbd5e1', marginBottom: '18px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f3020', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                            <span>🏢</span> Farmers Organisations & Cooperatives Under This Project *
+                          </label>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '0.78rem', color: '#475569' }}>
+                            Assign active cooperatives and SACCOs partnering in this initiative. Click any registered cooperative to add/remove, or enter a custom farmer organisation.
+                          </p>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '3px 10px', borderRadius: '6px', fontWeight: 700 }}>
+                          {(editingProject.cooperatives || []).length} Organisation(s) Assigned
+                        </span>
+                      </div>
+
+                      {/* Custom Cooperative Add Input */}
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          placeholder="Type new Farmer Organisation, SACCO, or Group Name (e.g. Puranga Women Maize Producers)..."
+                          value={customCoopInput}
+                          onChange={(e) => setCustomCoopInput(e.target.value)}
+                          className="form-input"
+                          style={{ flex: 1, background: '#fff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 600, fontSize: '0.85rem' }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (customCoopInput.trim()) {
+                                const current = editingProject.cooperatives || [];
+                                if (!current.includes(customCoopInput.trim())) {
+                                  const updated = [...current, customCoopInput.trim()];
+                                  setEditingProject({
+                                    ...editingProject,
+                                    cooperatives: updated,
+                                    engagedCooperatives: updated.length
+                                  });
+                                }
+                                setCustomCoopInput('');
+                              }
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (customCoopInput.trim()) {
+                              const current = editingProject.cooperatives || [];
+                              if (!current.includes(customCoopInput.trim())) {
+                                const updated = [...current, customCoopInput.trim()];
+                                setEditingProject({
+                                  ...editingProject,
+                                  cooperatives: updated,
+                                  engagedCooperatives: updated.length
+                                });
+                              }
+                              setCustomCoopInput('');
+                            }
+                          }}
+                          className="btn btn-primary"
+                          style={{ background: '#10b981', borderColor: '#059669', color: '#fff', padding: '9px 18px', fontSize: '0.82rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                        >
+                          + Add Organisation
+                        </button>
+                      </div>
+
+                      {/* Quick-Pick Registered Cooperatives from System */}
+                      <div style={{ marginBottom: '10px' }}>
+                        <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                          Registered Cooperatives in Database (Click to Add / Remove):
+                        </span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {(cooperativesList.length > 0 ? cooperativesList : [
+                            { id: 'c-1', name: 'Pader Sunflower Growers Cooperative Society' },
+                            { id: 'c-2', name: 'Agago Grain Producers SACCO' },
+                            { id: 'c-3', name: 'Kitgum Mixed Farming Cooperative Society' },
+                            { id: 'c-4', name: 'Abim Oilseed & Agroforestry Association' },
+                            { id: 'c-5', name: 'Karenga Green Growers Farmer Group' },
+                            { id: 'c-6', name: 'Lira Central Smallholders Cooperative' },
+                            { id: 'c-7', name: 'Kole Agro-Producers Association' }
+                          ]).map(coop => {
+                            const coopName = coop.name;
+                            const isAssigned = (editingProject.cooperatives || []).includes(coopName);
+                            return (
+                              <button
+                                key={coop.id || coopName}
+                                type="button"
+                                onClick={() => {
+                                  const current = editingProject.cooperatives || [];
+                                  const next = isAssigned
+                                    ? current.filter(n => n !== coopName)
+                                    : [...current, coopName];
+                                  setEditingProject({
+                                    ...editingProject,
+                                    cooperatives: next,
+                                    engagedCooperatives: next.length
+                                  });
+                                }}
+                                style={{
+                                  padding: '5px 12px',
+                                  borderRadius: '20px',
+                                  fontSize: '0.78rem',
+                                  fontWeight: isAssigned ? 800 : 500,
+                                  border: '1.5px solid',
+                                  borderColor: isAssigned ? '#10b981' : '#cbd5e1',
+                                  background: isAssigned ? '#ecfdf5' : '#ffffff',
+                                  color: isAssigned ? '#065f46' : '#334155',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  transition: 'all 0.15s ease'
+                                }}
+                              >
+                                <span>{isAssigned ? '✓' : '+'}</span>
+                                <span>{coopName}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Currently Assigned Cooperatives Tags */}
+                      {(editingProject.cooperatives || []).length > 0 && (
+                        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                            Currently Assigned Under This Project ({editingProject.cooperatives.length}):
+                          </span>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {editingProject.cooperatives.map(coopName => (
+                              <span
+                                key={coopName}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  background: '#dcfce7',
+                                  color: '#14532d',
+                                  border: '1px solid #86efac',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700
+                                }}
+                              >
+                                <span>🏢</span>
+                                <span>{coopName}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = (editingProject.cooperatives || []).filter(n => n !== coopName);
+                                    setEditingProject({
+                                      ...editingProject,
+                                      cooperatives: next,
+                                      engagedCooperatives: next.length
+                                    });
+                                  }}
+                                  style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800, padding: 0 }}
+                                  title="Remove organisation"
+                                >
+                                  ✕
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Row 7: Strategic Objectives, Scope & Interventions */}
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                          <span>🎯</span> Strategic Objectives, Scope & Interventions *
+                        </label>
+                        <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                          Guide: Scope of Work
+                        </span>
+                      </div>
+                      <textarea
+                        className="form-input"
+                        rows="3"
+                        required
+                        value={editingProject.objectives || ''}
+                        onChange={(e) => setEditingProject({ ...editingProject, objectives: e.target.value })}
+                        placeholder="Detail the project goals, value chains (sunflower, simsim, maize, soya, tree nursery), technology deployed, and implementation methodology..."
+                        style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 500, fontSize: '0.85rem', lineHeight: 1.5 }}
+                      />
+                    </div>
+
+                    {/* Row 8: Waterfall Deliverables & Stage Milestones */}
+                    <div style={{ marginBottom: '18px', background: '#ffffff', padding: '16px', borderRadius: '12px', border: '1.5px solid #cbd5e1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <div>
+                          <span style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f3020', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>📋</span> Waterfall Deliverables & Stage Milestones
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            Tag deliverables to sequential stages to track progress through the Waterfall methodology.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newM = {
+                              id: 'm-' + Date.now(),
+                              phase: editingProject.status || 'On Process',
+                              title: 'New Waterfall Deliverable',
+                              targetDate: '',
+                              completed: false
+                            };
+                            setEditingProject({ ...editingProject, milestones: [...(editingProject.milestones || []), newM] });
+                          }}
+                          style={{ fontSize: '0.78rem', padding: '5px 12px', background: '#ecfdf5', color: '#047857', border: '1.5px solid #a7f3d0', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
+                        >
+                          + Add Milestone Deliverable
+                        </button>
+                      </div>
+
+                      {(editingProject.milestones || []).length === 0 ? (
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>No milestones added yet. Click "+ Add Milestone Deliverable" above.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {editingProject.milestones.map((m, idx) => (
+                            <div key={m.id || idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                              <input
+                                type="checkbox"
+                                checked={!!m.completed}
+                                onChange={(e) => {
+                                  const nextM = editingProject.milestones.map((item, i) => i === idx ? { ...item, completed: e.target.checked } : item);
+                                  const completedCount = nextM.filter(x => x.completed).length;
+                                  const autoProgress = Math.round((completedCount / nextM.length) * 100);
+                                  setEditingProject({
+                                    ...editingProject,
+                                    milestones: nextM,
+                                    progressPercent: autoProgress
+                                  });
+                                }}
+                                style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
+                              />
+                              <select
+                                className="form-input"
+                                value={m.phase || 'On Process'}
+                                onChange={(e) => {
+                                  const nextM = editingProject.milestones.map((item, i) => i === idx ? { ...item, phase: e.target.value } : item);
+                                  setEditingProject({ ...editingProject, milestones: nextM });
+                                }}
+                                style={{ width: '130px', padding: '4px 8px', fontSize: '0.78rem', background: '#fff', color: '#0f172a', fontWeight: 700 }}
+                              >
+                                <option value="Initiation">1. Initiation</option>
+                                <option value="Planning">2. Planning</option>
+                                <option value="On Process">3. On Process</option>
+                                <option value="Implementation">4. Implementation</option>
+                                <option value="Monitoring">5. Monitoring</option>
+                                <option value="Completed">6. Completed</option>
+                              </select>
+                              <input
+                                type="text"
+                                className="form-input"
+                                value={m.title || ''}
+                                onChange={(e) => {
+                                  const nextM = editingProject.milestones.map((item, i) => i === idx ? { ...item, title: e.target.value } : item);
+                                  setEditingProject({ ...editingProject, milestones: nextM });
+                                }}
+                                style={{ flex: 1, minWidth: '180px', padding: '4px 8px', fontSize: '0.825rem', background: '#fff', color: '#0f172a', fontWeight: 600 }}
+                                placeholder="Milestone deliverable description"
+                              />
+                              <input
+                                type="date"
+                                className="form-input"
+                                value={m.targetDate || ''}
+                                onChange={(e) => {
+                                  const nextM = editingProject.milestones.map((item, i) => i === idx ? { ...item, targetDate: e.target.value } : item);
+                                  setEditingProject({ ...editingProject, milestones: nextM });
+                                }}
+                                style={{ width: '130px', padding: '4px 8px', fontSize: '0.8rem', background: '#fff', color: '#0f172a' }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextM = editingProject.milestones.filter((_, i) => i !== idx);
+                                  setEditingProject({ ...editingProject, milestones: nextM });
+                                }}
+                                style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontWeight: 800, fontSize: '0.9rem', padding: '0 4px' }}
+                                title="Remove deliverable"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Row 9: Risk Management & Field Safeguards */}
+                    <div className="form-group" style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                          <span>🛡️</span> Risk Management, Safeguards & Field Reporting
+                        </label>
+                        <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                          Guide: Mitigation Strategy
+                        </span>
+                      </div>
+                      <textarea
+                        className="form-input"
+                        rows="2"
+                        value={editingProject.riskMitigation || ''}
+                        onChange={(e) => setEditingProject({ ...editingProject, riskMitigation: e.target.value })}
+                        placeholder="Anticipated operational risks (weather volatility, input logistics, credit repayment) and proactive mitigation safeguards..."
+                        style={{ background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1', fontWeight: 500, fontSize: '0.85rem' }}
+                      />
+                    </div>
+
+                    {/* Form Action Buttons */}
+                    <div style={{ display: 'flex', gap: '12px', borderTop: '1.5px solid #e2e8f0', paddingTop: '16px' }}>
+                      <button type="submit" disabled={isSavingProject} className="btn btn-primary" style={{ padding: '11px 28px', background: '#10b981', borderColor: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.92rem' }}>
+                        {isSavingProject ? 'Saving...' : '💾 Save Universal Project'}
+                      </button>
+                      <button type="button" onClick={() => setEditingProject(null)} className="btn btn-secondary" style={{ padding: '11px 20px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', fontWeight: 600, fontSize: '0.92rem' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Projects Grid List (Waterfall Cards with High Contrast Text) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
+                {projectsList
+                  .filter(p => {
+                    const matchSearch = !projectSearch || 
+                      (p.title || '').toLowerCase().includes(projectSearch.toLowerCase()) ||
+                      (p.partner || '').toLowerCase().includes(projectSearch.toLowerCase()) ||
+                      (p.code || '').toLowerCase().includes(projectSearch.toLowerCase()) ||
+                      (p.manager || '').toLowerCase().includes(projectSearch.toLowerCase()) ||
+                      (p.cooperatives || []).some(c => c.toLowerCase().includes(projectSearch.toLowerCase()));
+                    const currentPhase = getWaterfallPhaseInfo(p.status);
+                    const matchStatus = projectStatusFilter === 'all' || p.status === projectStatusFilter || currentPhase.id === projectStatusFilter;
+                    const matchCoop = projectCoopFilter === 'all' || (p.cooperatives || []).some(c => c.toLowerCase().includes(projectCoopFilter.toLowerCase()));
+                    return matchSearch && matchStatus && matchCoop;
+                  })
+                  .map(project => {
+                    const pctBen = project.targetBeneficiaries > 0 ? Math.min(100, Math.round(((project.achievedBeneficiaries || 0) / project.targetBeneficiaries) * 100)) : 0;
+                    const pctBudget = project.budget > 0 ? Math.min(100, Math.round(((project.spent || 0) / project.budget) * 100)) : 0;
+                    const phaseInfo = getWaterfallPhaseInfo(project.status);
+                    const progress = project.progressPercent !== undefined ? project.progressPercent : pctBen;
+
+                    return (
+                      <div
+                        key={project.id}
+                        className="glass-panel project-card"
+                        style={{
+                          padding: '22px',
+                          background: '#ffffff',
+                          borderRadius: '16px',
+                          border: '1.5px solid #e2e8f0',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div>
+                          {/* Top Badges: Code, Phase, and Progress */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 800, padding: '4px 9px', borderRadius: '6px', background: '#f1f5f9', color: '#0f3020', border: '1px solid #cbd5e1' }}>
+                              🆔 {project.code || 'PRJ'}
+                            </span>
+                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                              <span style={{
+                                fontSize: '0.74rem',
+                                fontWeight: 800,
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                background: phaseInfo.bg,
+                                color: phaseInfo.color,
+                                border: `1.5px solid ${phaseInfo.border}`
+                              }}>
+                                {phaseInfo.step} ({phaseInfo.label})
+                              </span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: '10px', background: '#ecfdf5', color: '#047857' }}>
+                                {progress}%
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Title & Donor */}
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '1.15rem', color: 'var(--color-primary-dark, #0f3020)', fontWeight: 800, lineHeight: 1.35 }}>
+                            {project.title}
+                          </h4>
+                          <div style={{ fontSize: '0.82rem', color: '#1e293b', marginBottom: '10px', fontWeight: 600 }}>
+                            <span style={{ color: '#64748b', fontWeight: 500 }}>Funder / Partner:</span> {project.partner || 'Jeroma Internal'}
+                          </div>
+
+                          {/* Waterfall Method Mini-Pipeline Stepper on Card */}
+                          <div style={{ margin: '10px 0 12px 0', padding: '8px 10px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '4px' }}>
+                              Waterfall Stage Progression:
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                              {WATERFALL_PHASES.filter(p => p.id !== 'On Hold').map((ph, idx, arr) => {
+                                const isCurrent = phaseInfo.id === ph.id;
+                                const isPassed = phaseInfo.order > ph.order;
+                                return (
+                                  <React.Fragment key={ph.id}>
+                                    <span
+                                      style={{
+                                        fontSize: '0.68rem',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        fontWeight: isCurrent ? 800 : 500,
+                                        background: isCurrent ? ph.bg : isPassed ? '#ecfdf5' : '#ffffff',
+                                        color: isCurrent ? ph.color : isPassed ? '#047857' : '#94a3b8',
+                                        border: '1px solid',
+                                        borderColor: isCurrent ? ph.border : isPassed ? '#a7f3d0' : '#e2e8f0'
+                                      }}
+                                    >
+                                      {isPassed ? '✓ ' : ''}{ph.label}
+                                    </span>
+                                    {idx < arr.length - 1 && <span style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>➔</span>}
+                                  </React.Fragment>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Scope / Objectives */}
+                          {project.objectives && (
+                            <p style={{ fontSize: '0.82rem', color: '#334155', margin: '0 0 12px 0', lineHeight: 1.45, fontWeight: 500 }}>
+                              {project.objectives.length > 130 ? project.objectives.slice(0, 130) + '...' : project.objectives}
+                            </p>
+                          )}
+
+                          {/* Progress indicators: Beneficiaries & Budget */}
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155', marginBottom: '4px', fontWeight: 600 }}>
+                              <span>Individual Farmers:</span>
+                              <strong style={{ color: '#0f3020' }}>{(project.achievedBeneficiaries || 0).toLocaleString()} / {(project.targetBeneficiaries || 0).toLocaleString()} ({pctBen}%)</strong>
+                            </div>
+                            <div style={{ width: '100%', height: '7px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ width: `${pctBen}%`, height: '100%', background: '#10b981', borderRadius: '4px' }} />
+                            </div>
+                          </div>
+
+                          <div style={{ marginBottom: '14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155', marginBottom: '4px', fontWeight: 600 }}>
+                              <span>Budget Burn:</span>
+                              <strong style={{ color: '#0f3020' }}>
+                                UGX {((project.spent || 0) / 1000000).toFixed(1)}M / {((project.budget || 0) / 1000000).toFixed(1)}M ({pctBudget}%)
+                              </strong>
+                            </div>
+                            <div style={{ width: '100%', height: '7px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ width: `${pctBudget}%`, height: '100%', background: pctBudget > 90 ? '#ef4444' : '#1b4332', borderRadius: '4px' }} />
+                            </div>
+                          </div>
+
+                          {/* Farmers Organisations & Cooperatives Under Project (User Requested) */}
+                          <div style={{ marginBottom: '14px' }}>
+                            <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#0f3020', marginBottom: '6px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span>🏢</span> Participating Farmers Organisations ({(project.cooperatives || []).length || project.engagedCooperatives || 0}):
+                            </div>
+                            {(project.cooperatives && project.cooperatives.length > 0) ? (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                {project.cooperatives.map(coopName => (
+                                  <span key={coopName} style={{ fontSize: '0.72rem', padding: '3px 8px', background: '#ecfdf5', borderRadius: '6px', color: '#065f46', border: '1px solid #a7f3d0', fontWeight: 700 }}>
+                                    🏢 {coopName}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic' }}>
+                                {project.engagedCooperatives ? `${project.engagedCooperatives} Partner Cooperatives Engaged` : 'No cooperatives linked yet'}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Interactive Milestones / Deliverables Preview */}
+                          {project.milestones && project.milestones.length > 0 && (
+                            <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '10px', marginBottom: '14px', border: '1.5px solid #e2e8f0' }}>
+                              <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#0f3020', marginBottom: '6px', textTransform: 'uppercase' }}>
+                                Waterfall Deliverables ({project.milestones.filter(m => m.completed).length}/{project.milestones.length})
+                              </div>
+                              {project.milestones.slice(0, 3).map((m, idx) => (
+                                <div
+                                  key={m.id || idx}
+                                  onClick={() => handleToggleMilestone(project, m.id)}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: m.completed ? '#059669' : '#1e293b', cursor: 'pointer', marginBottom: '4px', fontWeight: 600 }}
+                                  title="Click to toggle completion"
+                                >
+                                  <span>{m.completed ? '✅' : '⬜'}</span>
+                                  <span style={{ textDecoration: m.completed ? 'line-through' : 'none' }}>{m.title}</span>
+                                </div>
+                              ))}
+                              {project.milestones.length > 3 && (
+                                <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px', fontWeight: 600 }}>+ {project.milestones.length - 3} more deliverables</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions & Lead */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1.5px solid #f1f5f9', paddingTop: '12px', marginTop: '8px' }}>
+                          <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>Lead: {project.manager || 'Jeroma PM'}</span>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomCoopInput('');
+                                setEditingProject({ ...project });
+                              }}
+                              style={{ padding: '7px 14px', fontSize: '0.8rem', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteProjectClick(project.id)}
+                              style={{ padding: '7px 10px', fontSize: '0.8rem', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* TAB 2: Staff, Positions & Human Resources Hub */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'staff' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
+                <div>
+                  <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.35rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: '0 0 6px 0' }}>
+                    👥 Staff, Positions & HR Hub
+                  </h3>
+                  <p style={{ color: 'var(--color-text-light)', fontSize: '0.875rem', margin: 0 }}>
+                    Manage all personnel across Jeroma: Managing Director, General Manager, Agronomists, Extension Officers, Environment Supervisors, Finance, Factory, and Fleet.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setEditingStaff({
+                    employeeId: generateAutoEmployeeId('PRJ'),
+                    name: '',
+                    title: 'Project Field Lead',
+                    department: 'project/Program manager',
+                    district: '101. Pader',
+                    phone: '+256 77',
+                    email: '',
+                    employmentType: 'Full-Time',
+                    status: 'Active',
+                    responsibilities: 'Cooperative mobilization, field data tracking, seed distribution'
+                  })}
+                  style={{ background: 'var(--color-primary)', color: '#fff', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '8px' }}
+                >
+                  <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>+</span> Register Staff Member
+                </button>
+              </div>
+
+              {/* KPI Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Total Staff</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary-dark)', marginTop: '4px' }}>{staffList.length}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#52b788', marginTop: '2px' }}>{staffList.filter(s => s.status === 'Active').length} Active Employees</div>
+                </div>
+                <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Agronomy & Extension</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#2d6a4f', marginTop: '4px' }}>
+                    {staffList.filter(s => (s.department || '').toLowerCase().includes('agronomy') || (s.department || '').toLowerCase().includes('field')).length}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>Field Officers on Ground</div>
+                </div>
+                <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Operations & Fleet</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1b4332', marginTop: '4px' }}>
+                    {staffList.filter(s => (s.department || '').toLowerCase().includes('factory') || (s.department || '').toLowerCase().includes('fleet') || (s.department || '').toLowerCase().includes('warehouse')).length}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>Processing & Logistics</div>
+                </div>
+                <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Executive & Admin</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#081c15', marginTop: '4px' }}>
+                    {staffList.filter(s => (s.department || '').toLowerCase().includes('executive') || (s.department || '').toLowerCase().includes('finance')).length}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>HQ & Management</div>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search staff by name, employee ID, position, phone..."
+                  value={staffSearch}
+                  onChange={(e) => setStaffSearch(e.target.value)}
+                  className="form-input"
+                  style={{ flex: 1, minWidth: '220px' }}
+                />
+                <select
+                  value={staffDeptFilter}
+                  onChange={(e) => setStaffDeptFilter(e.target.value)}
+                  className="form-input"
+                  style={{ width: 'auto', minWidth: '200px' }}
+                >
+                  <option value="all">All Official Departments (6)</option>
+                  {JEROMA_DEPARTMENTS.map(d => (
+                    <option key={d.id} value={d.name}>🏢 {d.name} ({d.code})</option>
+                  ))}
+                </select>
+                <select
+                  value={staffDistrictFilter}
+                  onChange={(e) => setStaffDistrictFilter(e.target.value)}
+                  className="form-input"
+                  style={{ width: 'auto', minWidth: '180px' }}
+                >
+                  <option value="all">All Stations (146 Districts)</option>
+                  <option value="Headquarters">HQ - Central Office</option>
+                  {UGANDA_DISTRICTS.map(d => (
+                    <option key={d.code} value={d.name}>{d.code}. {d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Edit / Create Staff Member Modal */}
+              {editingStaff && (
+                <div className="glass-panel" style={{ padding: '24px', background: '#faf9f6', borderRadius: '16px', border: '2px solid var(--color-primary)', marginBottom: '28px', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h4 style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '1.15rem', fontWeight: 700 }}>
+                      {editingStaff.id ? `Edit Staff: ${editingStaff.name}` : '👤 Register New Staff Member'}
+                    </h4>
+                    <button type="button" onClick={() => setEditingStaff(null)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+                  </div>
+                  <form onSubmit={handleSaveStaffSubmit}>
+                    <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      {/* Field: Auto Employee ID */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>🆔</span> Auto Employee ID *
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: Auto-Generated ID
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingStaff.employeeId || ''}
+                          onChange={(e) => setEditingStaff({ ...editingStaff, employeeId: e.target.value })}
+                        />
+                      </div>
+
+                      {/* Field: Full Name */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>👤</span> Your Full Name *
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: Official Legal Name
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingStaff.name || ''}
+                          onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })}
+                          placeholder="e.g. Akello Grace"
+                        />
+                      </div>
+
+                      {/* Field: Position / Title */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>💼</span> Position / Role Title *
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: Organizational Title
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingStaff.title || ''}
+                          onChange={(e) => setEditingStaff({ ...editingStaff, title: e.target.value })}
+                          placeholder="e.g. Finance Officer, Projects Lead"
+                        />
+                      </div>
+
+                      {/* Field: Official Department (6 departments) */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>🏢</span> Jeroma Department *
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: 6 Official Units
+                          </span>
+                        </div>
+                        <select
+                          className="form-input"
+                          value={editingStaff.department || 'project/Program manager'}
+                          onChange={(e) => {
+                            const newDept = e.target.value;
+                            const deptObj = JEROMA_DEPARTMENTS.find(d => d.name === newDept);
+                            setEditingStaff({ 
+                              ...editingStaff, 
+                              department: newDept,
+                              employeeId: editingStaff.employeeId?.startsWith('JER-STF-') 
+                                ? generateAutoEmployeeId(deptObj?.code || 'GEN') 
+                                : editingStaff.employeeId
+                            });
+                          }}
+                        >
+                          {JEROMA_DEPARTMENTS.map(d => (
+                            <option key={d.id} value={d.name}>🏢 {d.name} ({d.code})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      {/* Field: Base District (All 146 Districts) */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>📍</span> District / Station in Uganda *
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: Auto-Numbered
+                          </span>
+                        </div>
+                        <select
+                          className="form-input"
+                          value={editingStaff.district || '101. Pader'}
+                          onChange={(e) => setEditingStaff({ ...editingStaff, district: e.target.value })}
+                        >
+                          <option value="Headquarters">HQ - Central Office</option>
+                          {UGANDA_DISTRICTS.map(d => (
+                            <option key={d.code} value={d.code + '. ' + d.name}>{d.code}. {d.name} ({d.region})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Phone Number</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={editingStaff.phone || ''}
+                          onChange={(e) => setEditingStaff({ ...editingStaff, phone: e.target.value })}
+                          placeholder="+256 7..."
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Email Address</label>
+                        <input
+                          type="email"
+                          className="form-input"
+                          value={editingStaff.email || ''}
+                          onChange={(e) => setEditingStaff({ ...editingStaff, email: e.target.value })}
+                          placeholder="staff@jeromafarmers.com"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Employment Type</label>
+                        <select
+                          className="form-input"
+                          value={editingStaff.employmentType || 'Full-Time'}
+                          onChange={(e) => setEditingStaff({ ...editingStaff, employmentType: e.target.value })}
+                        >
+                          <option value="Full-Time">Full-Time</option>
+                          <option value="Contract">Contract</option>
+                          <option value="Seasonal">Seasonal</option>
+                          <option value="Intern">Intern</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Status</label>
+                        <select
+                          className="form-input"
+                          value={editingStaff.status || 'Active'}
+                          onChange={(e) => setEditingStaff({ ...editingStaff, status: e.target.value })}
+                        >
+                          <option value="Active">Active</option>
+                          <option value="On Leave">On Leave</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '16px' }}>
+                      <label>Key Responsibilities</label>
+                      <textarea
+                        className="form-input"
+                        rows="2"
+                        value={editingStaff.responsibilities || ''}
+                        onChange={(e) => setEditingStaff({ ...editingStaff, responsibilities: e.target.value })}
+                        placeholder="Brief summary of duties and operational jurisdiction..."
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button type="submit" disabled={isSavingStaff} className="btn btn-primary" style={{ padding: '10px 24px' }}>
+                        {isSavingStaff ? 'Saving...' : '💾 Save Staff Record'}
+                      </button>
+                      <button type="button" onClick={() => setEditingStaff(null)} className="btn btn-secondary" style={{ padding: '10px 18px' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Staff Table */}
+              <div style={{ overflowX: 'auto', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                      <th style={{ padding: '12px 16px' }}>Staff Member</th>
+                      <th style={{ padding: '12px 16px' }}>Position & Department</th>
+                      <th style={{ padding: '12px 16px' }}>Station</th>
+                      <th style={{ padding: '12px 16px' }}>Phone / Email</th>
+                      <th style={{ padding: '12px 16px' }}>Type</th>
+                      <th style={{ padding: '12px 16px' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffList
+                      .filter(s => {
+                        const matchSearch = !staffSearch ||
+                          (s.name || '').toLowerCase().includes(staffSearch.toLowerCase()) ||
+                          (s.employeeId || '').toLowerCase().includes(staffSearch.toLowerCase()) ||
+                          (s.title || '').toLowerCase().includes(staffSearch.toLowerCase()) ||
+                          (s.phone || '').includes(staffSearch);
+                        const matchDept = staffDeptFilter === 'all' || s.department === staffDeptFilter;
+                        const matchDistrict = staffDistrictFilter === 'all' || s.district === staffDistrictFilter;
+                        return matchSearch && matchDept && matchDistrict;
+                      })
+                      .map(staff => (
+                        <tr key={staff.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--color-primary-dark)' }}>{staff.name}</div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{staff.employeeId}</div>
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ fontWeight: 600 }}>{staff.title}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-primary)' }}>{staff.department}</div>
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#f1f5f9', fontSize: '0.75rem' }}>
+                              📍 {staff.district || 'Headquarters'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <div><a href={`tel:${staff.phone}`} style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>{staff.phone || '—'}</a></div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{staff.email || ''}</div>
+                          </td>
+                          <td style={{ padding: '12px 16px', fontSize: '0.75rem' }}>{staff.employmentType || 'Full-Time'}</td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <span style={{
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              background: staff.status === 'Active' ? '#e8f5e9' : '#fff7ed',
+                              color: staff.status === 'Active' ? '#2e7d32' : '#c2410c'
+                            }}>
+                              {staff.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              onClick={() => setEditingStaff({ ...staff })}
+                              style={{ padding: '4px 8px', fontSize: '0.75rem', background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '6px' }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteStaffClick(staff.id)}
+                              style={{ padding: '4px 6px', fontSize: '0.75rem', background: 'rgba(217,4,41,0.08)', color: '#d90429', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* TAB 3: Cooperatives, SACCOs & Machinery Hub */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'cooperatives' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
+                <div>
+                  <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.35rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: '0 0 6px 0' }}>
+                    🤝 Cooperatives & SACCOs Directory
+                  </h3>
+                  <p style={{ color: 'var(--color-text-light)', fontSize: '0.875rem', margin: 0 }}>
+                    Profile, monitor and coordinate partner farming cooperatives across the 7 northern districts with member demographics, acreage, and allocated machinery.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleExportCoopsCsv}
+                    className="btn btn-secondary"
+                    style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    📥 Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setEditingCooperative({
+                      code: generateAutoCoopCode('Pader'),
+                      name: '',
+                      district: '101. Pader',
+                      subcounty: '',
+                      contactPerson: '',
+                      phone: '+256 77',
+                      membersCount: 40,
+                      femaleMembers: 20,
+                      youthMembers: 15,
+                      totalAcreage: 80,
+                      cropsSpecialization: ['Sunflower', 'Soya Beans'],
+                      machineryAllocated: [],
+                      status: 'Active'
+                    })}
+                    style={{ background: 'var(--color-primary)', color: '#fff', padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '8px' }}
+                  >
+                    <span style={{ fontSize: '1.1rem', fontWeight: 700 }}>+</span> Register Cooperative
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Partner Cooperatives</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary-dark)', marginTop: '4px' }}>{cooperativesList.length}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#52b788', marginTop: '2px' }}>Across 7 Districts</div>
+                </div>
+                <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Total Farmer Members</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#2d6a4f', marginTop: '4px' }}>
+                    {cooperativesList.reduce((acc, c) => acc + (Number(c.membersCount) || 0), 0).toLocaleString()}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>
+                    Female: {cooperativesList.reduce((acc, c) => acc + (Number(c.femaleMembers) || 0), 0).toLocaleString()} | Youth: {cooperativesList.reduce((acc, c) => acc + (Number(c.youthMembers) || 0), 0).toLocaleString()}
+                  </div>
+                </div>
+                <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Total Acreage Under Management</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1b4332', marginTop: '4px' }}>
+                    {cooperativesList.reduce((acc, c) => acc + (Number(c.totalAcreage) || 0), 0).toLocaleString()} Acres
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>Commercial Oilseed & Grain</div>
+                </div>
+                <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Machinery Assets</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#081c15', marginTop: '4px' }}>
+                    {machineryList.length}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>
+                    {machineryList.filter(m => m.status === 'Operational' || m.status === 'Deployed').length} Deployed in Field
+                  </div>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search cooperatives by name, code, contact person, phone..."
+                  value={coopSearch}
+                  onChange={(e) => setCoopSearch(e.target.value)}
+                  className="form-input"
+                  style={{ flex: 1, minWidth: '220px' }}
+                />
+                <select
+                  value={coopDistrictFilter}
+                  onChange={(e) => setCoopDistrictFilter(e.target.value)}
+                  className="form-input"
+                  style={{ width: 'auto', minWidth: '180px' }}
+                >
+                  <option value="all">All Operational Districts (146)</option>
+                  {UGANDA_DISTRICTS.map(d => (
+                    <option key={d.code} value={d.name}>{d.code}. {d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Cooperative Edit/Create Form */}
+              {editingCooperative && (
+                <div className="glass-panel" style={{ padding: '24px', background: '#faf9f6', borderRadius: '16px', border: '2px solid var(--color-primary)', marginBottom: '28px', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h4 style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '1.15rem', fontWeight: 700 }}>
+                      {editingCooperative.id ? `Edit Cooperative: ${editingCooperative.name}` : '🤝 Register New Cooperative / SACCO'}
+                    </h4>
+                    <button type="button" onClick={() => setEditingCooperative(null)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+                  </div>
+                  <form onSubmit={handleSaveCoopSubmit}>
+                    <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      {/* Field: Auto Cooperative Code */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>🆔</span> Auto Cooperative Code *
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: Auto-Numbered Code
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingCooperative.code || ''}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, code: e.target.value })}
+                        />
+                      </div>
+
+                      {/* Field: Cooperative Name */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>🤝</span> Cooperative / SACCO Name *
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: Registered Society Name
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          className="form-input"
+                          value={editingCooperative.name || ''}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, name: e.target.value })}
+                          placeholder="e.g. Pajule Oilseed Farmers Cooperative"
+                        />
+                      </div>
+
+                      {/* Field: District in Uganda (All 146 Districts) */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>📍</span> District in Uganda (146 Districts) *
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: Select Registered Base
+                          </span>
+                        </div>
+                        <select
+                          className="form-input"
+                          value={editingCooperative.district || '101. Pader'}
+                          onChange={(e) => {
+                            const newDist = e.target.value;
+                            setEditingCooperative({ 
+                              ...editingCooperative, 
+                              district: newDist,
+                              code: editingCooperative.code?.startsWith('COP-') 
+                                ? generateAutoCoopCode(newDist) 
+                                : editingCooperative.code
+                            });
+                          }}
+                        >
+                          {UGANDA_DISTRICTS.map(d => (
+                            <option key={d.code} value={d.code + '. ' + d.name}>{d.code}. {d.name} ({d.region})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Field: Subcounty & Parish */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>🗺️</span> Subcounty / Parish
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: LC3 / Local Area
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={editingCooperative.subcounty || ''}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, subcounty: e.target.value })}
+                          placeholder="e.g. Pajule Subcounty"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                      {/* Field: Chairperson */}
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>👤</span> Chairperson / Contact Person
+                          </label>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                            Guide: Executive Contact
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={editingCooperative.contactPerson || ''}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, contactPerson: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Phone Number</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={editingCooperative.phone || ''}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, phone: e.target.value })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Total Farmer Members</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={editingCooperative.membersCount || 0}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, membersCount: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Female Members</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={editingCooperative.femaleMembers || 0}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, femaleMembers: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Youth Members</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={editingCooperative.youthMembers || 0}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, youthMembers: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Total Acreage (Acres)</label>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={editingCooperative.totalAcreage || 0}
+                          onChange={(e) => setEditingCooperative({ ...editingCooperative, totalAcreage: Number(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Crops specializations */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem' }}>
+                        Crops Specialization:
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {['Sunflower', 'Soya Beans', 'Maize', 'Sorghum', 'Sesame (Simsim)', 'Agroforestry Trees'].map(c => {
+                          const active = (editingCooperative.cropsSpecialization || []).includes(c);
+                          return (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => {
+                                const current = editingCooperative.cropsSpecialization || [];
+                                const next = active ? current.filter(x => x !== c) : [...current, c];
+                                setEditingCooperative({ ...editingCooperative, cropsSpecialization: next });
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: '16px',
+                                fontSize: '0.78rem',
+                                border: '1px solid',
+                                borderColor: active ? '#2d6a4f' : '#ccc',
+                                background: active ? '#2d6a4f' : '#fff',
+                                color: active ? '#fff' : 'inherit',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {active ? '✓ ' : '+ '} {c}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <button type="submit" disabled={isSavingCoop} className="btn btn-primary" style={{ padding: '10px 24px' }}>
+                        {isSavingCoop ? 'Saving...' : '💾 Save Cooperative'}
+                      </button>
+                      <button type="button" onClick={() => setEditingCooperative(null)} className="btn btn-secondary" style={{ padding: '10px 18px' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Cooperatives Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                {cooperativesList
+                  .filter(c => {
+                    const matchSearch = !coopSearch ||
+                      (c.name || '').toLowerCase().includes(coopSearch.toLowerCase()) ||
+                      (c.code || '').toLowerCase().includes(coopSearch.toLowerCase()) ||
+                      (c.contactPerson || '').toLowerCase().includes(coopSearch.toLowerCase()) ||
+                      (c.phone || '').includes(coopSearch);
+                    const matchDistrict = coopDistrictFilter === 'all' || c.district === coopDistrictFilter;
+                    return matchSearch && matchDistrict;
+                  })
+                  .map(coop => (
+                    <div
+                      key={coop.id}
+                      className="glass-panel"
+                      style={{
+                        padding: '20px',
+                        background: '#fff',
+                        borderRadius: '14px',
+                        border: '1px solid rgba(0,0,0,0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.03)'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: 'rgba(27,67,50,0.1)', color: 'var(--color-primary-dark)' }}>
+                            {coop.code}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>
+                            📍 <strong>{coop.district}</strong> {coop.subcounty ? `(${coop.subcounty})` : ''}
+                          </span>
+                        </div>
+
+                        <h4 style={{ margin: '0 0 10px 0', fontSize: '1.15rem', color: 'var(--color-primary-dark)', fontWeight: 700 }}>
+                          {coop.name}
+                        </h4>
+
+                        <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '8px' }}>
+                          <strong>Chairperson:</strong> {coop.contactPerson || 'N/A'}{' '}
+                          {coop.phone && (
+                            <a href={`tel:${coop.phone}`} style={{ color: 'var(--color-primary)', textDecoration: 'none', marginLeft: '6px' }}>
+                              📞 {coop.phone}
+                            </a>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', background: '#f8fafc', padding: '10px', borderRadius: '8px', margin: '12px 0', textAlign: 'center' }}>
+                          <div>
+                            <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Members</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{coop.membersCount || 0}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Women / Youth</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#059669' }}>
+                              {coop.femaleMembers || 0} / {coop.youthMembers || 0}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Acreage</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1b4332' }}>{coop.totalAcreage || 0} Ac</div>
+                          </div>
+                        </div>
+
+                        {/* Crops Specialization */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                          {(coop.cropsSpecialization || []).map(crop => (
+                            <span key={crop} style={{ fontSize: '0.7rem', padding: '2px 8px', background: '#ecfdf5', color: '#065f46', borderRadius: '12px', border: '1px solid #a7f3d0' }}>
+                              🌾 {crop}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid #f0f0f0', paddingTop: '12px', marginTop: '12px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setEditingCooperative({ ...coop })}
+                          style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                        >
+                              ✏️ Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCoopClick(coop.id)}
+                          style={{ padding: '6px 10px', fontSize: '0.78rem', background: 'rgba(217,4,41,0.08)', color: '#d90429', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Machinery & Technology Pool */}
+              <div style={{ borderTop: '2px dashed #cbd5e1', paddingTop: '28px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', color: 'var(--color-primary-dark)', fontWeight: 700 }}>
+                      🚜 Agricultural Machinery & Equipment Pool
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                      Allocations of tractors, grain threshers, mobile dryers, and moisture meters across cooperatives and district hubs.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingMachinery({
+                      assetCode: 'MCH-' + Math.floor(100 + Math.random() * 900),
+                      name: '',
+                      type: 'Tractor',
+                      status: 'Operational',
+                      allocatedTo: '',
+                      district: 'Pader',
+                      operator: '',
+                      condition: 'Good'
+                    })}
+                    style={{ padding: '8px 16px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                  >
+                    + Add Machinery Asset
+                  </button>
+                </div>
+
+                {/* Edit Machinery Form */}
+                {editingMachinery && (
+                  <div className="glass-panel" style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1', marginBottom: '20px' }}>
+                    <form onSubmit={handleSaveMachinerySubmit}>
+                      <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                        <div className="form-group">
+                          <label>Asset Code</label>
+                          <input
+                            type="text"
+                            required
+                            className="form-input"
+                            value={editingMachinery.assetCode || ''}
+                            onChange={(e) => setEditingMachinery({ ...editingMachinery, assetCode: e.target.value })}
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Asset Name / Model</label>
+                          <input
+                            type="text"
+                            required
+                            className="form-input"
+                            value={editingMachinery.name || ''}
+                            onChange={(e) => setEditingMachinery({ ...editingMachinery, name: e.target.value })}
+                            placeholder="e.g. Massey Ferguson 375 Tractor"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Equipment Type</label>
+                          <select
+                            className="form-input"
+                            value={editingMachinery.type || 'Tractor'}
+                            onChange={(e) => setEditingMachinery({ ...editingMachinery, type: e.target.value })}
+                          >
+                            <option value="Tractor">Tractor</option>
+                            <option value="Grain Thresher">Grain Thresher</option>
+                            <option value="Multi-Crop Planter">Multi-Crop Planter</option>
+                            <option value="Mobile Solar Dryer">Mobile Solar Dryer</option>
+                            <option value="Moisture Meter">Moisture Meter</option>
+                            <option value="Transit Truck">Transit Truck</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Deployment Status</label>
+                          <select
+                            className="form-input"
+                            value={editingMachinery.status || 'Operational'}
+                            onChange={(e) => setEditingMachinery({ ...editingMachinery, status: e.target.value })}
+                          >
+                            <option value="Operational">Operational</option>
+                            <option value="Deployed">Deployed to Cooperative</option>
+                            <option value="Maintenance">Under Maintenance</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label>Allocated Cooperative / Depot</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={editingMachinery.allocatedTo || ''}
+                            onChange={(e) => setEditingMachinery({ ...editingMachinery, allocatedTo: e.target.value })}
+                            placeholder="Cooperative name or Pader Central Depot"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Base District</label>
+                          <select
+                            className="form-input"
+                            value={editingMachinery.district || 'Pader'}
+                            onChange={(e) => setEditingMachinery({ ...editingMachinery, district: e.target.value })}
+                          >
+                            {['Pader', 'Agago', 'Kitgum', 'Abim', 'Karenga', 'Lira', 'Kole'].map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button type="submit" disabled={isSavingMachinery} className="btn btn-primary" style={{ padding: '8px 18px', fontSize: '0.8rem' }}>
+                          💾 Save Asset
+                        </button>
+                        <button type="button" onClick={() => setEditingMachinery(null)} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: '0.8rem' }}>
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* Machinery Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+                  {machineryList.map(mach => (
+                    <div key={mach.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '1rem' }}>🚜</span>
+                          <strong>{mach.name}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                          {mach.assetCode} • {mach.type} • 📍 {mach.district}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#334155', marginTop: '4px' }}>
+                          Assigned: <strong>{mach.allocatedTo || 'Central Depot'}</strong>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          background: mach.status === 'Operational' || mach.status === 'Deployed' ? '#ecfdf5' : '#fff7ed',
+                          color: mach.status === 'Operational' || mach.status === 'Deployed' ? '#059669' : '#c2410c'
+                        }}>
+                          {mach.status}
+                        </span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setEditingMachinery({ ...mach })}
+                            style={{ padding: '3px 8px', fontSize: '0.72rem', background: '#e0f2fe', color: '#0284c7', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMachineryClick(mach.id)}
+                            style={{ padding: '3px 6px', fontSize: '0.72rem', background: 'rgba(217,4,41,0.08)', color: '#d90429', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* TAB 4: Departmental Operations Hub */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'departments' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.35rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: '0 0 6px 0' }}>
+                    🏢 Departmental Operations Hub
+                  </h3>
+                  <p style={{ color: 'var(--color-text-light)', fontSize: '0.875rem', margin: 0 }}>
+                    Integrated workflow management for Finance, Environment & Tree Propagation Nurseries, and General Management.
+                  </p>
+                </div>
+                {/* Subtab Switcher */}
+                <div style={{ display: 'flex', gap: '6px', background: '#e2e8f0', padding: '4px', borderRadius: '10px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: 'overview', label: '🏢 Official Departments (6) & Roles' },
+                    { id: 'finance', label: '💰 Finance & Disbursements' },
+                    { id: 'environment', label: '🌱 Environment & Nurseries' },
+                    { id: 'general', label: '📜 Strategic Governance' }
+                  ].map(sub => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setDeptActiveSubtab(sub.id)}
+                      style={{
+                        padding: '8px 16px',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '0.825rem',
+                        fontWeight: deptActiveSubtab === sub.id ? 700 : 500,
+                        background: deptActiveSubtab === sub.id ? '#fff' : 'transparent',
+                        color: deptActiveSubtab === sub.id ? 'var(--color-primary-dark)' : '#475569',
+                        boxShadow: deptActiveSubtab === sub.id ? '0 2px 5px rgba(0,0,0,0.08)' : 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {sub.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* SUBTAB 0: OFFICIAL DEPARTMENTS (6) & ROLES DIRECTORY */}
+              {deptActiveSubtab === 'overview' && (
+                <div>
+                  <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <h4 style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '1.2rem', fontWeight: 800 }}>
+                          🏛️ Official Organization Structure & Department Roles (6 Departments)
+                        </h4>
+                        <p style={{ margin: '4px 0 0 0', color: 'var(--color-text-light)', fontSize: '0.85rem' }}>
+                          Each department possesses assigned operational mandates, auto-numbered employee codes, and strict role-based access permissions.
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', borderRadius: '6px', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+                          ✓ RBAC Access Control Active
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 6 Department Cards Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '18px', marginBottom: '24px' }}>
+                    {JEROMA_DEPARTMENTS.map(dept => {
+                      const staffInDept = staffList.filter(s => (s.department || '').toLowerCase() === dept.name.toLowerCase() || (s.department || '').toLowerCase() === dept.id.toLowerCase());
+                      return (
+                        <div 
+                          key={dept.id} 
+                          className="glass-panel" 
+                          style={{ 
+                            background: '#fff', 
+                            borderRadius: '14px', 
+                            border: '1.5px solid #e2e8f0', 
+                            padding: '20px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                              <span style={{ 
+                                fontSize: '0.75rem', 
+                                fontWeight: 800, 
+                                padding: '3px 10px', 
+                                borderRadius: '6px', 
+                                background: dept.badgeColor, 
+                                color: '#fff',
+                                textTransform: 'uppercase'
+                              }}>
+                                {dept.code}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>
+                                👥 {staffInDept.length} Personnel
+                              </span>
+                            </div>
+
+                            <h4 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', color: 'var(--color-primary-dark)', fontWeight: 800 }}>
+                              {dept.name}
+                            </h4>
+                            <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 700, marginBottom: '8px' }}>
+                              Lead Role: {dept.roleTitle}
+                            </div>
+                            <p style={{ fontSize: '0.825rem', color: '#475569', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+                              {dept.description}
+                            </p>
+                          </div>
+
+                          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '10px' }}>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '6px' }}>
+                              Allowed Access Controls:
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                              {dept.permissions.map(perm => (
+                                <span key={perm} style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#334155' }}>
+                                  ✓ {perm}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* SUBTAB 1: FINANCE */}
+              {deptActiveSubtab === 'finance' && (
+                <div>
+                  {/* Finance KPI Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                    <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Total Inflows / Revenue</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#059669', marginTop: '4px' }}>
+                        UGX {financialRecords.filter(f => f.type === 'Revenue').reduce((acc, f) => acc + (Number(f.amount) || 0), 0).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>Grain Sales & Donor Inflows</div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Total Expenditures</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#d90429', marginTop: '4px' }}>
+                        UGX {financialRecords.filter(f => f.type === 'Expense').reduce((acc, f) => acc + (Number(f.amount) || 0), 0).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>Operations & Inputs</div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Seed Subsidies Disbursed</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#7c3aed', marginTop: '4px' }}>
+                        UGX {financialRecords.filter(f => f.category === 'Seed Subsidy' || f.type === 'Disbursement').reduce((acc, f) => acc + (Number(f.amount) || 0), 0).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>Farmer Group Co-shares</div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Ledger Transactions</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-primary-dark)', marginTop: '4px' }}>
+                        {financialRecords.length}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#52b788', marginTop: '2px' }}>Verified Financial Logs</div>
+                    </div>
+                  </div>
+
+                  {/* Actions & Filters */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <select
+                        value={financeTypeFilter}
+                        onChange={(e) => setFinanceTypeFilter(e.target.value)}
+                        className="form-input"
+                        style={{ width: 'auto', minWidth: '130px' }}
+                      >
+                        <option value="all">All Types</option>
+                        <option value="Disbursement">Disbursement</option>
+                        <option value="Expense">Expense</option>
+                        <option value="Revenue">Revenue</option>
+                      </select>
+                      <select
+                        value={financeCategoryFilter}
+                        onChange={(e) => setFinanceCategoryFilter(e.target.value)}
+                        className="form-input"
+                        style={{ width: 'auto', minWidth: '150px' }}
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="Seed Subsidy">Seed Subsidy</option>
+                        <option value="Farmer Payout">Farmer Payout</option>
+                        <option value="Logistics & Fuel">Logistics & Fuel</option>
+                        <option value="Tree Nurseries">Tree Nurseries</option>
+                        <option value="Operations">Operations</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={handleExportFinanceCsv}
+                        className="btn btn-secondary"
+                        style={{ padding: '8px 14px', fontSize: '0.8rem' }}
+                      >
+                        📥 Export Ledger (CSV)
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => setEditingFinanceRecord({
+                          refId: 'TXN-' + Math.floor(1000 + Math.random() * 9000),
+                          date: new Date().toISOString().slice(0, 10),
+                          type: 'Disbursement',
+                          category: 'Seed Subsidy',
+                          description: '',
+                          amount: 500000,
+                          recipientOrSource: '',
+                          projectCode: 'PRJ-A2I-2024',
+                          status: 'Completed'
+                        })}
+                        style={{ padding: '8px 16px', fontSize: '0.8rem', background: 'var(--color-primary)', color: '#fff' }}
+                      >
+                        + Log Financial Entry
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Create / Edit Finance Entry */}
+                  {editingFinanceRecord && (
+                    <div className="glass-panel" style={{ padding: '20px', background: '#faf9f6', borderRadius: '14px', border: '2px solid var(--color-primary)', marginBottom: '20px' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '1.05rem', color: 'var(--color-primary-dark)' }}>
+                        {editingFinanceRecord.id ? 'Edit Transaction' : '💰 Log New Financial Transaction'}
+                      </h4>
+                      <form onSubmit={handleSaveFinanceSubmit}>
+                        <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                          <div className="form-group">
+                            <label>Ref / Voucher No *</label>
+                            <input
+                              type="text"
+                              required
+                              className="form-input"
+                              value={editingFinanceRecord.refId || ''}
+                              onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, refId: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Date *</label>
+                            <input
+                              type="date"
+                              required
+                              className="form-input"
+                              value={editingFinanceRecord.date || ''}
+                              onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, date: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Type</label>
+                            <select
+                              className="form-input"
+                              value={editingFinanceRecord.type || 'Disbursement'}
+                              onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, type: e.target.value })}
+                            >
+                              <option value="Disbursement">Disbursement</option>
+                              <option value="Expense">Expense</option>
+                              <option value="Revenue">Revenue</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label>Category</label>
+                            <select
+                              className="form-input"
+                              value={editingFinanceRecord.category || 'Seed Subsidy'}
+                              onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, category: e.target.value })}
+                            >
+                              <option value="Seed Subsidy">Seed Subsidy</option>
+                              <option value="Farmer Payout">Farmer Payout</option>
+                              <option value="Logistics & Fuel">Logistics & Fuel</option>
+                              <option value="Tree Nurseries">Tree Nurseries</option>
+                              <option value="Machinery Repair">Machinery Repair</option>
+                              <option value="Operations">Operations</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label>Amount (UGX) *</label>
+                            <input
+                              type="number"
+                              required
+                              className="form-input"
+                              value={editingFinanceRecord.amount || 0}
+                              onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, amount: Number(e.target.value) })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                          <div className="form-group">
+                            <label>Recipient / Source</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={editingFinanceRecord.recipientOrSource || ''}
+                              onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, recipientOrSource: e.target.value })}
+                              placeholder="e.g. Pajule Farmers SACCO / Total Energies"
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Linked Project Code</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={editingFinanceRecord.projectCode || ''}
+                              onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, projectCode: e.target.value })}
+                              placeholder="e.g. PRJ-A2I-2024"
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Status</label>
+                            <select
+                              className="form-input"
+                              value={editingFinanceRecord.status || 'Completed'}
+                              onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, status: e.target.value })}
+                            >
+                              <option value="Completed">Completed</option>
+                              <option value="Pending Approval">Pending Approval</option>
+                              <option value="Processing">Processing</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: '12px' }}>
+                          <label>Description & Purpose</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={editingFinanceRecord.description || ''}
+                            onChange={(e) => setEditingFinanceRecord({ ...editingFinanceRecord, description: e.target.value })}
+                            placeholder="Brief description of the voucher or transaction..."
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button type="submit" disabled={isSavingFinance} className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.8rem' }}>
+                            💾 Save Entry
+                          </button>
+                          <button type="button" onClick={() => setEditingFinanceRecord(null)} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: '0.8rem' }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Financial Ledger Table */}
+                  <div style={{ overflowX: 'auto', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
+                          <th style={{ padding: '12px 14px' }}>Voucher Ref</th>
+                          <th style={{ padding: '12px 14px' }}>Date</th>
+                          <th style={{ padding: '12px 14px' }}>Type & Category</th>
+                          <th style={{ padding: '12px 14px' }}>Description</th>
+                          <th style={{ padding: '12px 14px' }}>Recipient / Source</th>
+                          <th style={{ padding: '12px 14px' }}>Amount (UGX)</th>
+                          <th style={{ padding: '12px 14px' }}>Project</th>
+                          <th style={{ padding: '12px 14px', textAlign: 'right' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {financialRecords
+                          .filter(f => {
+                            const matchType = financeTypeFilter === 'all' || f.type === financeTypeFilter;
+                            const matchCat = financeCategoryFilter === 'all' || f.category === financeCategoryFilter;
+                            return matchType && matchCat;
+                          })
+                          .map(f => (
+                            <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '10px 14px', fontWeight: 600 }}>{f.refId || f.id}</td>
+                              <td style={{ padding: '10px 14px', color: '#64748b' }}>{f.date}</td>
+                              <td style={{ padding: '10px 14px' }}>
+                                <span style={{
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  padding: '2px 8px',
+                                  borderRadius: '10px',
+                                  background: f.type === 'Revenue' ? '#ecfdf5' : f.type === 'Disbursement' ? '#f5f3ff' : '#fef2f2',
+                                  color: f.type === 'Revenue' ? '#059669' : f.type === 'Disbursement' ? '#7c3aed' : '#dc2626'
+                                }}>
+                                  {f.type}
+                                </span>
+                                <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>{f.category}</div>
+                              </td>
+                              <td style={{ padding: '10px 14px' }}>{f.description}</td>
+                              <td style={{ padding: '10px 14px', color: '#334155' }}>{f.recipientOrSource || '—'}</td>
+                              <td style={{ padding: '10px 14px', fontWeight: 700, color: f.type === 'Revenue' ? '#059669' : 'inherit' }}>
+                                UGX {Number(f.amount || 0).toLocaleString()}
+                              </td>
+                              <td style={{ padding: '10px 14px', fontSize: '0.75rem', color: 'var(--color-primary)' }}>{f.projectCode || 'Internal'}</td>
+                              <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteFinanceClick(f.id)}
+                                  style={{ padding: '3px 6px', fontSize: '0.72rem', background: 'rgba(217,4,41,0.08)', color: '#d90429', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                >
+                                  ✕
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SUBTAB 2: ENVIRONMENT & TREE NURSERIES */}
+              {deptActiveSubtab === 'environment' && (
+                <div>
+                  {/* Environment KPIs */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                    <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Active District Nurseries</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#2d6a4f', marginTop: '4px' }}>{nurseriesList.length}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#52b788', marginTop: '2px' }}>Covering all 7 Districts</div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Total Seedlings In Stock</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-primary-dark)', marginTop: '4px' }}>
+                        {nurseriesList.reduce((acc, n) => acc + (Number(n.currentStock) || 0), 0).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>
+                        Capacity: {nurseriesList.reduce((acc, n) => acc + (Number(n.capacity) || 0), 0).toLocaleString()} Seedlings
+                      </div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Seedlings Distributed</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#059669', marginTop: '4px' }}>
+                        {nurseriesList.reduce((acc, n) => acc + (Number(n.distributed) || 0), 0).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>Planted with Smallholders</div>
+                    </div>
+                    <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                      <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Reforestation Interventions</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1b4332', marginTop: '4px' }}>
+                        350+ Ha
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>Indigenous & Agroforestry Canopy</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-primary-dark)' }}>
+                      🌲 Commercial & Conservation Tree Propagation Sites
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setEditingNursery({
+                        name: '',
+                        district: 'Pader',
+                        location: '',
+                        supervisor: '',
+                        phone: '+256 7',
+                        species: ['Mahogany', 'Musizi', 'Grevillea', 'Fruit Trees'],
+                        capacity: 25000,
+                        currentStock: 12000,
+                        distributed: 8000,
+                        irrigation: 'Solar-Powered Drip'
+                      })}
+                      style={{ padding: '8px 16px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                    >
+                      + Add Nursery Station
+                    </button>
+                  </div>
+
+                  {/* Nursery Edit Form */}
+                  {editingNursery && (
+                    <div className="glass-panel" style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1', marginBottom: '20px' }}>
+                      <form onSubmit={handleSaveNurserySubmit}>
+                        <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                          <div className="form-group">
+                            <label>Nursery Station Name *</label>
+                            <input
+                              type="text"
+                              required
+                              className="form-input"
+                              value={editingNursery.name || ''}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, name: e.target.value })}
+                              placeholder="e.g. Pader Central Commercial Tree Nursery"
+                            />
+                          </div>
+                          <div className="form-group">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase' }}>
+                                📍 Nursery District in Uganda *
+                              </label>
+                              <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
+                                Guide: 146 Districts
+                              </span>
+                            </div>
+                            <select
+                              className="form-input"
+                              value={editingNursery.district || '101. Pader'}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, district: e.target.value })}
+                            >
+                              {UGANDA_DISTRICTS.map(d => (
+                                <option key={d.code} value={d.code + '. ' + d.name}>{d.code}. {d.name} ({d.region})</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label>Location / Subcounty</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={editingNursery.location || ''}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, location: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Supervisor Name</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={editingNursery.supervisor || ''}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, supervisor: e.target.value })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Supervisor Phone</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={editingNursery.phone || ''}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, phone: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                          <div className="form-group">
+                            <label>Total Capacity (Seedlings)</label>
+                            <input
+                              type="number"
+                              className="form-input"
+                              value={editingNursery.capacity || 0}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, capacity: Number(e.target.value) })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Current Stock</label>
+                            <input
+                              type="number"
+                              className="form-input"
+                              value={editingNursery.currentStock || 0}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, currentStock: Number(e.target.value) })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Seedlings Distributed to Date</label>
+                            <input
+                              type="number"
+                              className="form-input"
+                              value={editingNursery.distributed || 0}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, distributed: Number(e.target.value) })}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Irrigation System</label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={editingNursery.irrigation || ''}
+                              onChange={(e) => setEditingNursery({ ...editingNursery, irrigation: e.target.value })}
+                              placeholder="e.g. Solar Drip & Borehole"
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button type="submit" disabled={isSavingNursery} className="btn btn-primary" style={{ padding: '8px 18px', fontSize: '0.8rem' }}>
+                            💾 Save Nursery
+                          </button>
+                          <button type="button" onClick={() => setEditingNursery(null)} className="btn btn-secondary" style={{ padding: '8px 14px', fontSize: '0.8rem' }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Nursery Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
+                    {nurseriesList.map(nursery => (
+                      <div key={nursery.id} className="glass-panel" style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#065f46' }}>
+                            📍 {nursery.district} District
+                          </span>
+                          <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{nursery.irrigation || 'Irrigated'}</span>
+                        </div>
+                        <h4 style={{ margin: '0 0 6px 0', fontSize: '1.05rem', color: 'var(--color-primary-dark)' }}>{nursery.name}</h4>
+                        <div style={{ fontSize: '0.8rem', color: '#555', marginBottom: '10px' }}>
+                          Supervisor: <strong>{nursery.supervisor || 'Officer in Charge'}</strong> {nursery.phone ? `(${nursery.phone})` : ''}
+                        </div>
+
+                        <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', marginBottom: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '4px' }}>
+                            <span>Stock Utilization:</span>
+                            <strong>{(nursery.currentStock || 0).toLocaleString()} / {(nursery.capacity || 0).toLocaleString()} ({Math.round(((nursery.currentStock || 0) / (nursery.capacity || 1)) * 100)}%)</strong>
+                          </div>
+                          <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${Math.min(100, Math.round(((nursery.currentStock || 0) / (nursery.capacity || 1)) * 100))}%`, height: '100%', background: '#10b981' }} />
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '6px' }}>
+                            Distributed to Smallholders: <strong>{(nursery.distributed || 0).toLocaleString()} seedlings</strong>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
+                          {(nursery.species || []).map(sp => (
+                            <span key={sp} style={{ fontSize: '0.68rem', padding: '2px 6px', background: '#f1f5f9', borderRadius: '4px', color: '#334155' }}>
+                              🌱 {sp}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setEditingNursery({ ...nursery })}
+                            style={{ padding: '4px 10px', fontSize: '0.75rem', background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            ✏️ Update Nursery Log
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SUBTAB 3: GENERAL MANAGEMENT */}
+              {deptActiveSubtab === 'general' && (
+                <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '24px' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', color: 'var(--color-primary-dark)', fontWeight: 700 }}>
+                    🏛️ General Management & Strategic Direction
+                  </h4>
+                  <p style={{ color: '#475569', fontSize: '0.875rem', margin: '0 0 20px 0' }}>
+                    Executive governance overview, strategic partnerships, and organizational compliance benchmarks for Jeroma Enterprises.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                      <h5 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', color: 'var(--color-primary-dark)' }}>🤝 Strategic Institutional Partners</h5>
+                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.825rem', color: '#334155', lineHeight: 1.6 }}>
+                        <li><strong>Danish Government / Danida:</strong> Access to Innovation (A2I) smallholder funding.</li>
+                        <li><strong>NARO Uganda:</strong> Certified Foundation Seed (NARO-SUN series & Maksoy).</li>
+                        <li><strong>Ministry of Agriculture (MAAIF):</strong> Agroforestry & extension compliance.</li>
+                        <li><strong>Acholi & Lango Local Governments:</strong> 7 District Commercial Offices.</li>
+                      </ul>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                      <h5 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', color: 'var(--color-primary-dark)' }}>🌱 ESG & Environmental Commitments</h5>
+                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.825rem', color: '#334155', lineHeight: 1.6 }}>
+                        <li>1 Million Commercial & Indigenous Tree Seedlings Propagation Target.</li>
+                        <li>Soil regenerative agriculture & zero-deforestation grain sourcing.</li>
+                        <li>Eco-friendly biofertilizer and solar-assisted grain drying infrastructure.</li>
+                      </ul>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                      <h5 style={{ margin: '0 0 10px 0', fontSize: '0.95rem', color: 'var(--color-primary-dark)' }}>📋 Governance & Operational SOPs</h5>
+                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '0.825rem', color: '#334155', lineHeight: 1.6 }}>
+                        <li>Strict moisture content standards: Sunflower &le; 9.0%, Soya &le; 13.0%.</li>
+                        <li>Instant Mobile Money & SACCO direct disbursement policy.</li>
+                        <li>Gender inclusion quota: &ge; 50% female cooperative representation.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* TAB 5: Google Forms Live Synchronization & Ingestion System */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {activeTab === 'forms' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.35rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: '0 0 6px 0' }}>
+                    📋 Google Forms Live Database Sync & Official Intake Hub
+                  </h3>
+                  <p style={{ color: 'var(--color-text-light)', fontSize: '0.875rem', margin: 0 }}>
+                    Directly connected to Jeroma Farmers Collection Center Intake Form. Receives real-time survey submissions, maps all 19 official fields, and provides 1-click database conversions.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <a
+                    href="https://docs.google.com/forms/d/e/1FAIpQLSc-_G1-SjAhqYAFWS0P3sYto0Mn_79UoaecxYPv-hUugVKYhA/viewform?usp=sharing&ouid=100711303354591593896"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '6px', background: '#1d4ed8', color: '#fff', textDecoration: 'none', borderRadius: '8px', fontWeight: 600 }}
+                  >
+                    🔗 Open Live Google Form
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleExportFormsCsv}
+                    className="btn btn-secondary"
+                    style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    📥 Export Responses (CSV)
+                  </button>
+                </div>
+              </div>
+
+              {/* Official Google Form Direct Link Banner */}
+              <div className="glass-panel" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '1.5px solid #93c5fd', borderRadius: '14px', padding: '18px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1.3rem' }}>🌐</span>
+                      <strong style={{ color: '#1e40af', fontSize: '1rem' }}>Connected Official Google Form:</strong>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: '#1e3a8a', marginTop: '4px', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                      https://docs.google.com/forms/d/e/1FAIpQLSc-_G1-SjAhqYAFWS0P3sYto0Mn_79UoaecxYPv-hUugVKYhA/viewform?usp=sharing&ouid=100711303354591593896
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <a
+                      href="https://docs.google.com/forms/d/e/1FAIpQLSc-_G1-SjAhqYAFWS0P3sYto0Mn_79UoaecxYPv-hUugVKYhA/viewform?usp=sharing&ouid=100711303354591593896"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ padding: '6px 14px', background: '#1d4ed8', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      ↗ Open Google Form
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('https://docs.google.com/forms/d/e/1FAIpQLSc-_G1-SjAhqYAFWS0P3sYto0Mn_79UoaecxYPv-hUugVKYhA/viewform?usp=sharing&ouid=100711303354591593896');
+                        alert('Google Form URL copied to clipboard!');
+                      }}
+                      style={{ padding: '6px 14px', background: '#1e40af', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      📋 Copy Form Link
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* ────────────────────────────────────────────────────────── */}
+              {/* PRIMARY FEATURE: Google Sheet Live Synchronization Panel  */}
+              {/* ────────────────────────────────────────────────────────── */}
+              <div className="glass-panel" style={{ background: '#ffffff', border: '2px solid #10b981', borderRadius: '16px', padding: '24px', marginBottom: '24px', boxShadow: '0 8px 24px rgba(16,185,129,0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1.4rem' }}>📊</span>
+                      <h4 style={{ margin: 0, color: '#065f46', fontSize: '1.2rem', fontWeight: 800 }}>
+                        Google Sheet Live Synchronization & Responses Connector
+                      </h4>
+                    </div>
+                    <p style={{ margin: '6px 0 0 0', color: '#475569', fontSize: '0.85rem' }}>
+                      Connect the Google Sheet attached to your Google Form to immediately see all farmer intake responses on the system.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <label style={{ margin: 0, padding: '8px 16px', background: '#ecfdf5', color: '#065f46', border: '1.5px solid #10b981', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <span>📁</span> Upload Responses CSV
+                      <input 
+                        type="file" 
+                        accept=".csv,.tsv,.txt" 
+                        onChange={handleFileUploadCsv} 
+                        style={{ display: 'none' }} 
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPasteSheetModal(true)}
+                      style={{ padding: '8px 16px', background: '#f0fdf4', color: '#166534', border: '1.5px solid #86efac', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      📋 Quick Paste Sheet Rows
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLoadSampleLiveResponses}
+                      style={{ padding: '8px 16px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600 }}
+                      title="Load 3 sample live responses to test table display and account conversion"
+                    >
+                      🌱 Load Sample Responses
+                    </button>
+                  </div>
+                </div>
+
+                {/* Feedback Messages */}
+                {sheetSyncSuccess && (
+                  <div style={{ background: '#ecfdf5', color: '#065f46', padding: '12px 16px', borderRadius: '8px', border: '1px solid #a7f3d0', fontSize: '0.85rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>✓</span> {sheetSyncSuccess}
+                  </div>
+                )}
+                {sheetSyncError && (
+                  <div style={{ background: '#fef2f2', color: '#991b1b', padding: '12px 16px', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '0.85rem', fontWeight: 600, marginBottom: '16px' }}>
+                    ⚠️ {sheetSyncError}
+                  </div>
+                )}
+
+                {/* Google Sheet URL Input Row */}
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ flex: 1, minWidth: '280px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase' }}>
+                        🔗 Google Sheet URL or Spreadsheet ID
+                      </label>
+                      <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>
+                        (e.g. https://docs.google.com/spreadsheets/d/.../edit)
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Paste your Google Sheet link here..."
+                      value={googleSheetUrl}
+                      onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                      style={{ width: '100%', borderColor: '#10b981' }}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSyncGoogleSheet}
+                    disabled={isSyncingSheet}
+                    className="btn btn-primary"
+                    style={{ background: '#10b981', borderColor: '#059669', color: '#fff', padding: '10px 22px', fontSize: '0.9rem', fontWeight: 700, marginTop: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    {isSyncingSheet ? '⏳ Fetching Sheet...' : '⚡ Sync Google Sheet Now'}
+                  </button>
+                </div>
+
+                {/* Smart Notice if User Pasted Google Form Link */}
+                {googleSheetUrl.includes('/forms/') && (
+                  <div style={{ background: '#fefce8', border: '1.5px solid #fde047', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', fontSize: '0.85rem', color: '#713f12' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, marginBottom: '6px' }}>
+                      <span>💡</span> You pasted a Google Forms link (<strong>{googleSheetUrl.slice(0, 70)}...</strong>)
+                    </div>
+                    <p style={{ margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                      Google Forms collects submissions into a linked <strong>Google Spreadsheet</strong>. To display responses here in 10 seconds:
+                    </p>
+                    <ol style={{ margin: 0, paddingLeft: '20px', lineHeight: 1.6 }}>
+                      <li>In your Google Form Responses tab, click the green <strong>"Link to Sheets"</strong> / <strong>"View in Sheets"</strong> icon (top right).</li>
+                      <li>In the Google Sheet that opens, click <strong>Share</strong> (top right) &rarr; set to <strong>"Anyone with the link can view"</strong> &rarr; copy that spreadsheet URL and paste it here!</li>
+                      <li><em>Or:</em> Click the <strong>⋮</strong> menu next to the green icon &rarr; <strong>"Download responses (.csv)"</strong> &rarr; click <strong>"📁 Upload Responses CSV"</strong> right above to load everything instantly!</li>
+                    </ol>
+                  </div>
+                )}
+
+                {/* How to Connect Help Box */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 18px', fontSize: '0.82rem', color: '#475569' }}>
+                  <strong style={{ color: '#1e293b' }}>💡 How to view your Google Sheet responses on this system:</strong>
+                  <ol style={{ margin: '6px 0 0 0', paddingLeft: '20px', lineHeight: 1.6 }}>
+                    <li>Open your Google Form and click the green <strong>"View in Sheets"</strong> button in the <strong>Responses</strong> tab.</li>
+                    <li>In the Google Sheet that opens, click <strong>Share</strong> (top right) &rarr; change General Access to <strong>"Anyone with the link can view"</strong> &rarr; Copy Link.</li>
+                    <li>Paste that link in the box above and click <strong>"Sync Google Sheet Now"</strong> &mdash; all responses will instantly display below!</li>
+                    <li><em>Alternatively:</em> Press <strong>Ctrl+A</strong> then <strong>Ctrl+C</strong> inside your Google Sheet, and click <strong>"Quick Paste Sheet Rows"</strong> to import in 2 seconds!</li>
+                  </ol>
+                </div>
+              </div>
+
+              {/* Webhook & Setup Instructions Card */}
+              <div className="glass-panel" style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '14px', padding: '20px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🔗</span>
+                    <strong style={{ color: '#166534', fontSize: '0.95rem' }}>Your Live Webhook Sync Endpoint:</strong>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = `${window.location.origin}/api/forms/submit`;
+                      navigator.clipboard.writeText(url);
+                      setCopiedWebhook(true);
+                      setTimeout(() => setCopiedWebhook(false), 3000);
+                    }}
+                    style={{ padding: '6px 14px', background: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    {copiedWebhook ? '✓ URL Copied!' : '📋 Copy Webhook URL'}
+                  </button>
+                </div>
+
+                <div style={{ background: '#fff', border: '1px solid #bbf7d0', padding: '10px 14px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.85rem', color: '#14532d', wordBreak: 'break-all', marginBottom: '16px' }}>
+                  {typeof window !== 'undefined' ? `${window.location.origin}/api/forms/submit` : 'https://jeromafarmers.com/api/forms/submit'}
+                </div>
+
+                <details style={{ cursor: 'pointer', fontSize: '0.85rem', color: '#166534' }}>
+                  <summary style={{ fontWeight: 700, marginBottom: '8px' }}>
+                    ▶ Click to View Ready Google Apps Script Code (Drop into Google Forms)
+                  </summary>
+                  <div style={{ background: '#1e293b', color: '#f8fafc', padding: '16px', borderRadius: '8px', marginTop: '10px', position: 'relative' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const scriptText = `// Google Apps Script for Jeroma Forms Live Sync
+function onFormSubmit(e) {
+  var url = "${window.location.origin}/api/forms/submit";
+  var formResponse = e.response;
+  var itemResponses = formResponse.getItemResponses();
+  var payload = {
+    formType: "farmer_registration", // or "cooperative_profile", "seedling_request"
+    data: {
+      submittedAt: formResponse.getTimestamp()
+    }
+  };
+  
+  for (var i = 0; i < itemResponses.length; i++) {
+    var item = itemResponses[i];
+    payload.data[item.getItem().getTitle()] = item.getResponse();
+  }
+  
+  var options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+  
+  UrlFetchApp.fetch(url, options);
+}`;
+                        navigator.clipboard.writeText(scriptText);
+                        alert('Google Apps Script copied to clipboard! Paste it inside Extensions > Apps Script in your Google Form.');
+                      }}
+                      style={{ position: 'absolute', top: '10px', right: '10px', padding: '4px 10px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer' }}
+                    >
+                      Copy Script
+                    </button>
+                    <pre style={{ margin: 0, fontSize: '0.78rem', lineHeight: 1.4, overflowX: 'auto' }}>
+{`// 1. Open your Google Form
+// 2. Click "⋮" (More) > Extensions > Apps Script
+// 3. Paste this code and click Save 💾
+// 4. Click Triggers (alarm clock icon) > Add Trigger:
+//    - Function: onFormSubmit
+//    - Event Source: From form
+//    - Event Type: On form submit
+
+function onFormSubmit(e) {
+  var url = "${window.location.origin}/api/forms/submit";
+  var itemResponses = e.response.getItemResponses();
+  var payload = {
+    formType: "farmer_registration", // or "cooperative_profile", "tree_nurseries"
+    data: { submittedAt: e.response.getTimestamp() }
+  };
+  for (var i = 0; i < itemResponses.length; i++) {
+    payload.data[itemResponses[i].getItem().getTitle()] = itemResponses[i].getResponse();
+  }
+  UrlFetchApp.fetch(url, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+}`}
+                    </pre>
+                  </div>
+                </details>
+              </div>
+
+              {/* Submissions KPI & Search */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+                <div className="glass-panel" style={{ padding: '14px', background: '#fff', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Total Submissions</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-primary-dark)', marginTop: '2px' }}>{formSubmissionsList.length}</div>
+                </div>
+                <div className="glass-panel" style={{ padding: '14px', background: '#fff', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Farmer Registrations</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#059669', marginTop: '2px' }}>
+                    {formSubmissionsList.filter(s => s.formType?.includes('farmer') || s.data?.['Farmer Name'] || s.data?.fullName).length}
+                  </div>
+                </div>
+                <div className="glass-panel" style={{ padding: '14px', background: '#fff', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: '#64748b', fontWeight: 600 }}>Cooperative Profiles</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#7c3aed', marginTop: '2px' }}>
+                    {formSubmissionsList.filter(s => s.formType?.includes('coop') || s.data?.cooperativeName || s.data?.['Cooperative Name']).length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Submissions Filter */}
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search received responses..."
+                  value={formSearch}
+                  onChange={(e) => setFormSearch(e.target.value)}
+                  className="form-input"
+                  style={{ flex: 1, minWidth: '220px' }}
+                />
+                <select
+                  value={formTypeFilter}
+                  onChange={(e) => setFormTypeFilter(e.target.value)}
+                  className="form-input"
+                  style={{ width: 'auto', minWidth: '150px' }}
+                >
+                  <option value="all">All Form Types</option>
+                  <option value="farmer_registration">Farmer Registration</option>
+                  <option value="cooperative_profile">Cooperative Profile</option>
+                  <option value="seedling_request">Seedling Request</option>
+                  <option value="general">General</option>
+                </select>
+              </div>
+
+              {/* Submissions List */}
+              {formSubmissionsList.length === 0 ? (
+                <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '40px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>📬</div>
+                  <h4 style={{ margin: '0 0 6px 0', color: 'var(--color-primary-dark)' }}>No Submissions Received Yet</h4>
+                  <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem' }}>
+                    Once you hook up your Google Form using the Webhook URL above, responses will stream in automatically in real time.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {formSubmissionsList
+                    .filter(s => {
+                      const matchType = formTypeFilter === 'all' || s.formType === formTypeFilter;
+                      const strData = JSON.stringify(s.data || {}).toLowerCase();
+                      const matchSearch = !formSearch || strData.includes(formSearch.toLowerCase());
+                      return matchType && matchSearch;
+                    })
+                    .map(sub => (
+                      <div
+                        key={sub.id}
+                        className="glass-panel"
+                        style={{
+                          background: '#fff',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          padding: '16px 20px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          flexWrap: 'wrap',
+                          gap: '14px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: '260px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(27,67,50,0.1)', color: 'var(--color-primary-dark)' }}>
+                              {sub.formType || 'Form Submission'}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                              🕒 {sub.createdAt ? new Date(sub.createdAt).toLocaleString() : 'Just now'}
+                            </span>
+                          </div>
+
+                          {/* Data pills */}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                            {Object.entries(sub.data || {}).slice(0, 6).map(([k, v]) => (
+                              <div key={k} style={{ background: '#f8fafc', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem' }}>
+                                <span style={{ color: '#64748b', fontWeight: 600 }}>{k}: </span>
+                                <strong>{String(v)}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Quick 1-Click Conversion Actions */}
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSubmissionDetails(sub)}
+                            style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                            title="View all 19 answered questions in detail"
+                          >
+                            👁️ View Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleConvertSubmissionToFarmer(sub)}
+                            style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                            title="Register farmer account with generated credentials"
+                          >
+                            👨‍🌾 Convert to Farmer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleConvertSubmissionToCoop(sub)}
+                            style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#f5f3ff', color: '#6d28d9', border: '1px solid #ddd6fe', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+                            title="Register as Cooperative into Cooperatives Directory"
+                          >
+                            🤝 Convert to Coop
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSubmission(sub.id)}
+                            style={{ padding: '6px 10px', fontSize: '0.78rem', background: 'rgba(217,4,41,0.08)', color: '#d90429', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                            title="Delete Submission"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════════════ */}
+          {/* 📱 SOCIAL MEDIA & DIGITAL CHANNELS HUB TAB                                */}
+          {/* ═══════════════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'socials' && (
+            <div className="tab-pane active" style={{ animation: 'fadeIn 0.3s ease' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '16px',
+                marginBottom: '24px',
+                borderBottom: '1px solid rgba(0,0,0,0.08)',
+                paddingBottom: '16px'
+              }}>
+                <div>
+                  <h3 style={{
+                    fontSize: '1.5rem',
+                    fontWeight: 800,
+                    color: 'var(--color-primary-dark, #0f3020)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    margin: 0
+                  }}>
+                    📱 {lang === 'en' ? 'Social Media & Digital Channels Hub' : 'Dwol me Social Media & Digital'}
+                  </h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.88rem', color: '#64748b' }}>
+                    {lang === 'en'
+                      ? 'Manage official handles, website links, WhatsApp templates, and direct channel connectivity across the public platform.'
+                      : 'Yub kede loyo links me Facebook, WhatsApp, TikTok, YouTube kede channels ducu me Jeroma.'}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={handleResetSocialsToDefault}
+                    className="btn btn-outline"
+                    style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  >
+                    🔄 {lang === 'en' ? 'Reset Defaults' : 'Dwok cen'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveSocialsSubmit}
+                    disabled={isSavingSocials}
+                    className="btn btn-primary"
+                    style={{
+                      background: 'var(--color-secondary, #e9c46a)',
+                      color: 'var(--color-primary-dark, #0f3020)',
+                      fontWeight: 800,
+                      padding: '8px 20px',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}
+                  >
+                    {isSavingSocials ? 'Saving...' : (lang === 'en' ? '💾 Save All Channels' : '💾 Gwik jami ducu')}
+                  </button>
+                </div>
+              </div>
+
+              {socialsSuccess && (
+                <div style={{
+                  padding: '12px 16px',
+                  background: '#ecfdf5',
+                  border: '1px solid #10b981',
+                  borderRadius: '8px',
+                  color: '#065f46',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  marginBottom: '20px'
+                }}>
+                  ✅ {socialsSuccess}
+                </div>
+              )}
+
+              {socialsError && (
+                <div style={{
+                  padding: '12px 16px',
+                  background: '#fef2f2',
+                  border: '1px solid #ef4444',
+                  borderRadius: '8px',
+                  color: '#991b1b',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  marginBottom: '20px'
+                }}>
+                  ⚠️ {socialsError}
+                </div>
+              )}
+
+              {/* Channels Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '20px',
+                marginBottom: '32px'
+              }}>
+                {[
+                  {
+                    key: 'whatsapp',
+                    label: 'WhatsApp Business',
+                    icon: <Icons.WhatsAppOriginal size={26} />,
+                    color: '#25D366',
+                    handlePlaceholder: '+256 773 623 196',
+                    urlPlaceholder: 'https://wa.me/256773623196',
+                    hasExtra: true
+                  },
+                  {
+                    key: 'facebook',
+                    label: 'Facebook Page',
+                    icon: <Icons.FacebookOriginal size={26} />,
+                    color: '#1877F2',
+                    handlePlaceholder: '@jeromafarmers',
+                    urlPlaceholder: 'https://www.facebook.com/jeromafarmers'
+                  },
+                  {
+                    key: 'tiktok',
+                    label: 'TikTok Channel',
+                    icon: <Icons.TikTokOriginal size={26} />,
+                    color: '#000000',
+                    handlePlaceholder: '@jeromafarmers',
+                    urlPlaceholder: 'https://www.tiktok.com/@jeromafarmers'
+                  },
+                  {
+                    key: 'x',
+                    label: 'X (Twitter)',
+                    icon: <Icons.XTwitterOriginal size={26} />,
+                    color: '#0f1419',
+                    handlePlaceholder: '@JeromaFarmers',
+                    urlPlaceholder: 'https://x.com/JeromaFarmers'
+                  },
+                  {
+                    key: 'youtube',
+                    label: 'YouTube Channel',
+                    icon: <Icons.YouTubeOriginal size={26} />,
+                    color: '#FF0000',
+                    handlePlaceholder: '@jeromafarmers',
+                    urlPlaceholder: 'https://www.youtube.com/@jeromafarmers'
+                  },
+                  {
+                    key: 'linkedin',
+                    label: 'LinkedIn Page',
+                    icon: <Icons.LinkedInOriginal size={26} />,
+                    color: '#0A66C2',
+                    handlePlaceholder: 'jeromafarmers',
+                    urlPlaceholder: 'https://www.linkedin.com/company/jeromafarmers'
+                  },
+                  {
+                    key: 'instagram',
+                    label: 'Instagram',
+                    icon: <Icons.InstagramOriginal size={26} />,
+                    color: '#E4405F',
+                    handlePlaceholder: '@jeromafarmers',
+                    urlPlaceholder: 'https://www.instagram.com/jeromafarmers'
+                  },
+                  {
+                    key: 'telegram',
+                    label: 'Telegram Community',
+                    icon: <Icons.TelegramOriginal size={26} />,
+                    color: '#24A1DE',
+                    handlePlaceholder: '@jeromafarmers',
+                    urlPlaceholder: 'https://t.me/jeromafarmers'
+                  }
+                ].map((item) => {
+                  const data = socialsState[item.key] || {};
+                  return (
+                    <div
+                      key={item.key}
+                      style={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        padding: '18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '14px'
+                      }}
+                    >
+                      {/* Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {item.icon}
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '1rem', color: '#1e293b', fontWeight: 700 }}>
+                              {item.label}
+                            </h4>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              {data.handle || 'Not configured'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Toggle switch */}
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: data.enabled ? '#059669' : '#94a3b8' }}>
+                          <input
+                            type="checkbox"
+                            checked={!!data.enabled}
+                            onChange={(e) => handleSocialFieldChange(item.key, 'enabled', e.target.checked)}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          {data.enabled ? 'Active' : 'Hidden'}
+                        </label>
+                      </div>
+
+                      {/* Inputs */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                            Handle / Display Username
+                          </label>
+                          <input
+                            type="text"
+                            value={data.handle || ''}
+                            onChange={(e) => handleSocialFieldChange(item.key, 'handle', e.target.value)}
+                            placeholder={item.handlePlaceholder}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '0.85rem',
+                              color: '#0f172a',
+                              background: '#f8fafc'
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                            Target Web / Deep Link URL
+                          </label>
+                          <input
+                            type="url"
+                            value={data.url || ''}
+                            onChange={(e) => handleSocialFieldChange(item.key, 'url', e.target.value)}
+                            placeholder={item.urlPlaceholder}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '0.85rem',
+                              color: '#0f172a',
+                              background: '#f8fafc'
+                            }}
+                          />
+                        </div>
+
+                        {item.hasExtra && (
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#334155', marginBottom: '4px', textTransform: 'uppercase' }}>
+                              Default Greeting / Inquiry Message
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={data.greeting || ''}
+                              onChange={(e) => handleSocialFieldChange(item.key, 'greeting', e.target.value)}
+                              placeholder="Hello Jeroma Farmers, I would like to inquire about..."
+                              style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                border: '1px solid #cbd5e1',
+                                fontSize: '0.82rem',
+                                color: '#0f172a',
+                                background: '#f8fafc',
+                                resize: 'vertical'
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action footer */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
+                        <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                          Status: <strong style={{ color: data.enabled ? '#059669' : '#dc2626' }}>{data.enabled ? '● Live on Website' : '○ Disabled'}</strong>
+                        </span>
+
+                        <a
+                          href={data.url || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            if (!data.url) {
+                              e.preventDefault();
+                              alert('Please enter a target URL first.');
+                            }
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '6px 12px',
+                            fontSize: '0.76rem',
+                            fontWeight: 700,
+                            borderRadius: '6px',
+                            background: '#f1f5f9',
+                            color: '#0f172a',
+                            textDecoration: 'none',
+                            border: '1px solid #cbd5e1'
+                          }}
+                        >
+                          ⚡ Test Link ↗
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Integration Summary Card */}
+              <div style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                padding: '20px',
+                background: 'linear-gradient(135deg, rgba(27,67,50,0.03), rgba(255,255,255,0.95))'
+              }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '1.05rem', color: 'var(--color-primary-dark, #0f3020)', fontWeight: 800 }}>
+                  🌐 Public Website Integration Information
+                </h4>
+                <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+                  All accounts enabled here immediately update the public <strong>Digital Channels</strong> section, the <strong>Footer Social Links</strong>, and the <strong>Floating WhatsApp Support Widget</strong> across both English and Luo interfaces.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={onBackToSite}
+                    className="btn btn-outline"
+                    style={{ fontSize: '0.85rem', padding: '8px 16px' }}
+                  >
+                    👁️ Preview On Website
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveSocialsSubmit}
+                    disabled={isSavingSocials}
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.85rem', padding: '8px 18px', background: 'var(--color-primary, #1b4332)', color: '#fff' }}
+                  >
+                    💾 Confirm & Save All Changes
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -3220,6 +9071,102 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Paste Google Sheet Data Modal */}
+      {showPasteSheetModal && (
+        <div className="modal-backdrop" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="modal-card" style={{ background: '#fff', borderRadius: '16px', maxWidth: '640px', width: '100%', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                📋 Paste Google Sheet Responses Directly
+              </h3>
+              <button type="button" onClick={() => setShowPasteSheetModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+            <p style={{ margin: '0 0 14px 0', fontSize: '0.85rem', color: '#64748b' }}>
+              Open your Google Sheet, select the rows you want to import (including headers), copy them (<strong>Ctrl+C</strong>), and paste them into the box below (<strong>Ctrl+V</strong>):
+            </p>
+            <form onSubmit={handlePasteSheetSubmit}>
+              <textarea
+                className="form-input"
+                rows={8}
+                placeholder="Paste rows from your Google Sheet here... (Tab-separated or Comma-separated)"
+                value={pastedSheetData}
+                onChange={(e) => setPastedSheetData(e.target.value)}
+                style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.78rem', marginBottom: '16px' }}
+                required
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" onClick={() => setShowPasteSheetModal(false)} className="btn btn-secondary" style={{ padding: '8px 16px' }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={isPastingSheet} className="btn btn-primary" style={{ background: '#10b981', color: '#fff', padding: '8px 20px', fontWeight: 700 }}>
+                  {isPastingSheet ? 'Importing...' : '📥 Import Rows Now'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Full Submission Details Modal (All 19 Questions) */}
+      {selectedSubmissionDetails && (
+        <div className="modal-backdrop" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="modal-card" style={{ background: '#fff', borderRadius: '16px', maxWidth: '720px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '24px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontWeight: 800 }}>
+                  📋 Full Google Form Response Details
+                </h3>
+                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                  Submitted: {selectedSubmissionDetails.submittedAt || selectedSubmissionDetails.createdAt || 'Recent'}
+                </div>
+              </div>
+              <button type="button" onClick={() => setSelectedSubmissionDetails(null)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+              {Object.entries(selectedSubmissionDetails.data || {}).map(([key, value]) => (
+                <div key={key} style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '3px' }}>
+                    {key}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: '#1e293b', fontWeight: 600 }}>
+                    {String(value || '—')}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  handleConvertSubmissionToFarmer(selectedSubmissionDetails);
+                  setSelectedSubmissionDetails(null);
+                }}
+                className="btn btn-primary"
+                style={{ background: '#059669', color: '#fff', padding: '8px 18px', fontWeight: 700 }}
+              >
+                👨‍🌾 Convert to Farmer Account
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleConvertSubmissionToCoop(selectedSubmissionDetails);
+                  setSelectedSubmissionDetails(null);
+                }}
+                className="btn btn-primary"
+                style={{ background: '#7c3aed', color: '#fff', padding: '8px 18px', fontWeight: 700 }}
+              >
+                🤝 Convert to Cooperative
+              </button>
+              <button type="button" onClick={() => setSelectedSubmissionDetails(null)} className="btn btn-secondary" style={{ padding: '8px 16px' }}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

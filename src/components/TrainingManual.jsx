@@ -269,9 +269,34 @@ const DEFAULT_STAGES = [
   }
 ];
 
-export default function TrainingManual({ lang, onBackToHome }) {
+export default function TrainingManual({ lang, onBackToHome, onOpenAdminManual, currentUser }) {
   const [activeSection, setActiveSection] = useState('cover');
   const [stages, setStages] = useState(DEFAULT_STAGES);
+
+  const loggedUser = currentUser || (() => {
+    try {
+      const saved = localStorage.getItem('jeroma_logged_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const canEditManual = loggedUser && (
+    loggedUser.role === 'admin' ||
+    loggedUser.username === 'admin' ||
+    loggedUser.department === 'Managing Director' ||
+    (Array.isArray(loggedUser.permissions) && loggedUser.permissions.includes('training_manual'))
+  );
+
+  const handleGoToAdminManual = () => {
+    window.location.hash = '#manual';
+    if (onOpenAdminManual) {
+      onOpenAdminManual();
+    } else {
+      window.location.reload();
+    }
+  };
 
   useEffect(() => {
     const fetchStages = async () => {
@@ -365,6 +390,26 @@ export default function TrainingManual({ lang, onBackToHome }) {
           </button>
           
           <div style={{ display: 'flex', gap: '10px' }}>
+            {canEditManual && (
+              <button
+                onClick={handleGoToAdminManual}
+                className="btn btn-outline"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.85rem',
+                  padding: '8px 16px',
+                  backgroundColor: 'rgba(82, 183, 136, 0.15)',
+                  borderColor: 'var(--color-primary)',
+                  color: '#ffffff',
+                  cursor: 'pointer'
+                }}
+              >
+                <Icons.Edit size={16} />
+                <span>{lang === 'en' ? '⚙️ Edit Stages (Admin)' : '⚙️ Yub Stages (Admin)'}</span>
+              </button>
+            )}
             <button onClick={handlePrint} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', padding: '8px 20px' }}>
               <Icons.Shield size={16} /> {/* Print Icon representation */}
               <span>{lang === 'en' ? 'Download / Print Manual' : 'Download / Go Manual'}</span>
