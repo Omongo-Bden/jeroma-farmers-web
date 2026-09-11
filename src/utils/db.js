@@ -206,11 +206,20 @@ export const validateLogin = async (username, password) => {
       return data.user;
     }
   } catch (e) {
-    // Offline authentication fallback using local cached users
     const cachedUsersObj = await idbGet('users', 'all');
     const users = cachedUsersObj ? cachedUsersObj.data : [];
     const hashed = await hashPassword(password);
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === hashed);
+    const normInput = username.trim().toLowerCase();
+    const digitsInput = normInput.replace(/\D/g, '');
+    const user = users.find(u => {
+      const uName = (u.username || '').toLowerCase();
+      const uEmail = (u.email || '').toLowerCase();
+      const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+      const match = uName === normInput || 
+                    (uEmail && uEmail === normInput) || 
+                    (digitsInput.length >= 6 && uPhoneDigits && (uPhoneDigits === digitsInput || uPhoneDigits.endsWith(digitsInput) || digitsInput.endsWith(uPhoneDigits)));
+      return match && u.password === hashed;
+    });
     if (user) {
       if (user.status === 'suspended') {
         throw new Error('Account has been suspended. Please contact the administrator.');

@@ -65,6 +65,7 @@ import { BannerMedia, isVideoUrl } from './ActivityBanner';
 import { 
   UGANDA_DISTRICTS, 
   JEROMA_DEPARTMENTS, 
+  ALL_STAFF_PERMISSIONS,
   getDepartmentById, 
   getDepartmentPermissions,
   generateAutoFarmerId,
@@ -122,6 +123,11 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const [showBackupRestoreBanner, setShowBackupRestoreBanner] = useState(false);
   const [isRestoringBackup, setIsRestoringBackup] = useState(false);
 
+  // Professional Navigation & Access Control States
+  const [navCategory, setNavCategory] = useState('all'); // 'all' | 'operations' | 'organization' | 'outreach' | 'governance'
+  const [tabSearchQuery, setTabSearchQuery] = useState('');
+  const [editingUserPerms, setEditingUserPerms] = useState(null); // { username, name, role, department, permissions }
+
   // Sync user state
   const [currentUserState, setCurrentUserState] = useState(user);
   useEffect(() => {
@@ -132,7 +138,8 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   const isFullAdmin = (currentUserState?.username || '').toLowerCase() === 'admin' || 
                       (currentUserState?.department || '') === 'Managing Director' || 
                       (currentUserState?.role || '') === 'Managing Director' ||
-                      (currentUserState?.role || '') === 'managing_director';
+                      (currentUserState?.role || '') === 'managing_director' ||
+                      (currentUserState?.role || '').toLowerCase() === 'admin';
 
   const userAllowedPermissions = currentUserState?.permissions || 
                                  getDepartmentPermissions(currentUserState?.department) || 
@@ -2218,6 +2225,25 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     await loadData();
   };
 
+  const openUserPermsModal = (u) => {
+    const existingPerms = Array.isArray(u.permissions) && u.permissions.length > 0 
+      ? [...u.permissions] 
+      : (getDepartmentPermissions(u.department) || getDepartmentPermissions(u.role) || ['prices', 'deliveries', 'dispatches', 'inquiries']);
+    setEditingUserPerms({
+      username: u.username,
+      name: u.name || u.username,
+      role: u.role || 'staff',
+      department: u.department || 'General',
+      permissions: existingPerms
+    });
+  };
+
+  const handleSaveUserPerms = async () => {
+    if (!editingUserPerms) return;
+    await handleUpdateUserPermissions(editingUserPerms.username, editingUserPerms.permissions);
+    setEditingUserPerms(null);
+  };
+
   const handleResetDb = async () => {
     const confirmText = 'RESET';
     const userInput = window.prompt(lang === 'en' 
@@ -2476,41 +2502,191 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
           </div>
         </div>
 
-        {/* Dash Tabs */}
-        <div className="dashboard-tabs-container">
-          {[
-            { id: 'prices', label: t.pricesTab, icon: <Icons.Wheat size={18} /> },
-            { id: 'deliveries', label: t.deliveriesTab, icon: <Icons.Warehouse size={18} /> },
-            { id: 'dispatches', label: t.dispatchesTab, icon: <Icons.Truck size={18} /> },
-            { id: 'projects', label: lang === 'en' ? '🚀 Projects Hub' : '🚀 Projects', icon: null },
-            { id: 'staff', label: lang === 'en' ? '👥 Staff & Positions' : '👥 Lutic mwa', icon: null },
-            { id: 'cooperatives', label: lang === 'en' ? '🤝 Cooperatives & SACCOs' : '🤝 Cooperatives', icon: null },
-            { id: 'departments', label: lang === 'en' ? '🏢 Departments Hub' : '🏢 Departments', icon: null },
-            { id: 'forms', label: lang === 'en' ? '📋 Google Forms Sync' : '📋 Google Forms', icon: null },
-            { id: 'inquiries', label: t.inquiriesTab, icon: <Icons.Mail size={18} /> },
-            { id: 'users', label: t.usersTab || 'User Management', icon: <Icons.Users size={18} /> },
-            { id: 'logins', label: lang === 'en' ? '🔑 Login History' : '🔑 Wel me Login', icon: <Icons.Clock size={18} /> },
-            { id: 'language', label: lang === 'en' ? 'Language Manager' : 'Yore me Leb', icon: <Icons.Globe size={18} /> },
-            { id: 'socials', label: lang === 'en' ? '📱 Social Media Hub' : '📱 Social Media', icon: null },
-            { id: 'manual', label: lang === 'en' ? '📖 Training Manual Manager' : '📖 Training Manual Manager', icon: null },
-            { id: 'chatbot', label: lang === 'en' ? '🤖 Chatbot Manager' : '🤖 Chatbot Manager', icon: null },
-            { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null }
-          ].filter(tab => {
-            if (tab.id === 'users') return isFullAdmin;
-            if (tab.id === 'logins') return isFullAdmin;
-            if (tab.id === 'manual' && settings.hideManual && !isFullAdmin) return false;
-            if (isFullAdmin) return true;
-            return userAllowedPermissions.includes(tab.id);
-          }).map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              className={`btn-tab ${activeTab === tab.id ? 'active' : ''}`}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-            </button>
-          ))}
+        {/* Executive Center Admin Bar & Quick Operational Metrics */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(13, 45, 31, 0.95) 0%, rgba(22, 67, 47, 0.95) 100%)',
+          borderRadius: '16px',
+          padding: '18px 22px',
+          marginBottom: '20px',
+          border: '1px solid rgba(82,183,136,0.3)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.18)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{
+              width: '46px', height: '46px', borderRadius: '12px',
+              background: isFullAdmin ? 'linear-gradient(135deg, #e9c46a 0%, #f4a261 100%)' : '#2d6a4f',
+              color: isFullAdmin ? '#0f3020' : '#ffffff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.45rem', fontWeight: 800, boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+            }}>
+              {isFullAdmin ? '👑' : '🏢'}
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ color: '#ffffff', fontWeight: 800, fontSize: '1.15rem', fontFamily: 'var(--font-heading)' }}>
+                  {currentUserState?.name || 'Administrator'}
+                </span>
+                <span style={{
+                  fontSize: '0.72rem', fontWeight: 800, padding: '2px 9px', borderRadius: '6px',
+                  background: isFullAdmin ? '#e9c46a' : '#52b788',
+                  color: '#081c15', textTransform: 'uppercase', letterSpacing: '0.04em'
+                }}>
+                  {isFullAdmin ? 'Center Administrator · Full Access' : (currentUserState?.department || currentUserState?.role || 'Staff')}
+                </span>
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.8rem', marginTop: '3px' }}>
+                {isFullAdmin 
+                  ? '⚡ Complete Operational Command · Grant, delegate or restrict permissions for any staff member across all 14 units' 
+                  : `Authorized Departmental Operator · ${userAllowedPermissions?.length || 0} Permitted Units`}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics Counter Pills */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Staff</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#e9c46a' }}>{staffList.length}</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Deliveries</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#52b788' }}>{deliveries.length}</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Transit</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#93c5fd' }}>{dispatches.length}</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', padding: '6px 14px', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Projects</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f4a261' }}>{projectsList.length}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Categorized Tab Navigation Control */}
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+            {/* Category Filter Pills */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: 'All Modules (16)' },
+                { id: 'operations', label: '🚜 Operations (4)' },
+                { id: 'organization', label: '🏢 Organization (4)' },
+                { id: 'outreach', label: '📢 Outreach (5)' },
+                { id: 'governance', label: '⚙️ Governance (3)' }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setNavCategory(cat.id)}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: '20px',
+                    fontSize: '0.8rem',
+                    fontWeight: navCategory === cat.id ? 800 : 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    border: navCategory === cat.id ? '2px solid #e9c46a' : '1px solid rgba(255,255,255,0.15)',
+                    background: navCategory === cat.id ? '#e9c46a' : 'rgba(255,255,255,0.05)',
+                    color: navCategory === cat.id ? '#081c15' : '#ffffff'
+                  }}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Quick Search Filter */}
+            <div style={{ position: 'relative', minWidth: '220px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Search actions / tabs..."
+                value={tabSearchQuery}
+                onChange={(e) => setTabSearchQuery(e.target.value)}
+                className="form-input"
+                style={{
+                  padding: '7px 12px 7px 32px',
+                  fontSize: '0.8rem',
+                  borderRadius: '20px',
+                  background: 'rgba(0,0,0,0.35)',
+                  border: '1px solid rgba(82,183,136,0.3)',
+                  color: '#ffffff',
+                  width: '100%',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.8rem', opacity: 0.6 }}>
+                🔍
+              </span>
+            </div>
+          </div>
+
+          {/* Dash Tabs */}
+          <div className="dashboard-tabs-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {[
+              { id: 'prices', label: t.pricesTab, icon: <Icons.Wheat size={18} />, category: 'operations', badge: crops ? Object.keys(crops).length : 0 },
+              { id: 'deliveries', label: t.deliveriesTab, icon: <Icons.Warehouse size={18} />, category: 'operations', badge: deliveries.length },
+              { id: 'dispatches', label: t.dispatchesTab, icon: <Icons.Truck size={18} />, category: 'operations', badge: dispatches.length },
+              { id: 'projects', label: lang === 'en' ? '🚀 Projects Hub' : '🚀 Projects', icon: null, category: 'operations', badge: projectsList.length },
+              { id: 'staff', label: lang === 'en' ? '👥 Staff & Positions' : '👥 Lutic mwa', icon: null, category: 'organization', badge: staffList.length },
+              { id: 'cooperatives', label: lang === 'en' ? '🤝 Cooperatives & SACCOs' : '🤝 Cooperatives', icon: null, category: 'organization', badge: coopsList.length },
+              { id: 'departments', label: lang === 'en' ? '🏢 Departments Hub' : '🏢 Departments', icon: null, category: 'organization', badge: 6 },
+              { id: 'forms', label: lang === 'en' ? '📋 Google Forms Sync' : '📋 Google Forms', icon: null, category: 'organization' },
+              { id: 'inquiries', label: t.inquiriesTab, icon: <Icons.Mail size={18} />, category: 'outreach', badge: inquiries.length },
+              { id: 'users', label: t.usersTab || 'User Management', icon: <Icons.Users size={18} />, category: 'governance', badge: allUsersList.length },
+              { id: 'logins', label: lang === 'en' ? '🔑 Login History' : '🔑 Wel me Login', icon: <Icons.Clock size={18} />, category: 'governance' },
+              { id: 'language', label: lang === 'en' ? 'Language Manager' : 'Yore me Leb', icon: <Icons.Globe size={18} />, category: 'governance' },
+              { id: 'socials', label: lang === 'en' ? '📱 Social Media Hub' : '📱 Social Media', icon: null, category: 'outreach' },
+              { id: 'manual', label: lang === 'en' ? '📖 Training Manual Manager' : '📖 Training Manual Manager', icon: null, category: 'outreach', badge: manualStages.length },
+              { id: 'chatbot', label: lang === 'en' ? '🤖 Chatbot Manager' : '🤖 Chatbot Manager', icon: null, category: 'outreach' },
+              { id: 'slides', label: lang === 'en' ? '🖼️ Banner Slides Manager' : '🖼️ Banner Slides Manager', icon: null, category: 'outreach', badge: slides.length }
+            ].filter(tab => {
+              if (tab.id === 'users') return isFullAdmin;
+              if (tab.id === 'logins') return isFullAdmin;
+              if (tab.id === 'manual' && settings.hideManual && !isFullAdmin) return false;
+              if (!isFullAdmin && !userAllowedPermissions.includes(tab.id)) return false;
+              if (navCategory !== 'all' && tab.category !== navCategory) return false;
+              if (tabSearchQuery.trim()) {
+                const q = tabSearchQuery.toLowerCase();
+                return tab.label.toLowerCase().includes(q) || tab.id.toLowerCase().includes(q);
+              }
+              return true;
+            }).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`btn-tab ${activeTab === tab.id ? 'active' : ''}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '9px 16px',
+                  borderRadius: '10px',
+                  fontWeight: activeTab === tab.id ? 800 : 600,
+                  fontSize: '0.85rem'
+                }}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                    background: activeTab === tab.id ? '#081c15' : 'rgba(255,255,255,0.15)',
+                    color: activeTab === tab.id ? '#e9c46a' : '#ffffff',
+                    fontWeight: 800
+                  }}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
           
           {user.username.toLowerCase() === 'admin' && enableResetDb && (
             <button 
@@ -2529,6 +2705,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
               <span>{t.resetDb}</span>
             </button>
           )}
+          </div>
         </div>
 
         {/* Tab Contents */}
@@ -3966,34 +4143,83 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                       />
                     </div>
 
-                    {mngRole === 'admin' && (
+                    {mngRole !== 'client' && (
                       <div className="form-group" style={{ gridColumn: '1 / -1', marginTop: '6px' }}>
-                        <label style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.85rem' }}>Allowed Editors (Permissions)</label>
-                        <div style={{ display: 'flex', gap: '10px 14px', flexWrap: 'wrap', marginTop: '6px', background: 'rgba(0,0,0,0.2)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(82,183,136,0.2)' }}>
-                          {[
-                            { id: 'prices', label: 'Prices' },
-                            { id: 'deliveries', label: 'Deliveries' },
-                            { id: 'dispatches', label: 'Dispatches' },
-                            { id: 'inquiries', label: 'FAQs & AI' },
-                            { id: 'manual', label: 'Manual' },
-                            { id: 'chatbot', label: 'Chatbot' },
-                            { id: 'slides', label: 'Slides' },
-                            { id: 'language', label: 'Language' }
-                          ].map(feat => {
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                          <label style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.85rem' }}>
+                            🛡️ Staff Actions & Module Access Permissions ({mngPermissions.length} of {ALL_STAFF_PERMISSIONS.length} Permitted)
+                          </label>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setMngPermissions(ALL_STAFF_PERMISSIONS.map(p => p.id))}
+                              className="btn btn-outline"
+                              style={{ padding: '3px 8px', fontSize: '0.72rem', borderColor: '#e9c46a', color: '#e9c46a' }}
+                            >
+                              ✨ Grant All Access
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const perms = getDepartmentPermissions(mngDepartment) || getDepartmentPermissions(mngRole) || [];
+                                setMngPermissions(perms);
+                              }}
+                              className="btn btn-outline"
+                              style={{ padding: '3px 8px', fontSize: '0.72rem', borderColor: '#52b788', color: '#52b788' }}
+                            >
+                              🏢 Department Defaults
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMngPermissions([])}
+                              className="btn btn-outline"
+                              style={{ padding: '3px 8px', fontSize: '0.72rem', borderColor: '#f87171', color: '#f87171' }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
+
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                          gap: '8px',
+                          background: 'rgba(0,0,0,0.25)',
+                          padding: '14px',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(82,183,136,0.3)'
+                        }}>
+                          {ALL_STAFF_PERMISSIONS.map(feat => {
                             const checked = mngPermissions.includes(feat.id);
                             return (
-                              <label key={feat.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', cursor: 'pointer', color: '#ffffff' }}>
-                                <input 
-                                  type="checkbox" 
-                                  checked={checked} 
+                              <label
+                                key={feat.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '6px 10px',
+                                  borderRadius: '6px',
+                                  background: checked ? 'rgba(82, 183, 136, 0.18)' : 'rgba(255,255,255,0.03)',
+                                  border: checked ? '1px solid #52b788' : '1px solid rgba(255,255,255,0.08)',
+                                  fontSize: '0.8rem',
+                                  cursor: 'pointer',
+                                  color: checked ? '#ffffff' : 'rgba(255,255,255,0.7)'
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
                                   onChange={(e) => {
-                                    const newPerms = e.target.checked 
-                                      ? [...mngPermissions, feat.id] 
+                                    const newPerms = e.target.checked
+                                      ? [...mngPermissions, feat.id]
                                       : mngPermissions.filter(x => x !== feat.id);
                                     setMngPermissions(newPerms);
                                   }}
+                                  style={{ accentColor: '#52b788' }}
                                 />
-                                {feat.label}
+                                <span>{feat.icon}</span>
+                                <span style={{ fontWeight: checked ? 700 : 500 }}>{feat.label}</span>
                               </label>
                             );
                           })}
@@ -4016,107 +4242,270 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                   <thead>
                     <tr style={{ backgroundColor: 'rgba(0,0,0,0.03)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
                       <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Username</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Name</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Role</th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Name & Contact</th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Department & Role</th>
+                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Allowed Actions</th>
                       <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Status</th>
-                      <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>Details</th>
                       <th style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-primary-dark)', textAlign: 'center' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {allUsersList.map(u => (
-                      <tr key={u.username} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                        <td style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700 }}>{u.username}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>{u.name}</td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
-                          <span style={{
-                            padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
-                            backgroundColor: u.role === 'admin' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(82, 183, 136, 0.15)',
-                            color: u.role === 'admin' ? '#d90429' : '#1b4332'
-                          }}>
-                            {u.role.toUpperCase()}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
-                          <span style={{
-                            padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
-                            backgroundColor: u.status === 'suspended' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(82, 183, 136, 0.15)',
-                            color: u.status === 'suspended' ? '#d90429' : '#1b4332'
-                          }}>
-                            {u.status === 'suspended' ? 'SUSPENDED' : 'ACTIVE'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
-                          <div>{u.phone} {u.district ? `· ${u.district}` : ''}</div>
-                          {u.role === 'admin' && u.username.toLowerCase() !== 'admin' && (
-                            <div style={{ marginTop: '8px', borderTop: '1px dotted rgba(0,0,0,0.1)', paddingTop: '6px' }}>
-                              <p style={{ margin: '0 0 4px', fontWeight: 'bold', fontSize: '0.72rem', color: 'var(--color-primary-dark)' }}>Allowed Editors:</p>
-                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                {[
-                                  { id: 'prices', label: 'Prices' },
-                                  { id: 'deliveries', label: 'Deliveries' },
-                                  { id: 'dispatches', label: 'Dispatches' },
-                                  { id: 'inquiries', label: 'FAQs & AI' },
-                                  { id: 'manual', label: 'Manual' },
-                                  { id: 'chatbot', label: 'Chatbot' },
-                                  { id: 'slides', label: 'Slides' },
-                                  { id: 'language', label: 'Language' }
-                                ].map(feat => {
-                                  const allowed = u.permissions || ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot'];
-                                  const checked = allowed.includes(feat.id);
-                                  return (
-                                    <label key={feat.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', cursor: 'pointer', color: '#000' }}>
-                                      <input 
-                                        type="checkbox" 
-                                        checked={checked} 
-                                        onChange={(e) => {
-                                          const newPerms = e.target.checked 
-                                            ? [...allowed, feat.id] 
-                                            : allowed.filter(x => x !== feat.id);
-                                          handleUpdateUserPermissions(u.username, newPerms);
-                                        }}
-                                      />
-                                      {feat.label}
-                                    </label>
-                                  );
-                                })}
-                              </div>
+                    {allUsersList.map(u => {
+                      const userPerms = u.permissions || getDepartmentPermissions(u.department) || getDepartmentPermissions(u.role) || (u.role === 'admin' ? ALL_STAFF_PERMISSIONS.map(p => p.id) : []);
+                      const isSuper = u.username.toLowerCase() === 'admin' || (u.department || '') === 'Managing Director';
+                      return (
+                        <tr key={u.username} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                          <td style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {isSuper ? '👑' : '👤'}
+                              <span>{u.username}</span>
                             </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                            <button
-                              onClick={() => handleToggleUserRole(u.username, u.role)}
-                              className="btn btn-outline"
-                              style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
-                              disabled={u.username === user.username}
-                            >
-                              {u.role === 'admin' ? 'Demote' : 'Make Admin'}
-                            </button>
-                            <button
-                              onClick={() => handleToggleUserStatus(u.username, u.status)}
-                              className="btn btn-outline"
-                              style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: u.status === 'suspended' ? '#1b4332' : '#f77f00', color: u.status === 'suspended' ? '#1b4332' : '#f77f00' }}
-                              disabled={u.username === user.username}
-                            >
-                              {u.status === 'suspended' ? 'Activate' : 'Suspend'}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(u.username)}
-                              className="btn btn-outline"
-                              style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: '#d90429', color: '#d90429' }}
-                              disabled={u.username === user.username}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
+                            <div style={{ fontWeight: 600 }}>{u.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{u.phone} {u.email ? `· ${u.email}` : ''}</div>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
+                            <span style={{
+                              padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
+                              backgroundColor: u.role === 'admin' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(82, 183, 136, 0.15)',
+                              color: u.role === 'admin' ? '#d90429' : '#1b4332'
+                            }}>
+                              {u.department || u.role.toUpperCase()}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '0.8rem' }}>
+                            {isSuper ? (
+                              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', fontWeight: 800 }}>
+                                👑 Full Authority (All Actions)
+                              </span>
+                            ) : (
+                              <div>
+                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', maxWidth: '320px' }}>
+                                  {userPerms.length === 0 ? (
+                                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>No staff actions assigned</span>
+                                  ) : (
+                                    userPerms.slice(0, 5).map(pid => {
+                                      const meta = ALL_STAFF_PERMISSIONS.find(p => p.id === pid);
+                                      return (
+                                        <span key={pid} style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+                                          {meta?.icon || '✓'} {meta?.label || pid}
+                                        </span>
+                                      );
+                                    })
+                                  )}
+                                  {userPerms.length > 5 && (
+                                    <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', background: '#e2e8f0', color: '#475569', fontWeight: 700 }}>
+                                      +{userPerms.length - 5} more
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
+                            <span style={{
+                              padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
+                              backgroundColor: u.status === 'suspended' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(82, 183, 136, 0.15)',
+                              color: u.status === 'suspended' ? '#d90429' : '#1b4332'
+                            }}>
+                              {u.status === 'suspended' ? 'SUSPENDED' : 'ACTIVE'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                              {u.username.toLowerCase() !== 'admin' && (
+                                <button
+                                  type="button"
+                                  onClick={() => openUserPermsModal(u)}
+                                  className="btn btn-outline"
+                                  style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: '#059669', color: '#059669', background: '#ecfdf5', fontWeight: 700 }}
+                                  title="Configure and grant permissions for actions performed by this staff member"
+                                >
+                                  🛡️ Access
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleToggleUserRole(u.username, u.role)}
+                                className="btn btn-outline"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                                disabled={u.username === user.username}
+                              >
+                                {u.role === 'admin' ? 'Demote' : 'Make Admin'}
+                              </button>
+                              <button
+                                onClick={() => handleToggleUserStatus(u.username, u.status)}
+                                className="btn btn-outline"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: u.status === 'suspended' ? '#1b4332' : '#f77f00', color: u.status === 'suspended' ? '#1b4332' : '#f77f00' }}
+                                disabled={u.username === user.username}
+                              >
+                                {u.status === 'suspended' ? 'Activate' : 'Suspend'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(u.username)}
+                                className="btn btn-outline"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: '#d90429', color: '#d90429' }}
+                                disabled={u.username === user.username}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
+
+              {/* Center Admin Access & Permission Delegation Modal */}
+              {editingUserPerms && (
+                <div style={{
+                  position: 'fixed', inset: 0, zIndex: 9999,
+                  backgroundColor: 'rgba(8, 28, 21, 0.85)', backdropFilter: 'blur(6px)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+                }}>
+                  <div className="glass-panel" style={{
+                    background: '#ffffff', borderRadius: '16px', maxWidth: '720px', width: '100%',
+                    padding: '28px', maxHeight: '90vh', overflowY: 'auto',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.3)', border: '2px solid var(--color-primary)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '1.4rem' }}>🛡️</span>
+                          <h3 style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '1.25rem', fontWeight: 800 }}>
+                            Staff Operational Access & Permissions
+                          </h3>
+                        </div>
+                        <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                          Grant, delegate or restrict actions for <strong>{editingUserPerms.name}</strong> (@{editingUserPerms.username}) · {editingUserPerms.department || editingUserPerms.role}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingUserPerms(null)}
+                        style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#64748b' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Quick Presets for Center Admin */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155' }}>
+                        Center Admin Access Presets:
+                      </span>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => setEditingUserPerms({ ...editingUserPerms, permissions: ALL_STAFF_PERMISSIONS.map(p => p.id) })}
+                          className="btn btn-outline"
+                          style={{ padding: '5px 12px', fontSize: '0.75rem', borderColor: '#059669', color: '#059669', background: '#ecfdf5', fontWeight: 800 }}
+                        >
+                          ✨ Grant All 14 Actions
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const defs = getDepartmentPermissions(editingUserPerms.department) || getDepartmentPermissions(editingUserPerms.role) || ['prices', 'deliveries'];
+                            setEditingUserPerms({ ...editingUserPerms, permissions: defs });
+                          }}
+                          className="btn btn-outline"
+                          style={{ padding: '5px 12px', fontSize: '0.75rem', borderColor: '#2563eb', color: '#2563eb', background: '#eff6ff', fontWeight: 700 }}
+                        >
+                          🏢 Department Defaults
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingUserPerms({ ...editingUserPerms, permissions: [] })}
+                          className="btn btn-outline"
+                          style={{ padding: '5px 12px', fontSize: '0.75rem', borderColor: '#dc2626', color: '#dc2626', background: '#fef2f2', fontWeight: 700 }}
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Categorized Permissions Grid */}
+                    {['Operations', 'Organization', 'Outreach', 'Settings'].map(cat => {
+                      const catPerms = ALL_STAFF_PERMISSIONS.filter(p => p.category === cat);
+                      return (
+                        <div key={cat} style={{ marginBottom: '16px' }}>
+                          <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: '#475569', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>{cat === 'Operations' ? '🚜' : cat === 'Organization' ? '🏢' : cat === 'Outreach' ? '📢' : '⚙️'}</span>
+                            <span>{cat} Actions ({catPerms.filter(p => editingUserPerms.permissions.includes(p.id)).length}/{catPerms.length})</span>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '8px' }}>
+                            {catPerms.map(perm => {
+                              const checked = editingUserPerms.permissions.includes(perm.id);
+                              return (
+                                <label
+                                  key={perm.id}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: '10px',
+                                    padding: '10px 12px',
+                                    borderRadius: '8px',
+                                    background: checked ? '#f0fdf4' : '#ffffff',
+                                    border: checked ? '1.5px solid #22c55e' : '1px solid #e2e8f0',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={(e) => {
+                                      const newPerms = e.target.checked
+                                        ? [...editingUserPerms.permissions, perm.id]
+                                        : editingUserPerms.permissions.filter(x => x !== perm.id);
+                                      setEditingUserPerms({ ...editingUserPerms, permissions: newPerms });
+                                    }}
+                                    style={{ marginTop: '2px', accentColor: '#16a34a' }}
+                                  />
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span>{perm.icon}</span>
+                                      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: checked ? '#14532d' : '#1e293b' }}>
+                                        {perm.label}
+                                      </span>
+                                    </div>
+                                    <p style={{ margin: '2px 0 0', fontSize: '0.74rem', color: '#64748b', lineHeight: 1.35 }}>
+                                      {perm.desc}
+                                    </p>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setEditingUserPerms(null)}
+                        className="btn btn-outline"
+                        style={{ padding: '10px 18px' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveUserPerms}
+                        className="btn btn-primary"
+                        style={{ padding: '10px 24px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}
+                      >
+                        <Icons.CheckCircle size={16} />
+                        Save & Apply Access ({editingUserPerms.permissions.length} Actions)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {/* User Management Tab Content End */}

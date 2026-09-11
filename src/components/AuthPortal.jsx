@@ -11,15 +11,20 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  // Register Form States with Heading Guides & Auto-Generated Numbers
-  const [regUsername, setRegUsername] = useState('');
-  const [regPassword, setRegPassword] = useState('');
+  // Register Form States (Simplified Farmer Enrollment)
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regDob, setRegDob] = useState('');
+  const [regGender, setRegGender] = useState('Female');
   const [regDistrict, setRegDistrict] = useState('Lira');
-  const [regFarmSize, setRegFarmSize] = useState('');
-  const [regNin, setRegNin] = useState('');
+  const [regPassword, setRegPassword] = useState('');
   const [regAutoId, setRegAutoId] = useState(() => generateAutoFarmerId('Lira'));
+
+  // Calculate 16-year minimum age date string for native date picker limit
+  const maxDobDate = new Date();
+  maxDobDate.setFullYear(maxDobDate.getFullYear() - 16);
+  const maxDobString = maxDobDate.toISOString().split('T')[0];
 
   // Update auto-farmer ID when district changes
   const handleDistrictChange = (dName) => {
@@ -87,17 +92,43 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
     setError('');
     setSuccess('');
 
-    const username = cleanInput(regUsername).toLowerCase();
-    const password = regPassword;
     const name = cleanInput(regName);
     const phone = cleanInput(regPhone);
-    const district = cleanInput(regDistrict);
-    const farmSize = cleanInput(regFarmSize);
+    const email = cleanInput(regEmail).toLowerCase();
+    const dob = cleanInput(regDob);
+    const gender = cleanInput(regGender) || 'Female';
+    const district = cleanInput(regDistrict) || 'Lira';
+    const password = regPassword;
 
-    if (!username || !password || !name || !phone || !farmSize) {
-      setError(t.authEnterAllFields || 'Please fill out all fields.');
+    if (!name || !phone || !email || !dob || !password) {
+      setError(t.authEnterAllFields || 'Please fill out all required fields.');
       return;
     }
+
+    // Age validation: strictly restricted to at least 16 years old
+    const birthDate = new Date(dob);
+    if (isNaN(birthDate.getTime())) {
+      setError(lang === 'en' ? 'Please enter a valid Date of Birth.' : 'Ket nino dwe me nywol ma tye kakare.');
+      return;
+    }
+    const today = new Date();
+    let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      calculatedAge--;
+    }
+    if (calculatedAge < 16) {
+      setError(lang === 'en' 
+        ? 'Registration restricted: You must be at least 16 years old to register as a farmer.' 
+        : 'Gwoko twero: Myero ibed kede mwaki 16 onyo makato me coyo nying.'
+      );
+      return;
+    }
+
+    // Auto-derive primary login username from telephone digits or email prefix
+    const phoneDigits = phone.replace(/\D/g, '');
+    const emailPrefix = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const username = phoneDigits.length >= 6 ? phoneDigits : (emailPrefix || `fmr_${Date.now()}`);
 
     // Restrict password strength
     const hasText = /[a-zA-Z]/.test(password);
@@ -115,11 +146,15 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
       password,
       name,
       phone,
+      email,
+      dob,
+      gender,
       district,
-      farmSize: farmSize + ' acres',
-      nin: regNin,
+      farmSize: '',
+      nin: '',
       farmerId: regAutoId,
-      role: 'client'
+      role: 'client',
+      status: 'active'
     };
 
     setIsLoading(true);
@@ -417,17 +452,19 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
             /* Login Form */
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
-                <label htmlFor="username" style={{ color: 'var(--color-primary-dark)' }}>{t.authUsername}</label>
+                <label htmlFor="username" style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}>
+                  {t.authUsername || 'Username, Phone Number, or Email'}
+                </label>
                 <input
                   type="text" id="username" name="username" autoComplete="username"
-                  className="form-input" placeholder="e.g. okello"
+                  className="form-input" placeholder="e.g. +256 77... or email or username"
                   value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)}
                   style={{ width: '100%', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="password" style={{ color: 'var(--color-primary-dark)' }}>{t.authPassword}</label>
+                <label htmlFor="password" style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}>{t.authPassword}</label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showLoginPassword ? "text" : "password"} id="password" name="password" autoComplete="current-password"
@@ -480,40 +517,14 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
               </div>
             </form>
           ) : (
-            /* Register Form with Field Heading Guides & Auto-Numbered Districts */
+            /* Register Form: Clean, Yellow Headings, No Guides, Email/DOB(16+)/Gender */
             <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
-              {/* Auto Number Farmer ID Banner */}
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(27,67,50,0.08) 0%, rgba(82,183,136,0.12) 100%)',
-                border: '1.5px dashed var(--color-primary)',
-                borderRadius: '10px',
-                padding: '12px 14px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--color-primary-dark)', fontWeight: 700, letterSpacing: '0.04em' }}>
-                    🏷️ Auto-Generated Farmer ID
-                  </div>
-                  <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-primary-dark)', fontFamily: 'monospace', marginTop: '2px' }}>
-                    {regAutoId}
-                  </div>
-                </div>
-                <span style={{ fontSize: '0.72rem', background: '#2d6a4f', color: '#fff', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
-                  Auto-Assigned
-                </span>
-              </div>
-
-              {/* 1. Full Legal Name Field */}
+              {/* 1. Full Name */}
               <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                  <label htmlFor="reg-name" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
-                    👤 Your Full Name
-                  </label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>As on NIN / National ID</span>
-                </div>
+                <label htmlFor="reg-name" style={{ color: '#ffd166', fontWeight: 700, fontSize: '0.875rem', display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>
+                  👤 Full Name
+                </label>
                 <input
                   type="text" id="reg-name" name="name" autoComplete="name"
                   className="form-input" placeholder="e.g. John Okello"
@@ -523,14 +534,11 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                 />
               </div>
 
-              {/* 2. Telephone Contact Field */}
+              {/* 2. Telephone Contact */}
               <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                  <label htmlFor="reg-phone" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
-                    📞 Telephone Contact
-                  </label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Active Mobile Money Line</span>
-                </div>
+                <label htmlFor="reg-phone" style={{ color: '#ffd166', fontWeight: 700, fontSize: '0.875rem', display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>
+                  📞 Telephone Contact
+                </label>
                 <input
                   type="tel" id="reg-phone" name="phone" autoComplete="tel"
                   className="form-input" placeholder="e.g. +256 772 123 456"
@@ -540,86 +548,74 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                 />
               </div>
 
-              {/* 3. National ID (NIN) Field */}
+              {/* 3. Email Address */}
               <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                  <label htmlFor="reg-nin" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
-                    🆔 Your NIN (National ID Number)
-                  </label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>14-Character National ID</span>
-                </div>
+                <label htmlFor="reg-email" style={{ color: '#ffd166', fontWeight: 700, fontSize: '0.875rem', display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>
+                  ✉️ Email Address
+                </label>
                 <input
-                  type="text" id="reg-nin" name="nin" maxLength="14"
-                  className="form-input" placeholder="e.g. CM8901234567AB"
-                  value={regNin} onChange={(e) => setRegNin(e.target.value.toUpperCase())}
-                  style={{ width: '100%', boxSizing: 'border-box', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                />
-              </div>
-
-              {/* 4. District in Uganda & Farm Size */}
-              <div className="form-row-responsive">
-                <div className="form-group" style={{ flex: 1.2 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                    <label htmlFor="reg-district" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
-                      📍 District in Uganda
-                    </label>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>146 Districts</span>
-                  </div>
-                  <select
-                    id="reg-district" name="district" className="form-input"
-                    value={regDistrict} onChange={(e) => handleDistrictChange(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', background: 'var(--color-bg-white)', color: 'var(--color-text-dark)', border: '1px solid rgba(27,67,50,0.2)' }}
-                  >
-                    {UGANDA_DISTRICTS.map(d => (
-                      <option key={d.code} value={d.name} style={{ background: '#ffffff', color: 'var(--color-text-dark)' }}>
-                        {d.code}. {d.name} ({d.region})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ flex: 0.8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                    <label htmlFor="reg-farm" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
-                      🌾 Farm Size
-                    </label>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Acres</span>
-                  </div>
-                  <input
-                    type="number" id="reg-farm" name="farmSize"
-                    className="form-input" placeholder="e.g. 5" min="0.5" step="0.5"
-                    value={regFarmSize} onChange={(e) => setRegFarmSize(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box' }}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* 5. Portal Username Field */}
-              <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                  <label htmlFor="reg-username" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
-                    🔑 Portal Login Username
-                  </label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Unique ID</span>
-                </div>
-                <input
-                  type="text" id="reg-username" name="username" autoComplete="username"
-                  className="form-input" placeholder="e.g. johnokello"
-                  value={regUsername} onChange={(e) => setRegUsername(e.target.value)}
+                  type="email" id="reg-email" name="email" autoComplete="email"
+                  className="form-input" placeholder="e.g. farmer@example.com"
+                  value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
                   style={{ width: '100%', boxSizing: 'border-box' }}
                   required
                 />
               </div>
 
-              {/* 6. Secure Password Field */}
-              <div className="form-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                  <label htmlFor="reg-password" style={{ color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: '0.875rem' }}>
-                    🔒 Create Secure Password
+              {/* 4. Date of Birth & Gender (Age restricted to at least 16 years old) */}
+              <div className="form-row-responsive">
+                <div className="form-group" style={{ flex: 1.2 }}>
+                  <label htmlFor="reg-dob" style={{ color: '#ffd166', fontWeight: 700, fontSize: '0.875rem', display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>
+                    🎂 Date of Birth
                   </label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Min. 6 chars (text + digits)</span>
+                  <input
+                    type="date" id="reg-dob" name="dob" max={maxDobString}
+                    className="form-input"
+                    value={regDob} onChange={(e) => setRegDob(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    required
+                  />
                 </div>
+
+                <div className="form-group" style={{ flex: 0.8 }}>
+                  <label htmlFor="reg-gender" style={{ color: '#ffd166', fontWeight: 700, fontSize: '0.875rem', display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>
+                    ⚥ Gender
+                  </label>
+                  <select
+                    id="reg-gender" name="gender" className="form-input"
+                    value={regGender} onChange={(e) => setRegGender(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other / Prefer not to say</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 5. District in Uganda */}
+              <div className="form-group">
+                <label htmlFor="reg-district" style={{ color: '#ffd166', fontWeight: 700, fontSize: '0.875rem', display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>
+                  📍 District in Uganda
+                </label>
+                <select
+                  id="reg-district" name="district" className="form-input"
+                  value={regDistrict} onChange={(e) => handleDistrictChange(e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                >
+                  {UGANDA_DISTRICTS.map(d => (
+                    <option key={d.code} value={d.name}>
+                      {d.code}. {d.name} ({d.region})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 6. Create Secure Password */}
+              <div className="form-group">
+                <label htmlFor="reg-password" style={{ color: '#ffd166', fontWeight: 700, fontSize: '0.875rem', display: 'block', marginBottom: '6px', letterSpacing: '0.02em' }}>
+                  🔒 Create Secure Password
+                </label>
                 <div style={{ position: 'relative' }}>
                   <input
                     type={showRegPassword ? "text" : "password"} id="reg-password" name="password" autoComplete="new-password"
@@ -644,7 +640,7 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
 
               <button
                 type="submit" className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px' }}
+                style={{ width: '100%', justifyContent: 'center', marginTop: '12px', padding: '12px', fontWeight: 700 }}
                 disabled={isLoading}
               >
                 <span>{isLoading ? 'Registering...' : (t.authRegisterBtn || 'Register Farmer Account')}</span>

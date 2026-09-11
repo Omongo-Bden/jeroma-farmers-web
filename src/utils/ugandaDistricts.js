@@ -270,3 +270,22 @@ export const getDepartmentPermissions = (deptOrRoleId) => {
   );
   return dept ? dept.permissions : null;
 };
+
+// Comprehensive Master List of All Staff Action Permissions
+export const ALL_STAFF_PERMISSIONS = [
+  { id: 'prices', label: 'Prices & Rates', category: 'Operations', icon: '🌾', desc: 'Manage crop buying/selling prices and commodity updates' },
+  { id: 'deliveries', label: 'Deliveries & Scale', category: 'Operations', icon: '🏬', desc: 'Record warehouse deliveries, weigh scale receipts, quality audits' },
+  { id: 'dispatches', label: 'Dispatches & Transit', category: 'Operations', icon: '🚚', desc: 'Coordinate transit vehicle collections and fleet logistics' },
+  { id: 'projects', label: 'Projects Hub', category: 'Operations', icon: '🚀', desc: 'A2I programs, donor projects, field phases and milestones' },
+  { id: 'staff', label: 'Staff & HR Hub', category: 'Organization', icon: '👥', desc: 'Personnel profiles, departments, employee IDs and positions' },
+  { id: 'cooperatives', label: 'Cooperatives & SACCOs', category: 'Organization', icon: '🤝', desc: 'Cooperative societies, farmer groups, legal certs and contacts' },
+  { id: 'departments', label: 'Departments & Finance', category: 'Organization', icon: '🏢', desc: '6 official departments, cash ledgers, revenue and expense logs' },
+  { id: 'forms', label: 'Google Forms Sync', category: 'Organization', icon: '📋', desc: 'Synchronize agronomy surveys and real-time farmer profiling' },
+  { id: 'inquiries', label: 'Inquiries & Messages', category: 'Outreach', icon: '✉️', desc: 'Respond to farmer questions, SMS/WhatsApp and messages' },
+  { id: 'chatbot', label: 'AI Chatbot Manager', category: 'Outreach', icon: '🤖', desc: 'Update AI farming assistant knowledge base and prompts' },
+  { id: 'socials', label: 'Social Media Hub', category: 'Outreach', icon: '📱', desc: 'Manage official TikTok, WhatsApp, Facebook and YouTube links' },
+  { id: 'slides', label: 'Banner Slides', category: 'Outreach', icon: '🖼️', desc: 'Publish carousel slides, photo highlights and announcements' },
+  { id: 'manual', label: 'Training Manual', category: 'Outreach', icon: '📖', desc: 'GAP training steps, agronomy guides and farmer videos' },
+  { id: 'language', label: 'Language Editor', category: 'Settings', icon: '🌐', desc: 'Translate UI text strings between English and Leb Lango' }
+];
+

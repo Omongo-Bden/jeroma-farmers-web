@@ -201,17 +201,22 @@ const authenticateUser = (event) => {
 
 // ─── Input Validation Schemas ───────────────────────────────────────────────
 const loginSchema = z.object({
-  username: z.string().min(3).max(30),
+  username: z.string().min(3).max(100),
   password: z.string().min(6).max(100)
 });
 
 const registerSchema = z.object({
-  username: z.string().min(3).max(30),
+  username: z.string().min(3).max(100),
   password: z.string().min(6).max(100),
   name: z.string().min(2).max(100),
   phone: z.string().optional(),
+  email: z.string().optional(),
+  dob: z.string().optional(),
+  gender: z.string().optional(),
   district: z.string().optional(),
   farmSize: z.string().optional(),
+  farmerId: z.string().optional(),
+  nin: z.string().optional(),
   permissions: z.array(z.string()).optional()
 });
 
@@ -287,9 +292,18 @@ exports.handler = async (event, _context) => {
 
       const { username, password } = parsed.data;
       const users = await db.getUsers();
-      const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+      const normInput = username.trim().toLowerCase();
+      const digitsInput = normInput.replace(/\D/g, '');
+      const user = users.find(u => {
+        const uName = (u.username || '').toLowerCase();
+        const uEmail = (u.email || '').toLowerCase();
+        const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+        return uName === normInput || 
+               (uEmail && uEmail === normInput) || 
+               (digitsInput.length >= 6 && uPhoneDigits && (uPhoneDigits === digitsInput || uPhoneDigits.endsWith(digitsInput) || digitsInput.endsWith(uPhoneDigits)));
+      });
       if (!user || !db.comparePassword(password, user.password)) {
-        return jsonResponse(401, { error: 'Invalid username or password' }, event);
+        return jsonResponse(401, { error: 'Invalid login credentials (username, email, or phone) or incorrect password.' }, event);
       }
       
       if (user.status === 'suspended') {
