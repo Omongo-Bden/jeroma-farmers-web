@@ -3960,9 +3960,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label htmlFor="mng-dept" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>🏢</span> Jeroma Department
                         </label>
-                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Guide: Select Official Department
-                        </span>
+                        
                       </div>
                       <select 
                         id="mng-dept" 
@@ -3985,9 +3983,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label htmlFor="mng-role" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>🛡️</span> System Access Role
                         </label>
-                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Guide: Defines Permissions
-                        </span>
+                        
                       </div>
                       <select 
                         id="mng-role" 
@@ -4011,9 +4007,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label htmlFor="mng-name" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>👤</span> Your Full Name
                         </label>
-                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Guide: Legal Name on ID / NIN
-                        </span>
+                        
                       </div>
                       <input 
                         id="mng-name" 
@@ -4034,9 +4028,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label htmlFor="mng-username" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>🔑</span> Login Username
                         </label>
-                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Guide: Lowercase, Unique ID
-                        </span>
+                        
                       </div>
                       <input 
                         id="mng-username" 
@@ -4057,9 +4049,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label htmlFor="mng-password" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>🔒</span> Secure Password
                         </label>
-                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Guide: Min. 6 chars with letters & numbers
-                        </span>
+                        
                       </div>
                       <input 
                         id="mng-password" 
@@ -4081,9 +4071,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label htmlFor="mng-district" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>📍</span> District in Uganda (146 Districts)
                         </label>
-                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Guide: Auto-Numbered Districts
-                        </span>
+                        
                       </div>
                       <select 
                         id="mng-district" 
@@ -4107,9 +4095,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label htmlFor="mng-phone" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>📞</span> Telephone Contact
                         </label>
-                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Guide: Ugandan Phone / WhatsApp
-                        </span>
+                        
                       </div>
                       <input 
                         id="mng-phone" 
@@ -4129,9 +4115,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label htmlFor="mng-nin" style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span>🆔</span> National Identification Number (NIN)
                         </label>
-                        <span style={{ fontSize: '0.7rem', color: '#86efac', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          Guide: 14-Character National ID
-                        </span>
+                        
                       </div>
                       <input 
                         id="mng-nin" 
@@ -5999,9 +5983,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>🆔</span> Auto Project Code *
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Auto-Numbered Code
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -6019,9 +6001,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>🚀</span> Project Title *
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Initiative Name
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -6039,9 +6019,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>🤝</span> Key Partner / Donor *
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Donor / Co-funder
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -6059,9 +6037,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>👤</span> Project Manager / Lead *
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Responsible Lead
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -6083,9 +6059,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                               <span>📊</span> Waterfall Project Phase / Status *
                             </label>
-                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                              Guide: Waterfall Lifecycle
-                            </span>
+                            
                           </div>
                           <select
                             className="form-input"
@@ -6108,9 +6082,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                               <span>📈</span> Overall Execution Progress: {editingProject.progressPercent || 0}%
                             </label>
-                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                              Guide: Milestone Completion
-                            </span>
+                            
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <input
@@ -6177,9 +6149,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>📅</span> Planned Start Date *
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Kickoff
-                          </span>
+                          
                         </div>
                         <input
                           type="date"
@@ -6196,9 +6166,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>🏁</span> Handover / End Date *
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Target Closure
-                          </span>
+                          
                         </div>
                         <input
                           type="date"
@@ -6215,9 +6183,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>⏱️</span> Schedule Duration
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Auto-Calculated
-                          </span>
+                          
                         </div>
                         <div style={{ padding: '10px 14px', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 700, color: '#0f3020' }}>
                           {editingProject.startDate && editingProject.endDate ? (
@@ -6241,9 +6207,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#14532d', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                               <span>💰</span> Total Allocated Budget (UGX) *
                             </label>
-                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#ffffff', border: '1px solid #86efac', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                              Guide: Total Grant / Fund
-                            </span>
+                            
                           </div>
                           <input
                             type="number"
@@ -6261,9 +6225,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#14532d', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                               <span>💳</span> Disbursed / Expenditure (UGX)
                             </label>
-                            <span style={{ fontSize: '0.72rem', color: '#047857', background: '#ffffff', border: '1px solid #86efac', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                              Guide: Actual Spent
-                            </span>
+                            
                           </div>
                           <input
                             type="number"
@@ -6298,9 +6260,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>👨‍🌾</span> Target Beneficiaries (Farmers)
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Farmer Target
-                          </span>
+                          
                         </div>
                         <input
                           type="number"
@@ -6317,9 +6277,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>✅</span> Achieved Beneficiaries (Farmers)
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Reached Count
-                          </span>
+                          
                         </div>
                         <input
                           type="number"
@@ -6336,9 +6294,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>🎯</span> Target Cooperatives / Groups
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Goal Groups
-                          </span>
+                          
                         </div>
                         <input
                           type="number"
@@ -6355,9 +6311,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                             <span>🏢</span> Engaged Cooperatives Count
                           </label>
-                          <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            Guide: Linked Groups
-                          </span>
+                          
                         </div>
                         <input
                           type="number"
@@ -6545,9 +6499,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                           <span>🎯</span> Strategic Objectives, Scope & Interventions *
                         </label>
-                        <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                          Guide: Scope of Work
-                        </span>
+                        
                       </div>
                       <textarea
                         className="form-input"
@@ -6670,9 +6622,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-primary-dark, #0f3020)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
                           <span>🛡️</span> Risk Management, Safeguards & Field Reporting
                         </label>
-                        <span style={{ fontSize: '0.72rem', color: '#047857', background: '#d1fae5', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                          Guide: Mitigation Strategy
-                        </span>
+                        
                       </div>
                       <textarea
                         className="form-input"
@@ -7019,9 +6969,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>🆔</span> Auto Employee ID *
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: Auto-Generated ID
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -7038,9 +6986,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>👤</span> Your Full Name *
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: Official Legal Name
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -7058,9 +7004,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>💼</span> Position / Role Title *
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: Organizational Title
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -7078,9 +7022,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>🏢</span> Jeroma Department *
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: 6 Official Units
-                          </span>
+                          
                         </div>
                         <select
                           className="form-input"
@@ -7111,9 +7053,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>📍</span> District / Station in Uganda *
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: Auto-Numbered
-                          </span>
+                          
                         </div>
                         <select
                           className="form-input"
@@ -7400,9 +7340,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>🆔</span> Auto Cooperative Code *
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: Auto-Numbered Code
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -7419,9 +7357,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>🤝</span> Cooperative / SACCO Name *
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: Registered Society Name
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -7439,9 +7375,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>📍</span> District in Uganda (146 Districts) *
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: Select Registered Base
-                          </span>
+                          
                         </div>
                         <select
                           className="form-input"
@@ -7469,9 +7403,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>🗺️</span> Subcounty / Parish
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: LC3 / Local Area
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -7490,9 +7422,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>👤</span> Chairperson / Contact Person
                           </label>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                            Guide: Executive Contact
-                          </span>
+                          
                         </div>
                         <input
                           type="text"
@@ -8352,9 +8282,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase' }}>
                                 📍 Nursery District in Uganda *
                               </label>
-                              <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px' }}>
-                                Guide: 146 Districts
-                              </span>
+                              
                             </div>
                             <select
                               className="form-input"

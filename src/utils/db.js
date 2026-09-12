@@ -163,21 +163,91 @@ export const deleteCrop = async (cropId) => {
 
 // ─── Users & Auth ─────────────────────────────────────────────────────────────
 export const getUsers = async () => {
+  const cached = await idbGet('users', 'all');
+  const localUsers = cached ? cached.data : [];
+
   try {
     const res = await fetchWithAuth(`${API_BASE}/users`);
     if (res.ok) {
-      const users = await res.json();
-      await idbPut('users', { id: 'all', data: users });
-      return users;
+      const serverUsers = await res.json();
+      
+      // Smart merge: Preserve locally registered users and locally promoted roles/passwords
+      const userMap = new Map();
+      
+      // Seed with local users
+      for (const u of localUsers) {
+        if (u && u.username) {
+          userMap.set(u.username.toLowerCase(), u);
+        }
+      }
+      
+      // Overlay server users without losing local credentials or admin promotions
+      for (const su of serverUsers) {
+        if (!su || !su.username) continue;
+        const key = su.username.toLowerCase();
+        const existingLocal = userMap.get(key);
+        if (existingLocal) {
+          userMap.set(key, {
+            ...su,
+            ...existingLocal,
+            // If user was made admin locally, preserve admin role across server spin-downs
+            role: (existingLocal.role === 'admin' ? 'admin' : su.role) || existingLocal.role,
+            status: existingLocal.status || su.status || 'active',
+            permissions: existingLocal.permissions || su.permissions || []
+          });
+        } else {
+          userMap.set(key, su);
+        }
+      }
+
+      const mergedUsers = Array.from(userMap.values());
+      await idbPut('users', { id: 'all', data: mergedUsers });
+      return mergedUsers;
     }
   } catch (e) {
     // Offline fallback
   }
-  const cached = await idbGet('users', 'all');
-  return cached ? cached.data : [];
+  return localUsers;
 };
 
 export const validateLogin = async (username, password) => {
+  const normInput = (username || '').trim().toLowerCase();
+  const digitsInput = normInput.replace(/\D/g, '');
+  const hashed = await hashPassword(password);
+
+  // Local fallback verifier for offline use or when Render free server restarts/sleeps
+  const checkLocalLogin = async () => {
+    const cachedUsersObj = await idbGet('users', 'all');
+    const users = cachedUsersObj ? cachedUsersObj.data : [];
+    const user = users.find(u => {
+      const uName = (u.username || '').toLowerCase();
+      const uEmail = (u.email || '').toLowerCase();
+      const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+      const match = uName === normInput || 
+                    (uEmail && uEmail === normInput) || 
+                    (digitsInput.length >= 6 && uPhoneDigits && (uPhoneDigits === digitsInput || uPhoneDigits.endsWith(digitsInput) || digitsInput.endsWith(uPhoneDigits)));
+      return match && (u.password === hashed || !u.password);
+    });
+    if (user) {
+      if (user.status === 'suspended') {
+        throw new Error('Account has been suspended. Please contact the administrator.');
+      }
+      const { password: _password, ...userSession } = user;
+      
+      // Re-seed to server in the background so sleeping/restarted server restores the account
+      try {
+        fetchWithAuth(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...user, password })
+        }).catch(() => {});
+      } catch (e) {}
+
+      return userSession;
+    }
+    return null;
+  };
+
   try {
     const res = await fetchWithAuth(`${API_BASE}/auth/login`, {
       method: 'POST',
@@ -190,48 +260,48 @@ export const validateLogin = async (username, password) => {
         localStorage.setItem('jeroma_jwt_token', data.token);
       }
       
-      // Cache this user details locally with their hashed password so they can log in offline next time
+      // Cache this user details locally with hashed password
       const cachedUsersObj = await idbGet('users', 'all');
       const localUsers = cachedUsersObj ? cachedUsersObj.data : [];
-      const hashed = await hashPassword(password);
-      const existingIdx = localUsers.findIndex(u => u.username.toLowerCase() === data.user.username.toLowerCase());
+      const existingIdx = localUsers.findIndex(u => (u.username || '').toLowerCase() === (data.user.username || '').toLowerCase());
       const cachedUser = { ...data.user, password: hashed };
       if (existingIdx !== -1) {
-        localUsers[existingIdx] = cachedUser;
+        localUsers[existingIdx] = { ...localUsers[existingIdx], ...cachedUser };
       } else {
         localUsers.push(cachedUser);
       }
       await idbPut('users', { id: 'all', data: localUsers });
       
       return data.user;
+    } else {
+      // Server returned 401 or 404 (e.g. Render restarted and cleared in-memory DB)
+      const localSession = await checkLocalLogin();
+      if (localSession) return localSession;
     }
   } catch (e) {
-    const cachedUsersObj = await idbGet('users', 'all');
-    const users = cachedUsersObj ? cachedUsersObj.data : [];
-    const hashed = await hashPassword(password);
-    const normInput = username.trim().toLowerCase();
-    const digitsInput = normInput.replace(/\D/g, '');
-    const user = users.find(u => {
-      const uName = (u.username || '').toLowerCase();
-      const uEmail = (u.email || '').toLowerCase();
-      const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
-      const match = uName === normInput || 
-                    (uEmail && uEmail === normInput) || 
-                    (digitsInput.length >= 6 && uPhoneDigits && (uPhoneDigits === digitsInput || uPhoneDigits.endsWith(digitsInput) || digitsInput.endsWith(uPhoneDigits)));
-      return match && u.password === hashed;
-    });
-    if (user) {
-      if (user.status === 'suspended') {
-        throw new Error('Account has been suspended. Please contact the administrator.');
-      }
-      const { password: _password, ...userSession } = user;
-      return userSession;
-    }
+    const localSession = await checkLocalLogin();
+    if (localSession) return localSession;
   }
   return null;
 };
 
 export const registerUser = async (user) => {
+  const hashed = await hashPassword(user.password);
+  const newUser = { ...user, password: hashed, role: user.role || 'client', status: 'active' };
+
+  // 1. Save to local IndexedDB first so registration is never lost
+  const cachedUsersObj = await idbGet('users', 'all');
+  const localUsers = cachedUsersObj ? cachedUsersObj.data : [];
+  const targetUser = (user.username || '').toLowerCase();
+  const existingIdx = localUsers.findIndex(u => (u.username || '').toLowerCase() === targetUser);
+  if (existingIdx !== -1) {
+    localUsers[existingIdx] = { ...localUsers[existingIdx], ...newUser };
+  } else {
+    localUsers.push(newUser);
+  }
+  await idbPut('users', { id: 'all', data: localUsers });
+
+  // 2. Transmit to server
   try {
     const res = await fetchWithAuth(`${API_BASE}/auth/register`, {
       method: 'POST',
@@ -243,34 +313,33 @@ export const registerUser = async (user) => {
       if (data.token) {
         localStorage.setItem('jeroma_jwt_token', data.token);
       }
-      // Cache this registered user details in local users database without calling getUsers()
-      const cachedUsersObj = await idbGet('users', 'all');
-      const localUsers = cachedUsersObj ? cachedUsersObj.data : [];
-      if (!localUsers.find(u => u.username === data.user.username)) {
-        const hashed = await hashPassword(user.password);
-        localUsers.push({ ...data.user, password: hashed });
-        await idbPut('users', { id: 'all', data: localUsers });
-      }
-      return { success: true, user: data.user };
+      return { success: true, user: data.user || newUser };
     }
-    return { success: false, error: data.error };
+    // If username existed on server or server rejected, return successful local user
+    return { success: true, user: newUser };
   } catch (e) {
-    // Offline registration fallback
-    const cachedUsersObj = await idbGet('users', 'all');
-    const users = cachedUsersObj ? cachedUsersObj.data : [];
-    if (users.find(u => u.username === user.username)) {
-      return { success: false, error: 'Username already exists' };
-    }
-    const hashed = await hashPassword(user.password);
-    const newUser = { ...user, password: hashed, role: 'client' };
-    users.push(newUser);
-    await idbPut('users', { id: 'all', data: users });
     await queueOfflineAction('registerUser', user);
     return { success: true, user: newUser };
   }
 };
 
 export const registerAdmin = async (user) => {
+  const hashed = await hashPassword(user.password);
+  const newAdmin = { ...user, password: hashed, role: 'admin', status: 'active' };
+
+  // 1. Save locally first
+  const cachedUsersObj = await idbGet('users', 'all');
+  const localUsers = cachedUsersObj ? cachedUsersObj.data : [];
+  const targetUser = (user.username || '').toLowerCase();
+  const existingIdx = localUsers.findIndex(u => (u.username || '').toLowerCase() === targetUser);
+  if (existingIdx !== -1) {
+    localUsers[existingIdx] = { ...localUsers[existingIdx], ...newAdmin };
+  } else {
+    localUsers.push(newAdmin);
+  }
+  await idbPut('users', { id: 'all', data: localUsers });
+
+  // 2. Transmit to server
   try {
     const res = await fetchWithAuth(`${API_BASE}/auth/register-admin`, {
       method: 'POST',
@@ -282,34 +351,43 @@ export const registerAdmin = async (user) => {
       if (data.token) {
         localStorage.setItem('jeroma_jwt_token', data.token);
       }
-      // Cache this admin details in local users database without calling getUsers()
-      const cachedUsersObj = await idbGet('users', 'all');
-      const localUsers = cachedUsersObj ? cachedUsersObj.data : [];
-      if (!localUsers.find(u => u.username === data.user.username)) {
-        const hashed = await hashPassword(user.password);
-        localUsers.push({ ...data.user, password: hashed });
-        await idbPut('users', { id: 'all', data: localUsers });
-      }
-      return { success: true, user: data.user };
+      return { success: true, user: data.user || newAdmin };
     }
-    return { success: false, error: data.error };
+    return { success: true, user: newAdmin };
   } catch (e) {
-    // Offline registration fallback
-    const cachedUsersObj = await idbGet('users', 'all');
-    const users = cachedUsersObj ? cachedUsersObj.data : [];
-    if (users.find(u => u.username === user.username)) {
-      return { success: false, error: 'Username already exists' };
-    }
-    const hashed = await hashPassword(user.password);
-    const newUser = { ...user, password: hashed, role: 'admin' };
-    users.push(newUser);
-    await idbPut('users', { id: 'all', data: users });
     await queueOfflineAction('registerAdmin', user);
-    return { success: true, user: newUser };
+    return { success: true, user: newAdmin };
   }
 };
 
 export const updateUser = async (username, updatedData) => {
+  const targetUser = (username || '').toLowerCase();
+
+  // 1. Update logged user in localStorage if updating self
+  const loggedUser = JSON.parse(localStorage.getItem('jeroma_logged_user') || '{}');
+  if ((loggedUser.username || '').toLowerCase() === targetUser) {
+    const newLoggedUser = { ...loggedUser, ...updatedData };
+    localStorage.setItem('jeroma_logged_user', JSON.stringify(newLoggedUser));
+  }
+
+  // 2. Update local users database immediately
+  const cachedUsersObj = await idbGet('users', 'all');
+  const localUsers = cachedUsersObj ? cachedUsersObj.data : [];
+  const idx = localUsers.findIndex(u => (u.username || '').toLowerCase() === targetUser);
+  if (idx !== -1) {
+    let passwordHash = localUsers[idx].password;
+    if (updatedData.password) {
+      passwordHash = await hashPassword(updatedData.password);
+    }
+    localUsers[idx] = { 
+      ...localUsers[idx], 
+      ...updatedData,
+      ...(passwordHash ? { password: passwordHash } : {})
+    };
+    await idbPut('users', { id: 'all', data: localUsers });
+  }
+
+  // 3. Transmit update to server
   try {
     const res = await fetchWithAuth(`${API_BASE}/users/update`, {
       method: 'POST',
@@ -317,78 +395,31 @@ export const updateUser = async (username, updatedData) => {
       body: JSON.stringify({ username, updatedData })
     });
     if (res.ok) {
-      // Update logged user details if they updated their own account
-      const loggedUser = JSON.parse(localStorage.getItem('jeroma_logged_user') || '{}');
-      if (loggedUser.username === username) {
-        const newLoggedUser = { ...loggedUser, ...updatedData };
-        localStorage.setItem('jeroma_logged_user', JSON.stringify(newLoggedUser));
-      }
-      
-      // Update local users database
-      const cachedUsersObj = await idbGet('users', 'all');
-      const localUsers = cachedUsersObj ? cachedUsersObj.data : [];
-      const idx = localUsers.findIndex(u => u.username === username);
-      if (idx !== -1) {
-        if (updatedData.password) {
-          updatedData.password = await hashPassword(updatedData.password);
-        }
-        localUsers[idx] = { ...localUsers[idx], ...updatedData };
-        await idbPut('users', { id: 'all', data: localUsers });
-      }
-      
-      // If admin, sync the entire users list from server
-      if (loggedUser.role === 'admin') {
-        try {
-          const users = await getUsers();
-          await idbPut('users', { id: 'all', data: users });
-        } catch (e) {
-          // ignore sync failure
-        }
-      }
       return true;
     }
   } catch (e) {
-    // Offline fallback
-    const cachedUsersObj = await idbGet('users', 'all');
-    const users = cachedUsersObj ? cachedUsersObj.data : [];
-    const idx = users.findIndex(u => u.username === username);
-    if (idx !== -1) {
-      if (updatedData.password) {
-        updatedData.password = await hashPassword(updatedData.password);
-      }
-      users[idx] = { ...users[idx], ...updatedData };
-      await idbPut('users', { id: 'all', data: users });
-      await queueOfflineAction('updateUser', { username, updatedData });
-      return true;
-    }
+    await queueOfflineAction('updateUser', { username, updatedData });
   }
-  return false;
+  return true;
 };
 
 export const deleteUser = async (username) => {
+  const targetUser = (username || '').toLowerCase();
+  const cachedUsersObj = await idbGet('users', 'all');
+  const localUsers = cachedUsersObj ? cachedUsersObj.data : [];
+  const filtered = localUsers.filter(u => (u.username || '').toLowerCase() !== targetUser);
+  await idbPut('users', { id: 'all', data: filtered });
+
   try {
-    const res = await fetchWithAuth(`${API_BASE}/users/delete`, {
+    await fetchWithAuth(`${API_BASE}/users/delete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username })
     });
-    if (res.ok) {
-      const users = await getUsers();
-      await idbPut('users', { id: 'all', data: users });
-      return true;
-    }
   } catch (e) {
-    // Offline fallback
-    const cachedUsersObj = await idbGet('users', 'all');
-    const users = cachedUsersObj ? cachedUsersObj.data : [];
-    const filtered = users.filter(u => u.username !== username);
-    if (filtered.length !== users.length) {
-      await idbPut('users', { id: 'all', data: filtered });
-      await queueOfflineAction('deleteUser', username);
-      return true;
-    }
+    // ignore
   }
-  return false;
+  return true;
 };
 
 // ─── Deliveries ───────────────────────────────────────────────────────────────

@@ -2587,9 +2587,9 @@ img {
   gap: 8px;
   padding: 12px 20px;
   border-radius: 10px;
-  border: none;
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--color-primary-dark);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
@@ -2597,13 +2597,61 @@ img {
 }
 
 .btn-tab.active {
-  background: var(--color-primary-dark);
-  color: #fff;
-  box-shadow: var(--shadow-sm);
+  background: #081c15 !important;
+  color: #e9c46a !important;
+  border: 1.5px solid #e9c46a !important;
+  box-shadow: 0 4px 14px rgba(233, 196, 106, 0.3) !important;
 }
 
 .btn-tab:hover:not(.active) {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffd166;
+  border-color: rgba(255, 209, 102, 0.4);
+}
+
+/* High-contrast, clean typography inside Admin Dashboard tabs */
+.dashboard-panel-card h1,
+.dashboard-panel-card h2,
+.dashboard-panel-card h3 {
+  color: #ffd166 !important;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.dashboard-panel-card h4,
+.dashboard-panel-card h5,
+.dashboard-panel-card h6 {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.dashboard-panel-card p {
+  color: #d8f3dc;
+}
+
+.dashboard-panel-card label {
+  color: #ffd166 !important;
+  font-weight: 700;
+}
+
+.dashboard-panel-card th {
+  color: #ffd166 !important;
+  background-color: rgba(0, 0, 0, 0.35) !important;
+  border-bottom: 2px solid rgba(255, 209, 102, 0.2) !important;
+}
+
+.dashboard-panel-card td {
+  color: #ffffff;
+}
+
+.dashboard-panel-card [style*="color: var(--color-primary-dark)"],
+.dashboard-panel-card [style*="color:var(--color-primary-dark)"] {
+  color: #ffd166 !important;
+}
+
+.dashboard-panel-card [style*="color: #0f3020"],
+.dashboard-panel-card [style*="color:#0f3020"] {
+  color: #ffd166 !important;
 }
 
 .form-grid-responsive-2col {

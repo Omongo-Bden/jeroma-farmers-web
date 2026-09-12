@@ -973,7 +973,8 @@ module.exports = {
 
   getUsers: async () => dbState.users,
   registerUser: async (user, role = 'client') => {
-    const existing = dbState.users.find(u => u.username === user.username);
+    const targetUser = (user.username || '').toLowerCase();
+    const existing = dbState.users.find(u => (u.username || '').toLowerCase() === targetUser);
     if (existing) return { success: false, error: 'Username already exists' };
     const newUser = {
       ...user,
@@ -986,7 +987,8 @@ module.exports = {
   },
   
   updateUser: async (username, updatedData) => {
-    const idx = dbState.users.findIndex(u => u.username === username);
+    const target = (username || '').toLowerCase();
+    const idx = dbState.users.findIndex(u => (u.username || '').toLowerCase() === target);
     if (idx !== -1) {
       if (updatedData.password) {
         updatedData.password = hashPassword(updatedData.password);
@@ -999,8 +1001,9 @@ module.exports = {
   },
   
   deleteUser: async (username) => {
+    const target = (username || '').toLowerCase();
     const originalLength = dbState.users.length;
-    dbState.users = dbState.users.filter(u => u.username !== username);
+    dbState.users = dbState.users.filter(u => (u.username || '').toLowerCase() !== target);
     const deleted = dbState.users.length !== originalLength;
     if (deleted) {
       saveDb();

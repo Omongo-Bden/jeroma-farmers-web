@@ -77,6 +77,7 @@ const isFullAdminUser = (userPayload) => {
   const dept = (userPayload.department || '').toLowerCase();
   const role = (userPayload.role || '').toLowerCase();
   return username === 'admin' || 
+         role === 'admin' ||
          dept === 'managing director' || 
          role === 'managing director' || 
          role === 'managing_director';
@@ -671,11 +672,15 @@ exports.handler = async (event, _context) => {
     if (path === '/users/update' && method === 'POST') {
       const userPayload = authenticateUser(event);
       const { username, updatedData } = body;
-      if (!isFullAdminUser(userPayload) && userPayload.username !== username) {
+      const callerUsername = (userPayload.username || '').toLowerCase();
+      const targetUsername = (username || '').toLowerCase();
+      const isAdmin = isFullAdminUser(userPayload);
+
+      if (!isAdmin && callerUsername !== targetUsername) {
         throw new Error('Forbidden: You can only update your own account');
       }
-      // Non-MD users cannot elevate their own role, department, or permissions!
-      if (!isFullAdminUser(userPayload) && updatedData) {
+      // Non-admin users cannot elevate their own role, department, or permissions!
+      if (!isAdmin && updatedData) {
         delete updatedData.role;
         delete updatedData.department;
         delete updatedData.permissions;

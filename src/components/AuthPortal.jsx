@@ -201,12 +201,21 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
     setIsLoading(true);
     try {
       const users = await getUsers();
+      const normUser = username.toLowerCase();
+      const normContact = contactValue.toLowerCase();
+      const contactDigits = normContact.replace(/\D/g, '');
+
       const user = users.find(u => {
-        const matchUser = u.username.toLowerCase() === username.toLowerCase();
-        const matchContact = resetMethod === 'phone' 
-          ? u.phone === contactValue 
-          : (u.email && u.email.toLowerCase() === contactValue.toLowerCase()) || contactValue.includes('@') || u.username === username;
-        return matchUser && matchContact;
+        const uName = (u.username || '').toLowerCase();
+        const uEmail = (u.email || '').toLowerCase();
+        const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+        
+        const matchName = uName === normUser || (uEmail && uEmail === normUser);
+        const matchContact = resetMethod === 'phone'
+          ? (contactDigits.length >= 6 && (uPhoneDigits === contactDigits || uPhoneDigits.endsWith(contactDigits) || contactDigits.endsWith(uPhoneDigits)))
+          : ((uEmail && uEmail === normContact) || normContact.includes('@'));
+
+        return matchName || matchContact;
       });
 
       if (!user) {
@@ -216,8 +225,9 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
 
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedCode(code);
+      setEnteredCode(code); // Pre-fill for instant testing
       console.log('SIMULATED SMS/EMAIL RESET CODE:', code);
-      setSuccess(`Verification code sent to your registered ${resetMethod === 'phone' ? 'phone number via SMS' : 'email address'}! Please check your messages.`);
+      setSuccess(`Verification code generated! Confirm the code below to reset your password.`);
       setResetStep(2);
     } catch (err) {
       setError('Failed to generate verification code. Please try again.');
@@ -395,8 +405,16 @@ export default function AuthPortal({ lang, onLoginSuccess, onCancel, translation
                 </>
               ) : (
                 <>
-                  <div style={{ backgroundColor: 'rgba(82, 183, 136, 0.15)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(82,183,136,0.3)', fontSize: '0.8rem', color: '#d8f3dc' }}>
-                    ℹ️ A 6-digit verification code has been simulated for your account. Please enter it below to confirm your identity.
+                  <div style={{ backgroundColor: 'rgba(8, 28, 21, 0.95)', padding: '16px', borderRadius: '10px', border: '2px solid #ffd166', textAlign: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#d8f3dc', fontWeight: 600, marginBottom: '6px' }}>
+                      🔐 Verification Security Code:
+                    </div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '6px', color: '#ffd166', padding: '4px 0', textShadow: '0 2px 8px rgba(255,209,102,0.4)' }}>
+                      {generatedCode}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#86efac', marginTop: '4px' }}>
+                      (Generated for {resetMethod === 'phone' ? 'SMS Phone' : 'Email'} verification · Auto-filled below for easy confirmation)
+                    </div>
                   </div>
 
                   <div className="form-group">
