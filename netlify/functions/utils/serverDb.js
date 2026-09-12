@@ -231,6 +231,34 @@ const DEFAULT_SLIDES = [
     fit: 'cover',
   },
   {
+    id: 'video_a2i_lira',
+    icon: '🎥',
+    tag_en: 'Training Video',
+    tag_ach: 'Video me Pwonj',
+    title_en: 'A2I Lira Farmer Training in Action',
+    title_ach: 'Pwonj me A2I i Lira pi Lupur',
+    body_en: 'Watch Jeroma, Access to Innovation (A2I), and partner bank teams conducting practical field training with local farmers and SACCOs in Lira on modern agro-machinery and financial literacy.',
+    body_ach: 'Nen team me Jeroma, A2I, kede Bank tye ka pwonjo lupur kede SACCOs i Lira kom mashini me pur kede neno cente.',
+    video: '/videos/a2i_lira_training.mp4',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
+    id: 'video_fallarmy_worm',
+    icon: '🐛',
+    tag_en: 'Crop Protection Video',
+    tag_ach: 'Gengo Kwoyo (Video)',
+    title_en: 'Fall Armyworm Field Scouting & Protection',
+    title_ach: 'Gengo Fall Armyworm kede Kwoyo i Cam',
+    body_en: 'Field extension guidance on scouting, early detection, and safe biological control techniques to protect maize and sunflower crops against fall armyworm outbreaks.',
+    body_ach: 'Pwonj me poto kom gengo Fall Armyworm ma balu anwanyi kede cam, pwonjo lupur yore me yeyi kabilo maber wek cam obed ma kwo.',
+    video: '/videos/fallarmy_worm.mp4',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
     id: 'partnership_a2i',
     icon: '🚀',
     tag_en: 'Implementation',
@@ -641,11 +669,11 @@ const DEFAULT_PROJECTS = [
       'Kole Agro-Producers Association'
     ],
     objectives: 'Train smallholder farmers on raised-rack drying, digital moisture grading, IPM pest control, and proper hermetic grain storage to achieve 0% aflatoxin contamination.',
-    riskMitigation: 'Practical hands-on village demonstration plots with local language (Acholi / Lango) manuals.',
+    riskMitigation: 'Practical hands-on village field training plots with local language (Acholi / Lango) manuals.',
     milestones: [
       { id: 'm1', phase: 'Initiation', title: 'Curriculum Harmonization with NARO & Ministry of Agriculture', completed: true, targetDate: '2026-02-20' },
       { id: 'm2', phase: 'Planning', title: 'TOT Training of 24 Field Extension Officers', completed: true, targetDate: '2026-04-10' },
-      { id: 'm3', phase: 'On Process', title: 'Community Mobilization & Demo Plot Preparation', completed: true, targetDate: '2026-06-15' },
+      { id: 'm3', phase: 'On Process', title: 'Community Mobilization & Field Plot Preparation', completed: true, targetDate: '2026-06-15' },
       { id: 'm4', phase: 'Implementation', title: 'Raised Racks & Hermetic Storage Bag Distribution', completed: true, targetDate: '2026-08-20' },
       { id: 'm5', phase: 'Monitoring', title: 'Aflatoxin Lab Testing & Grain Quality Sampling', completed: false, targetDate: '2026-09-30' },
       { id: 'm6', phase: 'Completed', title: 'Farmer Certification & Final Training Report', completed: false, targetDate: '2026-10-31' }
@@ -858,7 +886,7 @@ const DEFAULT_SOCIALS = {
   facebook: { enabled: true, handle: '@jeromafarmers', url: 'https://www.facebook.com/jeromafarmers', title: 'Facebook Page', subtitle: 'Jeroma Farmers Collection Centre Ltd' },
   tiktok: { enabled: true, handle: '@jeromafarmers', url: 'https://www.tiktok.com/@jeromafarmers', title: 'TikTok Channel', subtitle: 'Farmer Training & Field Operations' },
   x: { enabled: true, handle: '@JeromaFarmers', url: 'https://x.com/JeromaFarmers', title: 'X (Twitter)', subtitle: 'Real-time Bulletins & Commodity Updates' },
-  youtube: { enabled: true, handle: '@jeromafarmers', url: 'https://www.youtube.com/@jeromafarmers', title: 'YouTube Channel', subtitle: 'Farmer Testimonials & Machinery Demonstrations' },
+  youtube: { enabled: true, handle: '@jeromafarmers', url: 'https://www.youtube.com/@jeromafarmers', title: 'YouTube Channel', subtitle: 'Farmer Testimonials & Machinery Field Operations' },
   linkedin: { enabled: true, handle: 'jeromafarmers', url: 'https://www.linkedin.com/company/jeromafarmers', title: 'LinkedIn', subtitle: 'Corporate & Institutional Partnerships' },
   instagram: { enabled: true, handle: '@jeromafarmers', url: 'https://www.instagram.com/jeromafarmers', title: 'Instagram', subtitle: 'Farm Photography & Community Highlights' },
   telegram: { enabled: false, handle: '@jeromafarmers', url: 'https://t.me/jeromafarmers', title: 'Telegram Community', subtitle: 'Broadcasts & Cooperative Alerts' }
@@ -913,6 +941,22 @@ if (dbState.slides && Array.isArray(dbState.slides)) {
         Object.assign(a2iSlide, freshSlide);
         saveDb();
       }
+    }
+  }
+  const hasA2iVid = dbState.slides.some(s => s.id === 'video_a2i_lira');
+  if (!hasA2iVid) {
+    const s1 = DEFAULT_SLIDES.find(s => s.id === 'video_a2i_lira');
+    if (s1) {
+      dbState.slides.push(s1);
+      saveDb();
+    }
+  }
+  const hasWormVid = dbState.slides.some(s => s.id === 'video_fallarmy_worm');
+  if (!hasWormVid) {
+    const s2 = DEFAULT_SLIDES.find(s => s.id === 'video_fallarmy_worm');
+    if (s2) {
+      dbState.slides.push(s2);
+      saveDb();
     }
   }
 }

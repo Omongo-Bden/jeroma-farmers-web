@@ -38,7 +38,7 @@ export default function Projects({ lang, translations: dynamicTranslations }) {
           icon: '⚙️',
           title: lang === 'en' ? 'A2I & Danish Support' : 'Machinery ki A2I & Denmark',
           desc: lang === 'en'
-            ? 'Demonstrations and operation of modern threshers, cyclone shellers, and solar dryers designed to avoid smallholder debt burdens.'
+            ? 'Field training and operation of modern threshers, cyclone shellers, and solar dryers designed to avoid smallholder debt burdens.'
             : 'Pwonjo tic ki mashini me pur (threshers, shellers, solar dryers) kede cwak me Gavumenti me Denmark ma pe kelo deni bot lupur.'
         }
       ],

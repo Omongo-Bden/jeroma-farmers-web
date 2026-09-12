@@ -59,6 +59,34 @@ const getSlidesFallback = (lang) => [
     fit: 'cover',
   },
   {
+    id: 'video_a2i_lira',
+    icon: '🎥',
+    tag_en: 'Training Video',
+    tag_ach: 'Video me Pwonj',
+    title_en: 'A2I Lira Farmer Training in Action',
+    title_ach: 'Pwonj me A2I i Lira pi Lupur',
+    body_en: 'Watch Jeroma, Access to Innovation (A2I), and partner bank teams conducting practical field training with local farmers and SACCOs in Lira on modern agro-machinery and financial literacy.',
+    body_ach: 'Nen team me Jeroma, A2I, kede Bank tye ka pwonjo lupur kede SACCOs i Lira kom mashini me pur kede neno cente.',
+    video: '/videos/a2i_lira_training.mp4',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
+    id: 'video_fallarmy_worm',
+    icon: '🐛',
+    tag_en: 'Crop Protection Video',
+    tag_ach: 'Gengo Kwoyo (Video)',
+    title_en: 'Fall Armyworm Field Scouting & Protection',
+    title_ach: 'Gengo Fall Armyworm kede Kwoyo i Cam',
+    body_en: 'Field extension guidance on scouting, early detection, and safe biological control techniques to protect maize and sunflower crops against fall armyworm outbreaks.',
+    body_ach: 'Pwonj me poto kom gengo Fall Armyworm ma balu anwanyi kede cam, pwonjo lupur yore me yeyi kabilo maber wek cam obed ma kwo.',
+    video: '/videos/fallarmy_worm.mp4',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
     id: 'partnership_a2i',
     icon: '🚀',
     tag_en: 'Implementation',
@@ -109,12 +137,13 @@ export const getEmbedUrl = (url) => {
 export function BannerMedia({ mediaUrl, title, fit, animating, isMobile, onVideoEnd, setIsVideoPlaying }) {
   const videoRef = useRef(null);
   const isVideo = isVideoUrl(mediaUrl);
+  const [isMuted, setIsMuted] = useState(true);
 
   useEffect(() => {
     if (isVideo && videoRef.current) {
       const v = videoRef.current;
       v.defaultMuted = true;
-      v.muted = true;
+      v.muted = isMuted;
       v.playsInline = true;
       const playPromise = v.play();
       if (playPromise !== undefined) {
@@ -123,7 +152,16 @@ export function BannerMedia({ mediaUrl, title, fit, animating, isMobile, onVideo
         });
       }
     }
-  }, [isVideo, mediaUrl]);
+  }, [isVideo, mediaUrl, isMuted]);
+
+  const toggleSound = (e) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      const nextMute = !videoRef.current.muted;
+      videoRef.current.muted = nextMute;
+      setIsMuted(nextMute);
+    }
+  };
 
   if (!mediaUrl) {
     return (
@@ -153,30 +191,58 @@ export function BannerMedia({ mediaUrl, title, fit, animating, isMobile, onVideo
     }
 
     return (
-      <video
-        ref={videoRef}
-        key={mediaUrl}
-        src={mediaUrl}
-        controls
-        autoPlay
-        muted
-        loop
-        playsInline
-        onPlay={() => setIsVideoPlaying && setIsVideoPlaying(true)}
-        onPause={() => setIsVideoPlaying && setIsVideoPlaying(false)}
-        onEnded={() => {
-          if (setIsVideoPlaying) setIsVideoPlaying(false);
-          if (onVideoEnd) onVideoEnd();
-        }}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          boxSizing: 'border-box',
-          transition: 'opacity 0.3s ease-in-out',
-          opacity: animating ? 0.2 : 1,
-        }}
-      />
+      <div style={{ position: 'relative', width: '100%', height: '100%', backgroundColor: '#05130e' }}>
+        <video
+          ref={videoRef}
+          key={mediaUrl}
+          src={mediaUrl}
+          controls
+          autoPlay
+          muted={isMuted}
+          playsInline
+          preload="auto"
+          onPlay={() => setIsVideoPlaying && setIsVideoPlaying(true)}
+          onPause={() => setIsVideoPlaying && setIsVideoPlaying(false)}
+          onEnded={() => {
+            if (setIsVideoPlaying) setIsVideoPlaying(false);
+            if (onVideoEnd) onVideoEnd();
+          }}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: fit || 'cover',
+            boxSizing: 'border-box',
+            transition: 'opacity 0.3s ease-in-out',
+            opacity: animating ? 0.2 : 1,
+            backgroundColor: '#000'
+          }}
+        />
+        <button
+          onClick={toggleSound}
+          title={isMuted ? "Click to unmute sound" : "Click to mute sound"}
+          style={{
+            position: 'absolute',
+            bottom: '12px',
+            right: '12px',
+            backgroundColor: 'rgba(8, 28, 21, 0.85)',
+            border: '1px solid rgba(82, 183, 136, 0.6)',
+            color: '#a8e6c8',
+            borderRadius: '20px',
+            padding: '4px 10px',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span>{isMuted ? '🔇 Unmute' : '🔊 Sound On'}</span>
+        </button>
+      </div>
     );
   }
 

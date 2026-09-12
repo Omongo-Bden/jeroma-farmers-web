@@ -265,12 +265,23 @@ function TypingIndicator() {
   );
 }
 
+export function cleanChatText(text) {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/\*{3,}/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/(^|\n)\s*\*\s+/g, '$1• ')
+    .replace(/(\n\s*){3,}/g, '\n\n')
+    .trim();
+}
+
 function ChatMessage({ msg }) {
   const isBot = msg.role === 'assistant';
   const [copied, setCopied] = useState(false);
+  const displayContent = isBot ? cleanChatText(msg.content) : msg.content;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(msg.content);
+    navigator.clipboard.writeText(displayContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -281,7 +292,7 @@ function ChatMessage({ msg }) {
       `Jeroma Farmers AI Response\n`,
       `Date: ${new Date(msg.ts).toLocaleString()}\n`,
       `==============================\n\n`,
-      msg.content
+      displayContent
     ], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     element.download = `jeroma_ai_response_${new Date(msg.ts).toISOString().slice(0, 10)}.txt`;
@@ -325,7 +336,7 @@ function ChatMessage({ msg }) {
               )}
             </div>
           )}
-          {msg.content}
+          {displayContent}
           <span className="chat-timestamp" style={{ display: 'block', textAlign: 'right', marginTop: '4px', fontSize: '0.68rem', opacity: 0.6 }}>
             {new Date(msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
@@ -733,16 +744,14 @@ export default function ChatBot({ lang, onClose }) {
     // Text-only off-topic check (skip if we have a media attachment OR if there is active history)
     const hasHistory = messages.length > 0;
     if (!currentAttachment && userMsg && !hasHistory && isQueryOffTopic(userMsg)) {
-      setTimeout(() => {
-        const botMsg = {
-          role: 'assistant',
-          content: "Sorry i cant help you with that question, is there any Question related to Agriculture or Our Company, i can help you with",
-          ts: Date.now(),
-        };
-        setMessages(prev => [...prev, botMsg]);
-        setIsLoading(false);
-        if (!isOpen) setUnread(prev => prev + 1);
-      }, 400);
+      const botMsg = {
+        role: 'assistant',
+        content: "Sorry i cant help you with that question, is there any Question related to Agriculture or Our Company, i can help you with",
+        ts: Date.now(),
+      };
+      setMessages(prev => [...prev, botMsg]);
+      setIsLoading(false);
+      if (!isOpen) setUnread(prev => prev + 1);
       return;
     }
 
@@ -773,7 +782,7 @@ export default function ChatBot({ lang, onClose }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(30000), // Extended timeout for multimodal
+        signal: AbortSignal.timeout(25000),
       });
 
       let reply;
@@ -781,15 +790,15 @@ export default function ChatBot({ lang, onClose }) {
         if (res.ok) {
           const data = await res.json();
           if (data && data.reply) {
-            reply = data.reply;
+            reply = cleanChatText(data.reply);
           } else {
-            reply = getLocalFallback(userMsg);
+            reply = cleanChatText(getLocalFallback(userMsg));
           }
         } else {
-          reply = getLocalFallback(userMsg);
+          reply = cleanChatText(getLocalFallback(userMsg));
         }
       } catch {
-        reply = getLocalFallback(userMsg);
+        reply = cleanChatText(getLocalFallback(userMsg));
       }
 
       const botMsg = { role: 'assistant', content: reply, ts: Date.now() };
@@ -801,7 +810,7 @@ export default function ChatBot({ lang, onClose }) {
         role: 'assistant',
         content: currentAttachment
           ? "I couldn't process your media right now. Please try again or describe your question in text."
-          : getLocalFallback(userMsg),
+          : cleanChatText(getLocalFallback(userMsg)),
         ts: Date.now(),
       };
       setMessages(prev => [...prev, botMsg]);
@@ -863,7 +872,34 @@ export default function ChatBot({ lang, onClose }) {
                 </p>
               </div>
             </div>
-            <div className="chatbot-header-actions">
+            <div className="chatbot-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button 
+                onClick={() => window.open(window.location.origin + '/#chatbot', '_blank')} 
+                title="Open in separate new page" 
+                className="chat-icon-btn" 
+                aria-label="Open in separate new page"
+                style={{
+                  background: 'rgba(82, 183, 136, 0.2)',
+                  border: '1px solid rgba(82, 183, 136, 0.5)',
+                  color: '#a8e6c8',
+                  borderRadius: '8px',
+                  padding: '4px 9px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  transition: 'all 0.2s'
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span>New Page</span>
+              </button>
               <button onClick={clearChat} title="Clear chat" className="chat-icon-btn" aria-label="Clear chat">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>

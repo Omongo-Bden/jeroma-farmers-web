@@ -369,12 +369,12 @@ export default function Socials({ lang, translations: _translations }) {
 
               <p className="social-description">
                 {lang === 'en'
-                  ? 'Watch high-definition video demonstrations of multi-crop threshers, moisture grading in action, and farmer success testimonials.'
+                  ? 'Watch high-definition field training videos of multi-crop threshers, moisture grading in action, and farmer success testimonials.'
                   : 'Nen video me pwonj kom kabilo, machinery me pur kede nyak me opur mwa i YouTube.'}
               </p>
 
               <div className="social-feed-mock tk-video-mock" style={{ minHeight: '130px' }}>
-                <img src="/a2i_project_1.jpg" alt="A2I Machinery Demonstration" loading="lazy" />
+                <img src="/a2i_project_1.jpg" alt="A2I Machinery Field Operations" loading="lazy" />
                 <div className="tk-play-btn" style={{ background: '#FF0000' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff">
                     <polygon points="5 3 19 12 5 21 5 3"></polygon>

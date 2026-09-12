@@ -38,6 +38,8 @@ const JEROMA_SYSTEM_PROMPT = `CRITICAL POLICY: You can ONLY answer questions rel
 If the user's message is about ANY other topic (including but not limited to general knowledge, sports, history, coding, cooking recipes, movies, math, etc.), you MUST reply EXACTLY with this phrase and nothing else:
 "Sorry i cant help you with that question, is there any Question related to Agriculture or Our Company, i can help you with"
 
+STRICT FORMATTING RULE: NEVER use triple asterisks (***) or double asterisks (**) in your responses. Do NOT write *** anywhere. Never use markdown header hashes (###). Use clean bullet points (•) and clear, easy-to-read paragraphs.
+
 You are Jeroma, the expert AI assistant for Jeroma Farmers Collection Centre Ltd — a leading agricultural company headquartered in Pader, Uganda.
 
 You have deep, comprehensive knowledge of Uganda agriculture drawn from the Ministry of Agriculture, Animal Industry and Fisheries (MAAIF), the National Agricultural Research Organisation (NARO), the Food and Agriculture Organization (FAO Uganda), the International Institute of Tropical Agriculture (IITA), and the Uganda Coffee Development Authority (UCDA). Use this knowledge to give thorough, accurate, practical advice.
@@ -97,7 +99,7 @@ SERVICES:
 2. Moisture & Quality Grading — digital moisture meters, optical sorting, certified Grade A/B assessments
 3. Warehousing & Silo Storage — climate-controlled, humidity-regulated, pest control, warehouse receipts for credit
 4. Agro Inputs & Supplies — certified seeds (NASECO, East African Seeds, Farm Africa DK Maize), Biofertilizer NPK; crop sprays (Bukola Inputs); buy-now pay-at-harvest credit terms
-5. Extension Services — GAP training, post-harvest handling demos, climate smart agriculture, VSLA training
+5. Extension Services — GAP training, post-harvest handling training, climate smart agriculture, VSLA training
 6. Tree Nurseries — fruit trees, agroforestry, fuel wood, and timber seedlings across all 7 districts
 
 FARMER PORTAL:
@@ -582,10 +584,12 @@ function formatWebsiteContext(context) {
 
 async function getLiveDatabaseContext() {
   try {
-    const crops = await db.getCrops();
-    const slides = await db.getSlides();
-    const manual = await db.getManual();
-    const users = await db.getUsers();
+    const [crops, slides, manual, users] = await Promise.all([
+      db.getCrops().catch(() => null),
+      db.getSlides().catch(() => null),
+      db.getManual().catch(() => null),
+      db.getUsers().catch(() => null)
+    ]);
     
     let text = '\n\nLIVE SYSTEM DATABASE CONTEXT (Current real-time state on the website):';
     
@@ -709,24 +713,26 @@ exports.handler = async (event, _context) => {
   // Determine auth method: AQ. keys use Bearer token auth; AIzaSy keys use ?key= query param
   const usesBearerAuth = apiKey.startsWith('AQ.');
 
-  // Merge admin links with the pre-configured default knowledge links (deduplicate by URL)
-  const adminUrls = new Set((knowledgeLinks || []).map(l => l.url));
-  const allLinks = [
-    ...(knowledgeLinks || []),
-    ...DEFAULT_KNOWLEDGE_LINKS.filter(l => !adminUrls.has(l.url))
-  ].slice(0, 8); // Max 8 links total to stay within fetch budget
-
-  // Fetch all knowledge sources in parallel
+  // Only fetch external custom knowledge links if explicitly provided by admin configuration
   let linksText = '';
-  if (allLinks.length > 0) {
-    const fetchPromises = allLinks.map(async (link) => {
-      if (!link?.url) return '';
-      const content = await fetchUrlContent(link.url);
-      return `SOURCE: ${link.label || link.url}\nURL: ${link.url}\nCONTENT:\n${content}\n---`;
-    });
-    const results = (await Promise.all(fetchPromises)).filter(r => r.trim() !== '');
-    if (results.length > 0) {
-      linksText = `\n\nWEB KNOWLEDGE SOURCES (live-fetched from official Uganda agriculture authorities):\n${results.join('\n\n')}`;
+  if (Array.isArray(knowledgeLinks) && knowledgeLinks.length > 0) {
+    const validLinks = knowledgeLinks.filter(l => l && l.url).slice(0, 3);
+    if (validLinks.length > 0) {
+      const fetchPromises = validLinks.map(async (link) => {
+        try {
+          const content = await Promise.race([
+            fetchUrlContent(link.url),
+            new Promise(r => setTimeout(() => r(''), 1500))
+          ]);
+          return content ? `SOURCE: ${link.label || link.url}\nURL: ${link.url}\nCONTENT:\n${content}\n---` : '';
+        } catch {
+          return '';
+        }
+      });
+      const results = (await Promise.all(fetchPromises)).filter(r => r && r.trim() !== '');
+      if (results.length > 0) {
+        linksText = `\n\nADDITIONAL KNOWLEDGE SOURCES:\n${results.join('\n\n')}`;
+      }
     }
   }
 
@@ -935,11 +941,12 @@ exports.handler = async (event, _context) => {
       for (let i = 0; i < OPENROUTER_MODELS.length; i++) {
         const model = OPENROUTER_MODELS[i];
         try {
-          if (i > 0) await sleep(1000);
+          if (i > 0) await sleep(200);
           const { res, model: triedModel } = await tryOpenRouter(model);
           if (res.ok) {
             const data = await res.json();
-            const reply = data?.choices?.[0]?.message?.content || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            let reply = data?.choices?.[0]?.message?.content || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            reply = reply.replace(/\*{3,}/g, '').replace(/\*\*/g, '').replace(/(^|\n)\s*\*\s+/g, '$1• ').trim();
             console.log(`Jeroma AI responded via OpenRouter model: ${triedModel}`);
             chatCache[cacheKey] = { reply, timestamp: now };
             return jsonResponse(200, { reply });
@@ -960,11 +967,12 @@ exports.handler = async (event, _context) => {
       for (let i = 0; i < GROQ_MODELS.length; i++) {
         const model = GROQ_MODELS[i];
         try {
-          if (i > 0) await sleep(1000);
+          if (i > 0) await sleep(200);
           const { res, model: triedModel } = await tryGroq(model);
           if (res.ok) {
             const data = await res.json();
-            const reply = data?.choices?.[0]?.message?.content || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            let reply = data?.choices?.[0]?.message?.content || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            reply = reply.replace(/\*{3,}/g, '').replace(/\*\*/g, '').replace(/(^|\n)\s*\*\s+/g, '$1• ').trim();
             console.log(`Jeroma AI responded via Groq model: ${triedModel}`);
             chatCache[cacheKey] = { reply, timestamp: now };
             return jsonResponse(200, { reply });
@@ -978,9 +986,8 @@ exports.handler = async (event, _context) => {
         }
       }
     } else {
-      // Default: Google Direct API
+      // Default: Google Direct API (Fastest production models)
       const MODEL_WATERFALL = [
-        'gemini-2.5-flash',
         'gemini-2.0-flash',
         'gemini-1.5-flash',
         'gemini-1.5-flash-8b'
@@ -988,11 +995,12 @@ exports.handler = async (event, _context) => {
       for (let i = 0; i < MODEL_WATERFALL.length; i++) {
         const model = MODEL_WATERFALL[i];
         try {
-          if (i > 0) await sleep(1000);
+          if (i > 0) await sleep(200);
           const { res, model: triedModel } = await tryGemini(model);
           if (res.ok) {
             const geminiData = await res.json();
-            const reply = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            let reply = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I didn't get a clear answer. Please try again or call +256 773 623 196.";
+            reply = reply.replace(/\*{3,}/g, '').replace(/\*\*/g, '').replace(/(^|\n)\s*\*\s+/g, '$1• ').trim();
             console.log(`Jeroma AI responded via direct Gemini model: ${triedModel}`);
             chatCache[cacheKey] = { reply, timestamp: now };
             return jsonResponse(200, { reply });

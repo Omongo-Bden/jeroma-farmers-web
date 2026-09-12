@@ -446,12 +446,6 @@ export default function Navbar({
               {/* Ask Jeroma AI button — always visible on top in mobile */}
               <button
                 onClick={() => {
-                  const loggedUser = localStorage.getItem('jeroma_logged_user');
-                  if (!loggedUser) {
-                    alert(lang === 'en' ? 'Please login to access Ask Jeroma AI' : 'Keto login me open tic man');
-                    if (onPortalClick) onPortalClick();
-                    return;
-                  }
                   window.location.hash = '#chatbot';
                 }}
                 style={{
@@ -738,12 +732,6 @@ export default function Navbar({
                 onClick={(e) => { 
                   e.preventDefault(); 
                   setIsMenuOpen(false);
-                  const loggedUser = localStorage.getItem('jeroma_logged_user');
-                  if (!loggedUser) {
-                    alert(lang === 'en' ? 'Please login to access Ask Jeroma AI' : 'Keto login me open tic man');
-                    if (onPortalClick) onPortalClick();
-                    return;
-                  }
                   window.location.hash = '#chatbot';
                 }}
                 style={{ 

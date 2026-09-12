@@ -257,13 +257,7 @@ function App() {
           setCurrentView('manual');
         }
       } else if (hash === '#chatbot') {
-        const savedUser = localStorage.getItem('jeroma_logged_user');
-        if (savedUser) {
-          setCurrentView('chatbot');
-        } else {
-          setCurrentView('portal');
-          window.location.hash = '#portal';
-        }
+        setCurrentView('chatbot');
       } else if (hash === '#dashboard') {
         const savedUser = localStorage.getItem('jeroma_logged_user');
         if (savedUser) {
@@ -574,7 +568,10 @@ function App() {
             </div>
             <button 
               className="btn btn-outline" 
-              onClick={() => setCurrentView('home')} 
+              onClick={() => {
+                window.location.hash = '';
+                setCurrentView('home');
+              }} 
               style={{ marginTop: '24px', borderColor: '#52b788', color: '#52b788', padding: '10px 20px' }}
             >
               ← {lang === 'en' ? 'Back to home' : 'Dok cen i home'}
@@ -616,7 +613,7 @@ function App() {
       )}
 
       {/* PC Only Floating ChatBot Overlay */}
-      {!isMobile && pcChatbotOpen && (
+      {!isMobile && pcChatbotOpen && currentView !== 'chatbot' && (
         <div style={{
           position: 'fixed',
           bottom: '80px',

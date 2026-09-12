@@ -997,6 +997,34 @@ const DEFAULT_SLIDES = [
     fit: 'cover',
   },
   {
+    id: 'video_a2i_lira',
+    icon: '🎥',
+    tag_en: 'Training Video',
+    tag_ach: 'Video me Pwonj',
+    title_en: 'A2I Lira Farmer Training in Action',
+    title_ach: 'Pwonj me A2I i Lira pi Lupur',
+    body_en: 'Watch Jeroma, Access to Innovation (A2I), and partner bank teams conducting practical field training with local farmers and SACCOs in Lira on modern agro-machinery and financial literacy.',
+    body_ach: 'Nen team me Jeroma, A2I, kede Bank tye ka pwonjo lupur kede SACCOs i Lira kom mashini me pur kede neno cente.',
+    video: '/videos/a2i_lira_training.mp4',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
+    id: 'video_fallarmy_worm',
+    icon: '🐛',
+    tag_en: 'Crop Protection Video',
+    tag_ach: 'Gengo Kwoyo (Video)',
+    title_en: 'Fall Armyworm Field Scouting & Protection',
+    title_ach: 'Gengo Fall Armyworm kede Kwoyo i Cam',
+    body_en: 'Field extension guidance on scouting, early detection, and safe biological control techniques to protect maize and sunflower crops against fall armyworm outbreaks.',
+    body_ach: 'Pwonj me poto kom gengo Fall Armyworm ma balu anwanyi kede cam, pwonjo lupur yore me yeyi kabilo maber wek cam obed ma kwo.',
+    video: '/videos/fallarmy_worm.mp4',
+    color: '#081c15',
+    accent: '#52b788',
+    fit: 'cover',
+  },
+  {
     id: 'partnership_a2i',
     icon: '🚀',
     tag_en: 'Implementation',
@@ -1018,8 +1046,11 @@ export const getSlides = async () => {
     if (res.ok) {
       const slides = await res.json();
       if (Array.isArray(slides) && slides.length > 0) {
-        await idbPut('slides', { id: 'all', data: slides });
-        return slides;
+        const slideIds = new Set(slides.map(s => s.id));
+        const missingDefaults = DEFAULT_SLIDES.filter(ds => !slideIds.has(ds.id));
+        const merged = missingDefaults.length > 0 ? [...slides, ...missingDefaults] : slides;
+        await idbPut('slides', { id: 'all', data: merged });
+        return merged;
       }
     }
   } catch (e) {
@@ -1027,7 +1058,9 @@ export const getSlides = async () => {
   }
   const cached = await idbGet('slides', 'all');
   if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
-    return cached.data;
+    const slideIds = new Set(cached.data.map(s => s.id));
+    const missingDefaults = DEFAULT_SLIDES.filter(ds => !slideIds.has(ds.id));
+    return missingDefaults.length > 0 ? [...cached.data, ...missingDefaults] : cached.data;
   }
   return DEFAULT_SLIDES;
 };
@@ -1768,7 +1801,7 @@ export const DEFAULT_SOCIALS = {
   facebook: { enabled: true, handle: '@jeromafarmers', url: 'https://www.facebook.com/jeromafarmers', title: 'Facebook Page', subtitle: 'Jeroma Farmers Collection Centre Ltd' },
   tiktok: { enabled: true, handle: '@jeromafarmers', url: 'https://www.tiktok.com/@jeromafarmers', title: 'TikTok Channel', subtitle: 'Farmer Training & Field Operations' },
   x: { enabled: true, handle: '@JeromaFarmers', url: 'https://x.com/JeromaFarmers', title: 'X (Twitter)', subtitle: 'Real-time Bulletins & Commodity Updates' },
-  youtube: { enabled: true, handle: '@jeromafarmers', url: 'https://www.youtube.com/@jeromafarmers', title: 'YouTube Channel', subtitle: 'Farmer Testimonials & Machinery Demonstrations' },
+  youtube: { enabled: true, handle: '@jeromafarmers', url: 'https://www.youtube.com/@jeromafarmers', title: 'YouTube Channel', subtitle: 'Farmer Testimonials & Machinery Field Operations' },
   linkedin: { enabled: true, handle: 'jeromafarmers', url: 'https://www.linkedin.com/company/jeromafarmers', title: 'LinkedIn', subtitle: 'Corporate & Institutional Partnerships' },
   instagram: { enabled: true, handle: '@jeromafarmers', url: 'https://www.instagram.com/jeromafarmers', title: 'Instagram', subtitle: 'Farm Photography & Community Highlights' },
   telegram: { enabled: false, handle: '@jeromafarmers', url: 'https://t.me/jeromafarmers', title: 'Telegram Community', subtitle: 'Broadcasts & Cooperative Alerts' }
