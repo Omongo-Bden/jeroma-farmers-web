@@ -800,7 +800,8 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
         }
       }
 
-      setPwSuccess(`Verification code generated! [DEMO MODE] Your code is: ${code}. Please enter it below to verify (configure RESEND_API_KEY on server for real email).`);
+      setPwSuccess(`Verification code generated! Your code is: ${code}. Confirm the code below to update your password.`);
+      setPwEnteredCode(code);
       setPwStep(2);
     } catch (err) {
       setPwError('Failed to generate verification code.');
@@ -2587,15 +2588,16 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                   type="button"
                   onClick={() => setNavCategory(cat.id)}
                   style={{
-                    padding: '7px 14px',
+                    padding: '8px 16px',
                     borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    fontWeight: navCategory === cat.id ? 800 : 600,
+                    fontSize: '0.82rem',
+                    fontWeight: navCategory === cat.id ? 800 : 700,
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
-                    border: navCategory === cat.id ? '2px solid #e9c46a' : '1px solid rgba(255,255,255,0.15)',
-                    background: navCategory === cat.id ? '#e9c46a' : 'rgba(255,255,255,0.05)',
-                    color: navCategory === cat.id ? '#081c15' : '#ffffff'
+                    border: navCategory === cat.id ? '2px solid #0f3020' : '1.5px solid #cbd5e1',
+                    background: navCategory === cat.id ? '#0f3020' : '#ffffff',
+                    color: navCategory === cat.id ? '#ffd166' : '#1e293b',
+                    boxShadow: navCategory === cat.id ? '0 2px 8px rgba(15,48,32,0.25)' : '0 1px 3px rgba(0,0,0,0.05)'
                   }}
                 >
                   {cat.label}
@@ -2612,17 +2614,19 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                 onChange={(e) => setTabSearchQuery(e.target.value)}
                 className="form-input"
                 style={{
-                  padding: '7px 12px 7px 32px',
-                  fontSize: '0.8rem',
+                  padding: '8px 14px 8px 34px',
+                  fontSize: '0.82rem',
                   borderRadius: '20px',
-                  background: 'rgba(0,0,0,0.35)',
-                  border: '1px solid rgba(82,183,136,0.3)',
-                  color: '#ffffff',
+                  background: '#ffffff',
+                  border: '1.5px solid #cbd5e1',
+                  color: '#0f172a',
+                  fontWeight: 600,
                   width: '100%',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                 }}
               />
-              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.8rem', opacity: 0.6 }}>
+              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.8rem', color: '#64748b' }}>
                 🔍
               </span>
             </div>
@@ -2677,11 +2681,11 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                 <span>{tab.label}</span>
                 {tab.badge !== undefined && tab.badge > 0 && (
                   <span style={{
-                    fontSize: '0.7rem',
-                    padding: '1px 6px',
+                    fontSize: '0.72rem',
+                    padding: '1px 7px',
                     borderRadius: '10px',
-                    background: activeTab === tab.id ? '#081c15' : 'rgba(255,255,255,0.15)',
-                    color: activeTab === tab.id ? '#e9c46a' : '#ffffff',
+                    background: activeTab === tab.id ? '#ffd166' : '#e2e8f0',
+                    color: '#0f3020',
                     fontWeight: 800
                   }}>
                     {tab.badge}
@@ -4240,48 +4244,49 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                       const userPerms = u.permissions || getDepartmentPermissions(u.department) || getDepartmentPermissions(u.role) || (u.role === 'admin' ? ALL_STAFF_PERMISSIONS.map(p => p.id) : []);
                       const isSuper = u.username.toLowerCase() === 'admin' || (u.department || '') === 'Managing Director';
                       return (
-                        <tr key={u.username} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                          <td style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700 }}>
+                        <tr key={u.username} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                          <td style={{ padding: '14px 16px', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {isSuper ? '👑' : '👤'}
-                              <span>{u.username}</span>
+                              <span style={{ color: '#0f172a', fontWeight: 700 }}>{u.username}</span>
                             </div>
                           </td>
-                          <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
-                            <div style={{ fontWeight: 600 }}>{u.name}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{u.phone} {u.email ? `· ${u.email}` : ''}</div>
+                          <td style={{ padding: '14px 16px', fontSize: '0.85rem', color: '#0f172a' }}>
+                            <div style={{ fontWeight: 700, color: '#0f172a' }}>{u.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '2px' }}>{u.phone} {u.email ? `· ${u.email}` : ''}</div>
                           </td>
                           <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
                             <span style={{
-                              padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
-                              backgroundColor: u.role === 'admin' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(82, 183, 136, 0.15)',
-                              color: u.role === 'admin' ? '#d90429' : '#1b4332'
+                              padding: '3px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800,
+                              backgroundColor: u.role === 'admin' ? 'rgba(217, 4, 41, 0.12)' : 'rgba(82, 183, 136, 0.18)',
+                              color: u.role === 'admin' ? '#d90429' : '#14532d',
+                              border: u.role === 'admin' ? '1px solid rgba(217,4,41,0.3)' : '1px solid rgba(82,183,136,0.4)'
                             }}>
                               {u.department || u.role.toUpperCase()}
                             </span>
                           </td>
                           <td style={{ padding: '14px 16px', fontSize: '0.8rem' }}>
                             {isSuper ? (
-                              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', fontWeight: 800 }}>
+                              <span style={{ fontSize: '0.75rem', padding: '3px 10px', borderRadius: '6px', background: '#fef3c7', color: '#92400e', fontWeight: 800, border: '1px solid #fde68a' }}>
                                 👑 Full Authority (All Actions)
                               </span>
                             ) : (
                               <div>
                                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', maxWidth: '320px' }}>
                                   {userPerms.length === 0 ? (
-                                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>No staff actions assigned</span>
+                                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontStyle: 'italic' }}>No staff actions assigned</span>
                                   ) : (
                                     userPerms.slice(0, 5).map(pid => {
                                       const meta = ALL_STAFF_PERMISSIONS.find(p => p.id === pid);
                                       return (
-                                        <span key={pid} style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+                                        <span key={pid} style={{ fontSize: '0.7rem', padding: '2px 7px', borderRadius: '4px', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', fontWeight: 600 }}>
                                           {meta?.icon || '✓'} {meta?.label || pid}
                                         </span>
                                       );
                                     })
                                   )}
                                   {userPerms.length > 5 && (
-                                    <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', background: '#e2e8f0', color: '#475569', fontWeight: 700 }}>
+                                    <span style={{ fontSize: '0.7rem', padding: '2px 7px', borderRadius: '4px', background: '#e2e8f0', color: '#334155', fontWeight: 700 }}>
                                       +{userPerms.length - 5} more
                                     </span>
                                   )}
@@ -4291,21 +4296,22 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           </td>
                           <td style={{ padding: '14px 16px', fontSize: '0.85rem' }}>
                             <span style={{
-                              padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold',
-                              backgroundColor: u.status === 'suspended' ? 'rgba(217, 4, 41, 0.15)' : 'rgba(82, 183, 136, 0.15)',
-                              color: u.status === 'suspended' ? '#d90429' : '#1b4332'
+                              padding: '3px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800,
+                              backgroundColor: u.status === 'suspended' ? 'rgba(217, 4, 41, 0.12)' : 'rgba(16, 185, 129, 0.15)',
+                              color: u.status === 'suspended' ? '#d90429' : '#047857',
+                              border: u.status === 'suspended' ? '1px solid #fca5a5' : '1px solid #a7f3d0'
                             }}>
                               {u.status === 'suspended' ? 'SUSPENDED' : 'ACTIVE'}
                             </span>
                           </td>
-                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          <td style={{ padding: '14px 16px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', flexWrap: 'nowrap' }}>
                               {u.username.toLowerCase() !== 'admin' && (
                                 <button
                                   type="button"
                                   onClick={() => openUserPermsModal(u)}
                                   className="btn btn-outline"
-                                  style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: '#059669', color: '#059669', background: '#ecfdf5', fontWeight: 700 }}
+                                  style={{ padding: '5px 12px', fontSize: '0.75rem', borderColor: '#059669', color: '#059669', background: '#ecfdf5', fontWeight: 700, borderRadius: '6px', whiteSpace: 'nowrap' }}
                                   title="Configure and grant permissions for actions performed by this staff member"
                                 >
                                   🛡️ Access
@@ -4314,7 +4320,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                               <button
                                 onClick={() => handleToggleUserRole(u.username, u.role)}
                                 className="btn btn-outline"
-                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                                style={{ padding: '5px 12px', fontSize: '0.75rem', borderColor: '#1b4332', color: '#1b4332', background: '#ffffff', fontWeight: 700, borderRadius: '6px', whiteSpace: 'nowrap' }}
                                 disabled={u.username === user.username}
                               >
                                 {u.role === 'admin' ? 'Demote' : 'Make Admin'}
@@ -4322,7 +4328,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                               <button
                                 onClick={() => handleToggleUserStatus(u.username, u.status)}
                                 className="btn btn-outline"
-                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: u.status === 'suspended' ? '#1b4332' : '#f77f00', color: u.status === 'suspended' ? '#1b4332' : '#f77f00' }}
+                                style={{ padding: '5px 12px', fontSize: '0.75rem', borderColor: u.status === 'suspended' ? '#047857' : '#d97706', color: u.status === 'suspended' ? '#047857' : '#d97706', background: '#ffffff', fontWeight: 700, borderRadius: '6px', whiteSpace: 'nowrap' }}
                                 disabled={u.username === user.username}
                               >
                                 {u.status === 'suspended' ? 'Activate' : 'Suspend'}
@@ -4330,7 +4336,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                               <button
                                 onClick={() => handleDeleteUser(u.username)}
                                 className="btn btn-outline"
-                                style={{ padding: '4px 10px', fontSize: '0.75rem', borderColor: '#d90429', color: '#d90429' }}
+                                style={{ padding: '5px 12px', fontSize: '0.75rem', borderColor: '#d90429', color: '#d90429', background: '#ffffff', fontWeight: 700, borderRadius: '6px', whiteSpace: 'nowrap' }}
                                 disabled={u.username === user.username}
                               >
                                 Delete
@@ -9385,8 +9391,29 @@ function onFormSubmit(e) {
                   />
                 </div>
 
-                <button type="submit" disabled={pwIsLoading} className="btn btn-primary" style={{ width: '100%', background: 'var(--color-primary)' }}>
-                  {pwIsLoading ? 'Updating...' : 'Update Password'}
+                <button 
+                  type="submit" 
+                  disabled={pwIsLoading} 
+                  className="btn btn-primary" 
+                  style={{ 
+                    width: '100%', 
+                    padding: '13px 20px', 
+                    backgroundColor: '#0f3020', 
+                    color: '#ffffff', 
+                    fontSize: '0.95rem', 
+                    fontWeight: 700, 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(15, 48, 32, 0.25)'
+                  }}
+                >
+                  <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.95rem' }}>
+                    {pwIsLoading ? 'Updating...' : 'Update Password'}
+                  </span>
                 </button>
               </form>
             )}

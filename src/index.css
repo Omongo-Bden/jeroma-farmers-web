@@ -2585,73 +2585,97 @@ img {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  padding: 10px 18px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f3020 !important;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
   transition: var(--transition-fast);
 }
 
 .btn-tab.active {
-  background: #081c15 !important;
-  color: #e9c46a !important;
-  border: 1.5px solid #e9c46a !important;
-  box-shadow: 0 4px 14px rgba(233, 196, 106, 0.3) !important;
+  background: #0f3020 !important;
+  color: #ffd166 !important;
+  border: 2px solid #ffd166 !important;
+  box-shadow: 0 4px 14px rgba(15, 48, 32, 0.25) !important;
 }
 
 .btn-tab:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffd166;
-  border-color: rgba(255, 209, 102, 0.4);
+  background: #f0fdf4 !important;
+  border-color: #1b4332 !important;
+  color: #1b4332 !important;
 }
 
 /* High-contrast, clean typography inside Admin Dashboard tabs */
+.dashboard-panel-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
 .dashboard-panel-card h1,
 .dashboard-panel-card h2,
 .dashboard-panel-card h3 {
-  color: #ffd166 !important;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  color: #0f3020 !important;
+  font-weight: 800;
+  text-shadow: none;
 }
 
 .dashboard-panel-card h4,
 .dashboard-panel-card h5,
 .dashboard-panel-card h6 {
-  color: #ffffff !important;
-  font-weight: 600;
+  color: #1e293b !important;
+  font-weight: 700;
 }
 
 .dashboard-panel-card p {
-  color: #d8f3dc;
+  color: #475569 !important;
 }
 
 .dashboard-panel-card label {
-  color: #ffd166 !important;
+  color: #0f3020 !important;
   font-weight: 700;
 }
 
 .dashboard-panel-card th {
   color: #ffd166 !important;
-  background-color: rgba(0, 0, 0, 0.35) !important;
-  border-bottom: 2px solid rgba(255, 209, 102, 0.2) !important;
+  background-color: #0f3020 !important;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #ffd166 !important;
 }
 
 .dashboard-panel-card td {
-  color: #ffffff;
+  color: #0f172a !important;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dashboard-panel-card tr:hover td {
+  background-color: #f8fafc;
+}
+
+.dashboard-panel-card td span,
+.dashboard-panel-card td div {
+  color: inherit;
 }
 
 .dashboard-panel-card [style*="color: var(--color-primary-dark)"],
 .dashboard-panel-card [style*="color:var(--color-primary-dark)"] {
-  color: #ffd166 !important;
+  color: #0f3020 !important;
 }
 
 .dashboard-panel-card [style*="color: #0f3020"],
 .dashboard-panel-card [style*="color:#0f3020"] {
-  color: #ffd166 !important;
+  color: #0f3020 !important;
 }
 
 .form-grid-responsive-2col {

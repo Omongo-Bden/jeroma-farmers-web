@@ -331,7 +331,8 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
         }
       }
 
-      setPwSuccess(`Verification code generated! [DEMO MODE] Your code is: ${code}. Please enter it below to verify (configure RESEND_API_KEY on server for real email).`);
+      setPwSuccess(`Verification code generated! Your code is: ${code}. Confirm the code below to update your password.`);
+      setPwEnteredCode(code);
       setPwStep(2);
     } catch (err) {
       setPwError('Failed to generate verification code.');
@@ -1079,8 +1080,29 @@ export default function ClientDashboard({ lang, user, onLogout, onBackToSite }) 
                   />
                 </div>
 
-                <button type="submit" disabled={pwIsLoading} className="btn btn-primary" style={{ width: '100%', background: 'var(--color-primary)' }}>
-                  {pwIsLoading ? 'Updating...' : 'Update Password'}
+                <button 
+                  type="submit" 
+                  disabled={pwIsLoading} 
+                  className="btn btn-primary" 
+                  style={{ 
+                    width: '100%', 
+                    padding: '13px 20px', 
+                    backgroundColor: '#0f3020', 
+                    color: '#ffffff', 
+                    fontSize: '0.95rem', 
+                    fontWeight: 700, 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(15, 48, 32, 0.25)'
+                  }}
+                >
+                  <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.95rem' }}>
+                    {pwIsLoading ? 'Updating...' : 'Update Password'}
+                  </span>
                 </button>
               </form>
             )}
