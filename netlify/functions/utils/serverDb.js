@@ -232,13 +232,13 @@ const DEFAULT_SLIDES = [
   },
   {
     id: 'partnership_a2i',
-    icon: '🤝',
-    tag_en: 'Partnership',
-    tag_ach: 'Ribbe Tic',
-    title_en: 'Jeroma in Conjunction with Access to Innovation (A2I)',
-    title_ach: 'Jeroma i Conjunction ki Access to Innovation (A2I)',
-    body_en: 'Jeroma, in conjunction with Access to Innovation and with support from the Danish Government, completed its First Cohort field program from July 10 to July 14, 2026. The team visited SACCOs, cooperatives, and farming institutions in the Lango and Acholi subregions to identify needs, see capacities, and select machinery that best supports farmers without financial burden.',
-    body_ach: 'Jeroma, i ribbe tic ki Access to Innovation kede cwak ma oa ki bot Gavumenti me Denmark, ocoyo Program me Cohort Mukwongo me abiri 10-14 July 2026. Team mwa olimo SACCOs kede cooperatives i Lango ki Acholi subregions pi neno machinery ma twero konyo lupur maber.',
+    icon: '🚀',
+    tag_en: 'Implementation',
+    tag_ach: 'Dwol me Tic',
+    title_en: 'A2I Cohort 1: Implementation Stage & Joint Farmer Trainings',
+    title_ach: 'A2I Cohort 1: Dwol me Tic & Pwonj me Lupur ki Bank, Jeroma & A2I',
+    body_en: 'The Agricultural Modernization & Capacity Building Initiative (Cohort 1) is now under the Implementation Stage! In conjunction with Access to Innovation (A2I) and supported by the Danish Government, joint farmer trainings are actively underway conducted by commercial partner banks, Jeroma agronomy experts, and A2I teams.',
+    body_ach: 'Prujek me A2I Cohort 1 dong ocopo i dwol me tic me poto! I ribbe tic ki Access to Innovation (A2I) kede Gavumenti me Denmark, pwonj dongo bot lupur tye ka medde ma team me commercial banks, Jeroma, kede A2I tye ka miyo kanyacel.',
     image: '/a2i_project_2.jpg',
     color: '#081c15',
     accent: '#52b788',
@@ -517,17 +517,17 @@ const DEFAULT_PROJECTS = [
   {
     id: 'proj-a2i-01',
     code: 'A2I-COHORT-1',
-    title: 'Access to Innovation (A2I) Mechanization & Capacity Building',
+    title: 'Agricultural Modernization & Capacity Building Initiative — Cohort 1',
     partner: 'Access to Innovation (A2I) & Danish Government',
     status: 'Implementation',
-    progressPercent: 65,
+    progressPercent: 68,
     budget: 450000000,
-    spent: 210000000,
+    spent: 245000000,
     currency: 'UGX',
     startDate: '2026-07-01',
     endDate: '2027-06-30',
     targetBeneficiaries: 1800,
-    achievedBeneficiaries: 1240,
+    achievedBeneficiaries: 1350,
     targetCooperatives: 15,
     engagedCooperatives: 12,
     cooperatives: [
@@ -537,13 +537,13 @@ const DEFAULT_PROJECTS = [
       'Lira Central Smallholders Cooperative',
       'Kole Agro-Producers Association'
     ],
-    objectives: 'Identify machinery needs, evaluate cooperative capacities, and deploy appropriate processing technology (threshers, shellers, solar dryers) without debt burden on farmers.',
-    riskMitigation: 'Machine maintenance trained local operators; warranty backed by Danida and equipment manufacturers.',
+    objectives: 'Implementation Stage: Conducting intensive hands-on farmer training sessions jointly delivered by commercial partner banks, Jeroma agronomy specialists, and Access to Innovation (A2I) teams. Equipping farmers with financial literacy, credit access, modern machinery operation (threshers, shellers, solar dryers), and high-grade post-harvest crop preservation supported by the Danish Government.',
+    riskMitigation: 'Machine maintenance trained local operators; commercial bank financial advisory; warranty backed by Danida and equipment manufacturers.',
     milestones: [
       { id: 'm1', phase: 'Initiation', title: 'Cohort 1 Field Needs Assessment in Lango & Acholi', completed: true, targetDate: '2026-07-14' },
       { id: 'm2', phase: 'Planning', title: 'Selection & Vetting of 12 Pilot Cooperatives & SACCOs', completed: true, targetDate: '2026-08-01' },
-      { id: 'm3', phase: 'On Process', title: 'Operator Training & Safety Protocol Mobilization', completed: true, targetDate: '2026-08-25' },
-      { id: 'm4', phase: 'Implementation', title: 'Deployment of Multi-Crop Threshers & Cyclone Shellers', completed: false, targetDate: '2026-09-30' },
+      { id: 'm3', phase: 'Implementation', title: 'Joint Farmer Trainings by Commercial Banks, Jeroma & A2I Teams', completed: true, targetDate: '2026-09-10' },
+      { id: 'm4', phase: 'Implementation', title: 'Deployment of Multi-Crop Threshers & Cyclone Shellers', completed: false, targetDate: '2026-10-15' },
       { id: 'm5', phase: 'Monitoring', title: 'Mid-Term Machine Utilization & Yield Quality Audit', completed: false, targetDate: '2026-11-15' },
       { id: 'm6', phase: 'Completed', title: 'Cohort 2 Handover & Annual Impact Evaluation', completed: false, targetDate: '2027-06-15' }
     ],
@@ -903,6 +903,26 @@ if (dbState.slides && Array.isArray(dbState.slides)) {
     const a2iSlide = DEFAULT_SLIDES.find(s => s.id === 'partnership_a2i');
     if (a2iSlide) {
       dbState.slides.push(a2iSlide);
+      saveDb();
+    }
+  } else {
+    const a2iSlide = dbState.slides.find(s => s.id === 'partnership_a2i');
+    if (a2iSlide && a2iSlide.tag_en !== 'Implementation') {
+      const freshSlide = DEFAULT_SLIDES.find(s => s.id === 'partnership_a2i');
+      if (freshSlide) {
+        Object.assign(a2iSlide, freshSlide);
+        saveDb();
+      }
+    }
+  }
+}
+
+if (dbState.projects && Array.isArray(dbState.projects)) {
+  const a2iProj = dbState.projects.find(p => p.id === 'proj-a2i-01');
+  if (a2iProj && (a2iProj.status !== 'Implementation' || !a2iProj.objectives.includes('commercial partner banks'))) {
+    const freshProj = DEFAULT_PROJECTS.find(p => p.id === 'proj-a2i-01');
+    if (freshProj) {
+      Object.assign(a2iProj, freshProj);
       saveDb();
     }
   }
