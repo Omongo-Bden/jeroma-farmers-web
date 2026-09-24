@@ -41,6 +41,8 @@ function parseSheetData(text) {
 }
 
 const db = require('./utils/serverDb');
+const momoGateway = require('./utils/momoGateway');
+const smsGateway = require('./utils/smsGateway');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const JWT_SECRET = process.env.JWT_SECRET || 'jeroma_farmers_secret_key_2026_lira_uganda';
@@ -773,6 +775,38 @@ exports.handler = async (event, _context) => {
       const success = await db.deleteMachinery(id);
       return jsonResponse(200, { success }, event);
     }
+
+    // ─── Interoperability: Uganda Mobile Money (MTN & Airtel) ───────────────
+    if (path === '/momo/disburse' && method === 'POST') {
+      requirePermission(event, 'deliveries');
+      const { phone, amountUGX, receiptNumber, farmerName } = body;
+      if (!phone || !amountUGX) {
+        return jsonResponse(400, { error: 'Phone number and amountUGX are required' }, event);
+      }
+      const result = await momoGateway.disburseFarmerPayout({ phone, amountUGX, receiptNumber, farmerName });
+      return jsonResponse(result.success ? 200 : 500, result, event);
+    }
+
+    // ─── Interoperability: Africa's Talking Uganda SMS Gateway ────────────────
+    if (path === '/sms/send-receipt' && method === 'POST') {
+      requirePermission(event, 'deliveries');
+      const { phone, farmerName, receiptNumber, crop, netWeightKg, unitPrice, totalAmountUGX } = body;
+      if (!phone || !receiptNumber) {
+        return jsonResponse(400, { error: 'Phone number and receiptNumber are required' }, event);
+      }
+      const result = await smsGateway.sendDeliveryReceiptSms({
+        phone, farmerName, receiptNumber, crop, netWeightKg, unitPrice, totalAmountUGX
+      });
+      return jsonResponse(result.success ? 200 : 500, result, event);
+    }
+
+    if (path === '/sms/broadcast' && method === 'POST') {
+      requirePermission(event, 'prices');
+      const { phoneNumbers, pricesText } = body;
+      const result = await smsGateway.broadcastGrainPricesSms({ phoneNumbers, pricesText });
+      return jsonResponse(200, result, event);
+    }
+
 
     // ─── Department Operations: Finance Endpoints ─────────────────────────────
     if (path === '/departments/finance' && method === 'GET') {

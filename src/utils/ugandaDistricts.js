@@ -172,11 +172,14 @@ export const generateAutoFarmerId = (districtName = 'Pader') => {
   return `JRM-FMR-${code}-${randomSuffix}`;
 };
 
-export const generateAutoCoopCode = (districtName = 'Pader') => {
-  const dist = findDistrictByName(districtName);
-  const code = dist ? dist.code : '000';
-  const randomSuffix = Math.floor(100 + Math.random() * 900);
-  return `COP-UG-${code}-${randomSuffix}`;
+export const generateAutoCoopCode = (countOrList = 0) => {
+  let count = 0;
+  if (Array.isArray(countOrList)) {
+    count = countOrList.length;
+  } else if (typeof countOrList === 'number') {
+    count = countOrList;
+  }
+  return String(count + 1).padStart(3, '0');
 };
 
 export const generateAutoEmployeeId = (deptCode = 'STF') => {
@@ -201,7 +204,7 @@ export const JEROMA_DEPARTMENTS = [
     badgeColor: '#081c15',
     permissions: [
       'prices', 'deliveries', 'dispatches', 'projects', 'staff',
-      'cooperatives', 'departments', 'forms', 'inquiries', 'users',
+      'cooperatives', 'departments', 'inquiries', 'users',
       'logins', 'language', 'manual', 'chatbot', 'slides', 'socials'
     ],
     description: 'Executive leadership, overall organizational oversight, strategic policy, and full administrative access controls.'
@@ -223,7 +226,7 @@ export const JEROMA_DEPARTMENTS = [
     roleId: 'project_manager',
     code: 'PRJ',
     badgeColor: '#0284c7',
-    permissions: ['projects', 'cooperatives', 'manual', 'forms'],
+    permissions: ['projects', 'cooperatives', 'manual'],
     description: 'Multi-project operations (Access to Innovation - A2I, seed programs), partner reporting, cooperative group coordination, and training manual.'
   },
   {
@@ -253,8 +256,8 @@ export const JEROMA_DEPARTMENTS = [
     roleId: 'mne_officer',
     code: 'MNE',
     badgeColor: '#dc2626',
-    permissions: ['forms', 'projects', 'cooperatives', 'departments'],
-    description: 'Google Forms live sync ingestion, field profiling surveys, target vs achieved impact metrics, and tree nursery survival audits.'
+    permissions: ['projects', 'cooperatives', 'departments'],
+    description: 'Field profiling surveys, target vs achieved impact metrics, project evaluation, and tree nursery survival audits.'
   }
 ];
 

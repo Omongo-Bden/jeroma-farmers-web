@@ -105,7 +105,7 @@ export default function Footer({ lang, translations: _translations, showInstallB
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)' }}>
               <span>📍 Rwot Awich Rd, Pader Town Council, Pader, Uganda</span>
               <span style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.45)' }}>Also operational in: Agago · Kitgum · Abim · Karenga · Lira · Kole</span>
-              <a href="tel:+256773623196" style={{ color: 'rgba(255,255,255,0.7)' }}>📞 +256 773 623 196 (Acuti Sam, MD)</a>
+              <a href="tel:+256773623196" style={{ color: 'rgba(255,255,255,0.7)' }}>📞 +256 773 623 196</a>
               <a href="mailto:jeromafarmers.c@gmail.com" style={{ color: 'rgba(255,255,255,0.7)' }}>✉ jeromafarmers.c@gmail.com</a>
               <a href="http://www.jeromafarmers.com" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-secondary)' }}>🌐 www.jeromafarmers.com</a>
             </div>
@@ -351,7 +351,7 @@ export default function Footer({ lang, translations: _translations, showInstallB
 
         {/* Bottom bar */}
         <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} Jeroma Farmers Collection Centre Ltd · Rwot Awich Rd, Pader, Uganda · TIN: 1020040260 · All rights reserved.</p>
+          <p>© 2026 Jeroma farmers collection center Ltd · All rights reserved.</p>
           <button
             className="scroll-top-btn"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

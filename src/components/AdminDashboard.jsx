@@ -73,6 +73,8 @@ import {
   generateAutoEmployeeId,
   generateAutoProjectCode
 } from '../utils/ugandaDistricts';
+import NetworkSyncStatus from './NetworkSyncStatus';
+import AgroWeatherWidget from './AgroWeatherWidget';
 
 export const WATERFALL_PHASES = [
   { id: 'Initiation', order: 1, step: '1. Initiation', label: 'Initiation', desc: 'Concept & Stakeholder Alignment', color: '#2563eb', bg: '#eff6ff', border: '#93c5fd' },
@@ -145,7 +147,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
     return currentUserState?.permissions || 
            getDepartmentPermissions(currentUserState?.department) || 
            getDepartmentPermissions(currentUserState?.role) || 
-           (isFullAdmin ? ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot', 'projects', 'staff', 'cooperatives', 'departments', 'forms', 'users', 'logins', 'language', 'socials', 'slides'] : []);
+           (isFullAdmin ? ['prices', 'deliveries', 'dispatches', 'inquiries', 'manual', 'chatbot', 'projects', 'staff', 'cooperatives', 'departments', 'users', 'logins', 'language', 'socials', 'slides'] : []);
   }, [currentUserState, isFullAdmin]);
 
   const canAccessTab = (tabId) => {
@@ -1358,7 +1360,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
   };
 
   const handleExportCoopsCsv = () => {
-    const headers = ['Code', 'Name', 'District', 'Subcounty', 'Chairperson', 'Phone', 'Members Count', 'Female Members', 'Youth Members', 'Acreage', 'Crops'];
+    const headers = ['Cooperative Number', 'Name', 'District', 'Subcounty', 'Chairperson', 'Phone', 'Total Registered Farmers', 'Crops'];
     const rows = cooperativesList.map(c => [
       c.code || '',
       `"${(c.name || '').replace(/"/g, '""')}"`,
@@ -1367,9 +1369,6 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
       `"${(c.contactPerson || '').replace(/"/g, '""')}"`,
       c.phone || '',
       c.membersCount || 0,
-      c.femaleMembers || 0,
-      c.youthMembers || 0,
-      c.totalAcreage || 0,
       `"${(c.cropsSpecialization || []).join('; ')}"`
     ]);
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -2568,6 +2567,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>Projects</div>
               <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f4a261' }}>{(projectsList || []).length}</div>
             </div>
+            <div style={{ marginLeft: '4px' }}>
+              <NetworkSyncStatus />
+            </div>
           </div>
         </div>
 
@@ -2577,9 +2579,9 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             {/* Category Filter Pills */}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {[
-                { id: 'all', label: 'All Modules (16)' },
+                { id: 'all', label: 'All Modules (15)' },
                 { id: 'operations', label: '🚜 Operations (4)' },
-                { id: 'organization', label: '🏢 Organization (4)' },
+                { id: 'organization', label: '🏢 Organization (3)' },
                 { id: 'outreach', label: '📢 Outreach (5)' },
                 { id: 'governance', label: '⚙️ Governance (3)' }
               ].map(cat => (
@@ -2642,7 +2644,6 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
               { id: 'staff', label: lang === 'en' ? '👥 Staff & Positions' : '👥 Lutic mwa', icon: null, category: 'organization', badge: (staffList || []).length },
               { id: 'cooperatives', label: lang === 'en' ? '🤝 Cooperatives & SACCOs' : '🤝 Cooperatives', icon: null, category: 'organization', badge: (cooperativesList || []).length },
               { id: 'departments', label: lang === 'en' ? '🏢 Departments Hub' : '🏢 Departments', icon: null, category: 'organization', badge: 6 },
-              { id: 'forms', label: lang === 'en' ? '📋 Google Forms Sync' : '📋 Google Forms', icon: null, category: 'organization' },
               { id: 'inquiries', label: t.inquiriesTab, icon: <Icons.Mail size={18} />, category: 'outreach', badge: (inquiries || []).length },
               { id: 'users', label: t.usersTab || 'User Management', icon: <Icons.Users size={18} />, category: 'governance', badge: (allUsersList || []).length },
               { id: 'logins', label: lang === 'en' ? '🔑 Login History' : '🔑 Wel me Login', icon: <Icons.Clock size={18} />, category: 'governance' },
@@ -2760,6 +2761,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
             return (
               /* Price Manager Tab */
               <div>
+                <AgroWeatherWidget initialDistrict="Pader" />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
                   <div>
                     <h3 style={{ color: 'var(--color-primary-dark)', fontSize: '1.3rem', fontFamily: 'var(--font-heading)', fontWeight: 700, margin: '0 0 6px 0' }}>
@@ -7251,16 +7253,13 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                     type="button"
                     className="btn btn-primary"
                     onClick={() => setEditingCooperative({
-                      code: generateAutoCoopCode('Pader'),
+                      code: generateAutoCoopCode(cooperativesList),
                       name: '',
                       district: '101. Pader',
                       subcounty: '',
                       contactPerson: '',
                       phone: '+256 77',
-                      membersCount: 40,
-                      femaleMembers: 20,
-                      youthMembers: 15,
-                      totalAcreage: 80,
+                      membersCount: 0,
                       cropsSpecialization: ['Sunflower', 'Soya Beans'],
                       machineryAllocated: [],
                       status: 'Active'
@@ -7280,12 +7279,12 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                   <div style={{ fontSize: '0.75rem', color: '#52b788', marginTop: '2px' }}>Across 7 Districts</div>
                 </div>
                 <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Total Farmer Members</div>
+                  <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-light)', fontWeight: 600 }}>Total Registered Farmers</div>
                   <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#2d6a4f', marginTop: '4px' }}>
                     {cooperativesList.reduce((acc, c) => acc + (Number(c.membersCount) || 0), 0).toLocaleString()}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: '2px' }}>
-                    Female: {cooperativesList.reduce((acc, c) => acc + (Number(c.femaleMembers) || 0), 0).toLocaleString()} | Youth: {cooperativesList.reduce((acc, c) => acc + (Number(c.youthMembers) || 0), 0).toLocaleString()}
+                  <div style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '2px' }}>
+                    Active registered smallholder farmers across SACCOs
                   </div>
                 </div>
                 <div className="glass-panel" style={{ padding: '16px', background: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}>
@@ -7340,17 +7339,17 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                   </div>
                   <form onSubmit={handleSaveCoopSubmit}>
                     <div className="form-row-responsive" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
-                      {/* Field: Auto Cooperative Code */}
+                      {/* Field: Cooperative Number / Code */}
                       <div className="form-group">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                           <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>🆔</span> Auto Cooperative Code *
+                            <span>🔢</span> Cooperative Number / Code *
                           </label>
-                          
                         </div>
                         <input
                           type="text"
                           required
+                          placeholder="e.g. 001"
                           className="form-input"
                           value={editingCooperative.code || ''}
                           onChange={(e) => setEditingCooperative({ ...editingCooperative, code: e.target.value })}
@@ -7390,10 +7389,7 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                             const newDist = e.target.value;
                             setEditingCooperative({ 
                               ...editingCooperative, 
-                              district: newDist,
-                              code: editingCooperative.code?.startsWith('COP-') 
-                                ? generateAutoCoopCode(newDist) 
-                                : editingCooperative.code
+                              district: newDist
                             });
                           }}
                         >
@@ -7447,39 +7443,17 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                         />
                       </div>
                       <div className="form-group">
-                        <label>Total Farmer Members</label>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary-dark)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>👥</span> Total Registered Farmers *
+                        </label>
                         <input
                           type="number"
+                          min="0"
+                          required
                           className="form-input"
-                          value={editingCooperative.membersCount || 0}
+                          value={editingCooperative.membersCount ?? 0}
                           onChange={(e) => setEditingCooperative({ ...editingCooperative, membersCount: Number(e.target.value) })}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Female Members</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editingCooperative.femaleMembers || 0}
-                          onChange={(e) => setEditingCooperative({ ...editingCooperative, femaleMembers: Number(e.target.value) })}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Youth Members</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editingCooperative.youthMembers || 0}
-                          onChange={(e) => setEditingCooperative({ ...editingCooperative, youthMembers: Number(e.target.value) })}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Total Acreage (Acres)</label>
-                        <input
-                          type="number"
-                          className="form-input"
-                          value={editingCooperative.totalAcreage || 0}
-                          onChange={(e) => setEditingCooperative({ ...editingCooperative, totalAcreage: Number(e.target.value) })}
+                          placeholder="e.g. 50"
                         />
                       </div>
                     </div>
@@ -7581,21 +7555,12 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
                           )}
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', background: '#f8fafc', padding: '10px', borderRadius: '8px', margin: '12px 0', textAlign: 'center' }}>
+                        <div style={{ background: '#f0fdf4', padding: '10px 14px', borderRadius: '8px', margin: '12px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #bbf7d0' }}>
                           <div>
-                            <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Members</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary-dark)' }}>{coop.membersCount || 0}</div>
+                            <div style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600, textTransform: 'uppercase' }}>Total Registered Farmers</div>
+                            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#14532d' }}>{Number(coop.membersCount || 0).toLocaleString()} <span style={{ fontSize: '0.78rem', fontWeight: 500, color: '#15803d' }}>Farmers</span></div>
                           </div>
-                          <div>
-                            <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Women / Youth</div>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#059669' }}>
-                              {coop.femaleMembers || 0} / {coop.youthMembers || 0}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Acreage</div>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1b4332' }}>{coop.totalAcreage || 0} Ac</div>
-                          </div>
+                          <span style={{ fontSize: '1.4rem' }}>👨‍🌾</span>
                         </div>
 
                         {/* Crops Specialization */}
@@ -8478,8 +8443,8 @@ export default function AdminDashboard({ lang, user, onLogout, onBackToSite, onS
 
           {/* ═══════════════════════════════════════════════════════════════ */}
           {/* TAB 5: Google Forms Live Synchronization & Ingestion System */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {activeTab === 'forms' && (
+          {/* Google Forms Tab Removed */}
+          {false /* Google Forms tab removed from dashboard */ && activeTab === 'forms' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
                 <div>

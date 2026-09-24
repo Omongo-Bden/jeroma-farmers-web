@@ -1845,3 +1845,45 @@ export const saveSocials = async (socialsData) => {
   return socialsData;
 };
 
+// ─── Interoperability: Uganda Mobile Money (MTN & Airtel) ─────────────────────
+export const disburseMomoPayout = async ({ phone, amountUGX, receiptNumber, farmerName }) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/momo/disburse`, {
+      method: 'POST',
+      body: JSON.stringify({ phone, amountUGX, receiptNumber, farmerName })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('Mobile money payout error:', err);
+    return { success: false, error: err.message };
+  }
+};
+
+// ─── Interoperability: Africa's Talking Uganda SMS Gateway ────────────────────
+export const sendReceiptSms = async ({ phone, farmerName, receiptNumber, crop, netWeightKg, unitPrice, totalAmountUGX }) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/sms/send-receipt`, {
+      method: 'POST',
+      body: JSON.stringify({ phone, farmerName, receiptNumber, crop, netWeightKg, unitPrice, totalAmountUGX })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('SMS send error:', err);
+    return { success: false, error: err.message };
+  }
+};
+
+export const broadcastPriceSms = async ({ phoneNumbers, pricesText }) => {
+  try {
+    const res = await fetchWithAuth(`${API_BASE}/sms/broadcast`, {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumbers, pricesText })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('SMS broadcast error:', err);
+    return { success: false, error: err.message };
+  }
+};
+
+

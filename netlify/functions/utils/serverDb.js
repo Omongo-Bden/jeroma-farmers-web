@@ -66,7 +66,7 @@ const DEFAULT_USERS = [
     department: 'Managing Director',
     phone: '+256 773 623 196', 
     district: 'Lira',
-    permissions: ['prices', 'deliveries', 'dispatches', 'projects', 'staff', 'cooperatives', 'departments', 'forms', 'inquiries', 'users', 'logins', 'language', 'manual', 'chatbot', 'slides']
+    permissions: ['prices', 'deliveries', 'dispatches', 'projects', 'staff', 'cooperatives', 'departments', 'inquiries', 'users', 'logins', 'language', 'manual', 'chatbot', 'slides', 'socials']
   },
   { 
     username: 'md', 
@@ -77,7 +77,7 @@ const DEFAULT_USERS = [
     department: 'Managing Director',
     phone: '+256 773 623 196', 
     district: 'Pader',
-    permissions: ['prices', 'deliveries', 'dispatches', 'projects', 'staff', 'cooperatives', 'departments', 'forms', 'inquiries', 'users', 'logins', 'language', 'manual', 'chatbot', 'slides']
+    permissions: ['prices', 'deliveries', 'dispatches', 'projects', 'staff', 'cooperatives', 'departments', 'inquiries', 'users', 'logins', 'language', 'manual', 'chatbot', 'slides', 'socials']
   },
   { 
     username: 'finance', 
@@ -99,7 +99,7 @@ const DEFAULT_USERS = [
     department: 'project/Program manager',
     phone: '+256 775 889 012', 
     district: 'Pader',
-    permissions: ['projects', 'cooperatives', 'manual', 'forms']
+    permissions: ['projects', 'cooperatives', 'manual']
   },
   { 
     username: 'secretary', 
@@ -110,7 +110,7 @@ const DEFAULT_USERS = [
     department: 'General Secretary',
     phone: '+256 772 890 123', 
     district: 'Lira',
-    permissions: ['staff', 'cooperatives', 'inquiries', 'departments']
+    permissions: ['staff', 'cooperatives', 'inquiries', 'departments', 'socials']
   },
   { 
     username: 'logistics', 
@@ -132,7 +132,7 @@ const DEFAULT_USERS = [
     department: 'Monitoring and Evaluation',
     phone: '+256 771 889 900', 
     district: 'Agago',
-    permissions: ['forms', 'projects', 'cooperatives', 'departments']
+    permissions: ['projects', 'cooperatives', 'departments']
   },
   { 
     username: 'okello', 
